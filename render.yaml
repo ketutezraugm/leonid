@@ -1,0 +1,36 @@
+# Render Blueprint: one web service (API + built web app) and Postgres.
+# Secrets marked sync: false are entered in the Render dashboard on first deploy.
+services:
+  - type: web
+    name: quartermaster
+    runtime: node
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quartermaster-db
+          property: connectionString
+      - key: PAYPAL_TREASURY_CLIENT_ID
+        sync: false
+      - key: PAYPAL_TREASURY_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_PROCUREMENT_CLIENT_ID
+        sync: false
+      - key: PAYPAL_PROCUREMENT_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+
+databases:
+  - name: quartermaster-db
+    plan: basic-256mb
+    databaseName: quartermaster
