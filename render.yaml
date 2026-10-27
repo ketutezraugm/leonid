@@ -1,36 +1,46 @@
-# Render Blueprint: one web service (API + built web app) and Postgres.
-# Secrets marked sync: false are entered in the Render dashboard on first deploy.
+# Render Blueprint: one web service (API + built web app) running from main.
+# The database is Supabase (Postgres), not Render Postgres: DATABASE_URL is the Supabase pooler
+# connection string, entered in the Render dashboard. Secrets marked sync: false are entered there too.
+# The staging service (branch development) is created in the dashboard, not in this file,
+# because a Blueprint follows a single branch. Workflows and cron services are added later.
 services:
   - type: web
     name: quartermaster
     runtime: node
-    plan: starter
+    plan: 0.5c-512mb
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
-    startCommand: pnpm start
+    startCommand: pnpm db:migrate && pnpm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: '22'
       - key: DATABASE_URL
-        fromDatabase:
-          name: quartermaster-db
-          property: connectionString
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: INTERNAL_JOBS_SECRET
+        generateValue: true
+      - key: DEMO_MODE
+        value: 'true'
+      - key: PAYPAL_WEBHOOK_VERIFY
+        value: 'true'
       - key: PAYPAL_TREASURY_CLIENT_ID
         sync: false
       - key: PAYPAL_TREASURY_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_TREASURY_WEBHOOK_ID
         sync: false
       - key: PAYPAL_PROCUREMENT_CLIENT_ID
         sync: false
       - key: PAYPAL_PROCUREMENT_CLIENT_SECRET
         sync: false
-      - key: PAYPAL_WEBHOOK_ID
+      - key: PAYPAL_PROCUREMENT_WEBHOOK_ID
+        sync: false
+      - key: RENDER_API_KEY
         sync: false
       - key: CHANNEL3_API_KEY
         sync: false
       - key: LLM_API_KEY
         sync: false
-
-databases:
-  - name: quartermaster-db
-    plan: basic-256mb
-    databaseName: quartermaster

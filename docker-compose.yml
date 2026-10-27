@@ -1,0 +1,21 @@
+# Local dev database only. Deployed environments use Supabase (see .env.example).
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: quartermaster
+      POSTGRES_PASSWORD: quartermaster
+      POSTGRES_DB: quartermaster
+    ports:
+      - '5432:5432'
+    volumes:
+      # Postgres 18+ images keep data under /var/lib/postgresql (version subdirectory)
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U quartermaster -d quartermaster']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:

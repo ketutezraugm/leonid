@@ -14,7 +14,12 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "test": "pnpm -r test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @quartermaster/api db:generate",
+    "db:migrate": "pnpm --filter @quartermaster/api db:migrate",
+    "db:seed": "pnpm --filter @quartermaster/api db:seed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
