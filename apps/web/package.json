@@ -22,7 +22,9 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@ai-sdk/react": "4.0.158",
     "@quartermaster/shared": "workspace:*",
+    "ai": "7.0.154",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.4"
