@@ -27,6 +27,12 @@ Other commands: `pnpm build`, `pnpm start` (serves the built web app from the AP
 
 _TODO: list each capability with a link to its code path._
 
+| Capability                                        | Code                                                                                                                                                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| OAuth client credentials (per app, cached token)  | [`apps/api/src/paypal/client.ts`](apps/api/src/paypal/client.ts)                                                                                                                           |
+| Orders v2: create order, show order               | [`apps/api/src/paypal/orders.ts`](apps/api/src/paypal/orders.ts)                                                                                                                           |
+| Sandbox negative testing (`PayPal-Mock-Response`) | [`apps/api/src/paypal/client.ts`](apps/api/src/paypal/client.ts), [`apps/api/scripts/paypal-smoke.ts`](apps/api/scripts/paypal-smoke.ts) (`pnpm --filter @quartermaster/api paypal:smoke`) |
+
 ## Sponsor integrations
 
 ### AG Studio
