@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import type { HealthResponse } from '@quartermaster/shared';
+import { chatRouter } from './routes/chat.js';
 
 export function createApp() {
   const app = express();
@@ -17,6 +18,8 @@ export function createApp() {
     };
     res.json(body);
   });
+
+  app.use('/api/chat', chatRouter);
 
   // In production the API also serves the built web app (one Render service).
   if (process.env.NODE_ENV === 'production') {
