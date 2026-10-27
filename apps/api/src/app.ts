@@ -3,10 +3,13 @@ import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import type { HealthResponse } from '@quartermaster/shared';
+import { webhookRouter } from './webhooks/router.js';
 
 export function createApp() {
   const app = express();
   app.use(cors());
+  // Before express.json(): PayPal webhook signatures are checked against the raw request body.
+  app.use('/api/webhooks/paypal', webhookRouter());
   app.use(express.json());
 
   app.get('/api/health', (_req, res) => {

@@ -23,8 +23,14 @@ services:
         sync: false
       - key: PAYPAL_PROCUREMENT_CLIENT_SECRET
         sync: false
-      - key: PAYPAL_WEBHOOK_ID
+      - key: PAYPAL_TREASURY_WEBHOOK_ID
         sync: false
+      - key: PAYPAL_PROCUREMENT_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_WEBHOOK_VERIFY
+        value: 'true'
+      - key: PAYPAL_ACCEPT_SIMULATOR_EVENTS
+        value: 'false'
       - key: CHANNEL3_API_KEY
         sync: false
       - key: LLM_API_KEY
