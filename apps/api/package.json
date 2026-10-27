@@ -8,7 +8,10 @@
     "build": "tsup",
     "start": "NODE_ENV=production node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "day1:invoicing": "tsx --env-file-if-exists=../../.env scripts/day1/invoicing.ts",
+    "day1:payouts": "tsx --env-file-if-exists=../../.env scripts/day1/payouts.ts",
+    "day1:search": "tsx --env-file-if-exists=../../.env scripts/day1/search.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
