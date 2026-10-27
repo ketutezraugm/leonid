@@ -21,7 +21,7 @@ Other commands: `pnpm build`, `pnpm start` (serves the built web app from the AP
 | `apps/web`        | React + Vite front end                                 |
 | `apps/api`        | Express API: agents, rules engine, PayPal webhooks     |
 | `packages/shared` | API contract types and zod schemas shared by web + API |
-| `render.yaml`     | Render Blueprint (web service + Postgres)              |
+| `render.yaml`     | Render Blueprint (web service; Postgres is Supabase)   |
 
 ## PayPal capabilities used
 
