@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793111288422,
+      "tag": "0000_hard_meggan",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793115573536,
+      "tag": "0001_nice_northstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793116438431,
+      "tag": "0002_chat_event_optional",
+      "breakpoints": true
+    }
+  ]
+}
