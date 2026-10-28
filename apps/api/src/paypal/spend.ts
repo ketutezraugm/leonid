@@ -21,18 +21,44 @@ const ChargeResponse = z.object({
     .default([]),
 });
 
-export interface VaultCharge {
+export interface Charge {
   orderId: string;
   captureId?: string;
   status: string; // COMPLETED when the money moved; NO_CAPTURE if PayPal returned no capture
   amount?: { amountMinor: number; currency: string }; // what PayPal actually captured, for the caller to verify
 }
 
+function toCharge(res: z.infer<typeof ChargeResponse>): Charge {
+  const capture = res.purchase_units[0]?.payments?.captures[0];
+  return {
+    orderId: res.id,
+    captureId: capture?.id,
+    status: capture?.status ?? 'NO_CAPTURE',
+    amount: capture ? fromPayPalMoney(capture.amount) : undefined,
+  };
+}
+
+// Capture an order the treasurer approved in the PayPal popup. The caller must already have checked at PayPal that the
+// order is APPROVED and that its amount is the spend's amount (the executor does both).
+export async function captureApprovedOrder(
+  client: PayPalClient,
+  input: { referenceId: string; orderId: string },
+): Promise<Charge> {
+  const res = await client.request({
+    method: 'POST',
+    path: `/v2/checkout/orders/${encodeURIComponent(input.orderId)}/capture`,
+    schema: ChargeResponse,
+    requestId: `capture-${input.referenceId}`,
+    body: {},
+  });
+  return toCharge(res);
+}
+
 // Charge the saved wallet with nobody present. PayPal refuses it if the payment token was deleted (kill switch).
 export async function chargeVaultedWallet(
   client: PayPalClient,
   input: { referenceId: string; paymentTokenId: string; amountMinor: number; currency: string },
-): Promise<VaultCharge> {
+): Promise<Charge> {
   const res = await client.request({
     method: 'POST',
     path: '/v2/checkout/orders',
@@ -50,11 +76,5 @@ export async function chargeVaultedWallet(
       payment_source: { paypal: { vault_id: input.paymentTokenId } },
     },
   });
-  const capture = res.purchase_units[0]?.payments?.captures[0];
-  return {
-    orderId: res.id,
-    captureId: capture?.id,
-    status: capture?.status ?? 'NO_CAPTURE',
-    amount: capture ? fromPayPalMoney(capture.amount) : undefined,
-  };
+  return toCharge(res);
 }

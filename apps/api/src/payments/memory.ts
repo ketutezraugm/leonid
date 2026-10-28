@@ -94,23 +94,37 @@ export function createMemoryReferences(): ReferencePort {
   };
 }
 
-export function createMemoryApprovals(): ApprovalsPort & {
-  list(): { id: string; spend: Spend; status: ApprovalStatus; reasons: string[] }[];
-} {
-  const rows = new Map<string, { spend: Spend; status: ApprovalStatus; decidedBy?: string; reasons: string[] }>();
+export interface ApprovalView {
+  id: string;
+  spend: Spend;
+  status: ApprovalStatus;
+  reasons: string[];
+  paypalOrderId?: string;
+}
+
+export function createMemoryApprovals(): ApprovalsPort & { list(): ApprovalView[] } {
+  const rows = new Map<string, Omit<ApprovalView, 'id'> & { rejectedBy?: string }>();
   return {
     async create(spend, result) {
       const id = `approval-${rows.size + 1}`;
       rows.set(id, { spend, status: 'pending', reasons: result.reasons });
       return id;
     },
+    async attachOrder(id, paypalOrderId) {
+      const row = rows.get(id);
+      if (row) row.paypalOrderId = paypalOrderId;
+    },
     async get(id) {
       return rows.get(id) ?? null;
+    },
+    async reject(id, by) {
+      const row = rows.get(id);
+      if (row) Object.assign(row, { status: 'rejected', rejectedBy: by });
     },
     async markPaid(id) {
       const row = rows.get(id);
       if (row) row.status = 'paid';
     },
-    list: () => [...rows].map(([id, r]) => ({ id, spend: r.spend, status: r.status, reasons: r.reasons })),
+    list: () => [...rows].map(([id, r]) => ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId })),
   };
 }

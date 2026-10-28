@@ -40,9 +40,13 @@ export interface ReferencePort {
   claim(referenceId: string, fingerprint: string): Promise<'new' | 'same' | 'conflict'>;
 }
 
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'paid';
+// The treasurer's approval is the PayPal popup: the approval row points at a PayPal order that only the treasurer
+// can approve. We never mark anything approved ourselves; the executor asks PayPal whether the order is APPROVED.
+export type ApprovalStatus = 'pending' | 'rejected' | 'paid';
 export interface ApprovalsPort {
   create(spend: Spend, result: CheckResult, auditId: string): Promise<string>;
-  get(id: string): Promise<{ spend: Spend; status: ApprovalStatus; decidedBy?: string } | null>;
+  attachOrder(id: string, paypalOrderId: string): Promise<void>;
+  get(id: string): Promise<{ spend: Spend; status: ApprovalStatus; paypalOrderId?: string } | null>;
+  reject(id: string, by: string): Promise<void>;
   markPaid(id: string): Promise<void>;
 }

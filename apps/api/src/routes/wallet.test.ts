@@ -26,16 +26,17 @@ function build(routes: Record<string, () => Response> = {}, envOverride: NodeJS.
   });
   const client = createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch });
   const wallet = createMemoryWalletStore();
+  const approvals = createMemoryApprovals();
   const executor = createExecutor({
     client,
     check: stubCheck,
     audit: createMemoryAudit(),
     wallet,
-    approvals: createMemoryApprovals(),
+    approvals,
     references: createMemoryReferences(),
   });
   const app = express();
-  app.use('/api/wallet', walletRouter({ env: envOverride, payments: () => ({ client, wallet, executor }) }));
+  app.use('/api/wallet', walletRouter({ env: envOverride, payments: () => ({ client, wallet, executor, approvals }) }));
   return { app, calls, fetch, wallet };
 }
 
