@@ -44,6 +44,16 @@ describe('createWalletSetup', () => {
     });
   });
 
+  it('allows one token per payer by default and several only when the demo pool opts in', async () => {
+    const body = { id: 'T', status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'approve', href: 'https://x/approve' }] };
+    const one = clientWith(json(201, body));
+    await createWalletSetup(one.client, { referenceId: 'a', returnUrl: 'r', cancelUrl: 'c' });
+    expect(lastCall(one.fetch).body.payment_source.paypal.permit_multiple_payment_tokens).toBe(false);
+    const pool = clientWith(json(201, body));
+    await createWalletSetup(pool.client, { referenceId: 'b', returnUrl: 'r', cancelUrl: 'c', permitMultipleTokens: true });
+    expect(lastCall(pool.fetch).body.payment_source.paypal.permit_multiple_payment_tokens).toBe(true);
+  });
+
   it('fails loudly when PayPal returns no approve link', async () => {
     const { client } = clientWith(json(201, { id: 'T', status: 'PAYER_ACTION_REQUIRED', links: [] }));
     await expect(createWalletSetup(client, { referenceId: 'w2', returnUrl: 'a', cancelUrl: 'b' })).rejects.toThrow('approve link');

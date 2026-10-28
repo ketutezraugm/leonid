@@ -35,7 +35,14 @@ export interface SavedWallet {
 // Step 1: ask PayPal for a setup token. The treasurer opens approveUrl and logs in to let the agent charge later.
 export async function createWalletSetup(
   client: PayPalClient,
-  input: { referenceId: string; returnUrl: string; cancelUrl: string },
+  input: {
+    referenceId: string;
+    returnUrl: string;
+    cancelUrl: string;
+    // Default false: one token per payer, so deleting it really ends the agent's spending.
+    // Only the hosted demo's token pool opts in. Extra tokens survive a kill switch that deletes one, so never use it for a real wallet.
+    permitMultipleTokens?: boolean;
+  },
 ): Promise<WalletSetup> {
   const res = await client.request({
     method: 'POST',
@@ -47,8 +54,7 @@ export async function createWalletSetup(
         paypal: {
           usage_type: 'MERCHANT',
           customer_type: 'CONSUMER',
-          // Several tokens per payer: the hosted demo keeps a pool so one judge's kill switch does not end the demo.
-          permit_multiple_payment_tokens: true,
+          permit_multiple_payment_tokens: input.permitMultipleTokens ?? false,
           experience_context: { return_url: input.returnUrl, cancel_url: input.cancelUrl },
         },
       },
