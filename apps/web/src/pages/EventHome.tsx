@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HealthResponse } from '@quartermaster/shared';
 import { AgentChat } from '../chat/AgentChat';
+import { PageHeader } from '../ui/PageHeader';
 
 export function EventHome() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -15,8 +16,7 @@ export function EventHome() {
 
   return (
     <section>
-      <h1>Event home</h1>
-      <p>Countdown, unlocked budget and alerts go here.</p>
+      <PageHeader title="Event home" description="Countdown, unlocked budget and alerts go here." />
       <p className="muted">
         API: {health ? `${health.status} (${health.service})` : (error ?? 'checking…')}
       </p>
