@@ -17,8 +17,10 @@ export interface WebhookRouterOptions {
   verify?: typeof verifyWebhook;
 }
 
-// One line per delivery, kept in memory (last 50) and shown to the treasurer at GET /recent.
-// Nothing secret goes in: no signatures, no body, only what is needed to see why an event was rejected.
+// One line per delivery, kept in memory (last 50 each) and shown to the treasurer at GET /recent.
+// Nothing secret goes in: no signatures, no body. Nothing a stranger sends is copied into a line either: reasons are fixed
+// wording, because anyone can POST to this endpoint. Requests that did not pass the signature check go in a separate list,
+// so they can never push verified PayPal deliveries out of view.
 export interface Delivery {
   at: string;
   app: string;
@@ -29,6 +31,15 @@ export interface Delivery {
   reason?: string;
 }
 const MAX_RECENT = 50;
+
+function isPayPalHost(certUrl: string): boolean {
+  try {
+    const url = new URL(certUrl);
+    return url.protocol === 'https:' && (url.hostname === 'paypal.com' || url.hostname.endsWith('.paypal.com'));
+  } catch {
+    return false;
+  }
+}
 
 const APPS: Record<WebhookApp, string> = {
   treasury: 'PAYPAL_TREASURY_WEBHOOK_ID',
@@ -51,16 +62,18 @@ export function webhookRouter(options: WebhookRouterOptions = {}) {
   // The simulator signs with a literal id, so accept it only where we explicitly allow it.
   const acceptSimulator = env.PAYPAL_ACCEPT_SIMULATOR_EVENTS === 'true';
 
-  const recent: Delivery[] = [];
-  const note = (d: Omit<Delivery, 'at'>) => {
-    recent.unshift({ at: new Date().toISOString(), ...d });
-    recent.length = Math.min(recent.length, MAX_RECENT);
+  const verified: Delivery[] = []; // passed the signature check (or verification is off locally)
+  const unauthenticated: Delivery[] = []; // did not: bounded, so a flood cannot hide the verified ones
+  const note = (d: Omit<Delivery, 'at'>, authenticated: boolean) => {
+    const list = authenticated ? verified : unauthenticated;
+    list.unshift({ at: new Date().toISOString(), ...d });
+    list.length = Math.min(list.length, MAX_RECENT);
   };
 
   const router = Router();
 
   router.get('/recent', requireTreasurer(env), (_req, res) => {
-    res.json({ deliveries: recent });
+    res.json({ deliveries: verified, unauthenticated });
   });
 
   router.post('/:app', express.raw({ type: () => true, limit: '1mb' }), async (req, res) => {
@@ -72,8 +85,14 @@ export function webhookRouter(options: WebhookRouterOptions = {}) {
     const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
 
     // Answer and remember in one place, so every exit leaves a trace.
-    const finish = (res2: Response, status: number, body: object, d: Omit<Delivery, 'at' | 'app' | 'status'>) => {
-      note({ app, status, ...d });
+    const finish = (
+      res2: Response,
+      status: number,
+      body: object,
+      d: Omit<Delivery, 'at' | 'app' | 'status'>,
+      authenticated = true,
+    ) => {
+      note({ app, status, ...d }, authenticated);
       res2.status(status).json(body);
     };
 
@@ -81,36 +100,32 @@ export function webhookRouter(options: WebhookRouterOptions = {}) {
       const ownId = env[APPS[app]];
       const webhookIds = [ownId, acceptSimulator ? SIMULATOR_WEBHOOK_ID : undefined].filter((id): id is string => !!id);
       if (webhookIds.length === 0) {
-        finish(res, 503, { error: 'webhook id not configured' }, { outcome: 'unavailable', reason: 'webhook id not configured' });
+        finish(res, 503, { error: 'webhook id not configured' }, { outcome: 'unavailable', reason: 'webhook id not configured' }, false);
         return;
       }
       const headers = readWebhookHeaders(req.headers);
       if (!headers) {
-        finish(res, 400, { error: 'missing PayPal signature headers' }, { outcome: 'rejected', reason: 'missing PayPal signature headers' });
+        finish(res, 400, { error: 'missing PayPal signature headers' }, { outcome: 'rejected', reason: 'missing PayPal signature headers' }, false);
         return;
       }
       let ok: boolean;
       try {
         ok = await verify({ headers, rawBody, webhookIds });
       } catch (err) {
-        // Could not fetch the certificate: ask PayPal to retry later.
+        // Could not fetch the certificate: ask PayPal to retry later. The error text can quote what the caller sent, so it is not stored.
         console.error('webhook verification unavailable', err);
-        finish(res, 503, { error: 'verification unavailable' }, { outcome: 'unavailable', reason: err instanceof Error ? err.message : 'verification unavailable' });
+        finish(res, 503, { error: 'verification unavailable' }, { outcome: 'unavailable', reason: 'certificate unavailable or not from paypal.com' }, false);
         return;
       }
       if (!ok) {
-        const certHost = (() => {
-          try {
-            return new URL(headers.certUrl).hostname;
-          } catch {
-            return 'invalid url';
-          }
-        })();
+        // Only fixed labels, never the caller's own strings.
+        const algo = headers.authAlgo === 'SHA256withRSA' ? 'SHA256withRSA' : 'unsupported';
+        const certHost = isPayPalHost(headers.certUrl) ? 'paypal.com' : 'not paypal.com';
         const tried = [ownId ? 'own webhook id' : undefined, acceptSimulator ? 'simulator id' : undefined].filter(Boolean).join(' + ');
         finish(res, 401, { error: 'invalid signature' }, {
           outcome: 'rejected',
-          reason: `signature did not match (algo ${headers.authAlgo}, cert host ${certHost}, tried ${tried})`,
-        });
+          reason: `signature did not match (algo ${algo}, cert host ${certHost}, tried ${tried})`,
+        }, false);
         return;
       }
     }
