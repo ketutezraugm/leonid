@@ -9,10 +9,13 @@ export const PAGE_CHAR_LIMIT = 8000;
 
 const reason = z.string().max(300).optional().describe('One sentence: why');
 
+// Any spelling of the closing tag: other case, or spaces around the slash (`</UNTRUSTED_PAGE`, `< / untrusted_page`).
+const CLOSING_TAG = /<\s*\/\s*untrusted_page/gi;
+
 // Page text is data (agents.md, prompt injection). It is delimited, and a page cannot close the
-// delimiter early by containing the closing tag itself.
+// delimiter early by containing the closing tag itself, however it spells it.
 export function wrapUntrusted(url: string, text: string): string {
-  const body = text.slice(0, PAGE_CHAR_LIMIT).replaceAll('</untrusted_page', '<\\/untrusted_page');
+  const body = text.slice(0, PAGE_CHAR_LIMIT).replace(CLOSING_TAG, '<\\/untrusted_page');
   return `<untrusted_page url="${url}">\n${body}\n</untrusted_page>`;
 }
 
