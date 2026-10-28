@@ -21,7 +21,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['**/paypal/spend.js'],
+              group: ['**/paypal/spend', '**/paypal/spend.js'],
               message: 'Money-moving PayPal calls may only be imported by payments/executor.ts (money-safety.md).',
             },
           ],
