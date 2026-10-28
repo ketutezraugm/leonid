@@ -4,6 +4,7 @@ import cors from 'cors';
 import express from 'express';
 import type { HealthResponse } from '@quartermaster/shared';
 import { chatRouter } from './routes/chat.js';
+import { walletRouter } from './routes/wallet.js';
 import { webhookRouter } from './webhooks/router.js';
 
 export function createApp() {
@@ -23,6 +24,7 @@ export function createApp() {
   });
 
   app.use('/api/chat', chatRouter);
+  app.use('/api/wallet', walletRouter());
 
   // In production the API also serves the built web app (one Render service).
   if (process.env.NODE_ENV === 'production') {
