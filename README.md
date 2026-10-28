@@ -37,7 +37,18 @@ _TODO: list each capability with a link to its code path._
 
 ### AG Studio
 
-_TODO (P3)_
+The Money screen is an AG Studio command center, themed from `apps/web/src/styles/tokens.css`. Its data sources are built from the shared widget shapes (`packages/shared/src/widgets.ts`); for now they read sample data and will switch to ledger-backed API endpoints.
+
+| What                                                        | Code                                   |
+| ----------------------------------------------------------- | -------------------------------------- |
+| Studio wiring, lazy-loaded                                  | `apps/web/src/money/CommandCenter.tsx` |
+| Theme from design tokens                                    | `apps/web/src/money/studio-theme.ts`   |
+| Data sources from the shared shapes                         | `apps/web/src/money/studio-data.ts`    |
+| Default report (KPIs, funding, budget burn, payouts ledger) | `apps/web/src/money/initial-report.ts` |
+
+![Money command center](docs/p3/screenshots/money-stage-0.png)
+
+Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.md). The licence key is read from `VITE_AG_STUDIO_LICENSE` and is not committed.
 
 ### Bryntum
 
