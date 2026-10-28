@@ -56,7 +56,7 @@ export function authRouter(options: AuthRouterOptions = {}) {
         return;
       }
       const state = randomBytes(16).toString('base64url');
-      setCookie(res, STATE_COOKIE, sign({ state }, secret, STATE_TTL_S), STATE_TTL_S, secure);
+      setCookie(res, STATE_COOKIE, sign('state', { state }, secret, STATE_TTL_S), STATE_TTL_S, secure);
       res.redirect(authorizeUrl({ clientId, redirectUri: `${base}/api/auth/paypal/callback`, state }));
     }),
   );
@@ -64,7 +64,7 @@ export function authRouter(options: AuthRouterOptions = {}) {
   router.get(
     '/paypal/callback',
     handle(async (req, res, { base, secret, secure }) => {
-      const saved = verify<{ state: string }>(readCookie(req, STATE_COOKIE), secret);
+      const saved = verify<{ state: string }>('state', readCookie(req, STATE_COOKIE), secret);
       clearCookie(res, STATE_COOKIE, secure); // one attempt per state
       const state = typeof req.query.state === 'string' ? req.query.state : '';
       const code = typeof req.query.code === 'string' ? req.query.code : '';
@@ -86,7 +86,7 @@ export function authRouter(options: AuthRouterOptions = {}) {
         return;
       }
       const sub = profile.user_id ?? profile.sub ?? profile.email ?? 'paypal';
-      setCookie(res, SESSION_COOKIE, sign({ sub, email: profile.email }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
+      setCookie(res, SESSION_COOKIE, sign('session', { sub, email: profile.email }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
       res.redirect(`${base}/?login=ok`);
     }),
   );
@@ -118,7 +118,7 @@ export function authRouter(options: AuthRouterOptions = {}) {
         res.status(404).json({ error: 'not found' });
         return;
       }
-      setCookie(res, SESSION_COOKIE, sign({ sub: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
+      setCookie(res, SESSION_COOKIE, sign('session', { sub: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
       res.json({ ok: true, demo: true });
     }),
   );

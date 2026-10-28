@@ -96,14 +96,26 @@ describe('Log in with PayPal', () => {
 
   it('rejects a tampered, foreign-signed or expired session cookie; the ops token works only while it is set', async () => {
     const { app } = build({ ...env, TREASURER_TOKEN: 'letmein' });
-    const good = `qm_session=${sign({ sub: 'x' }, SECRET, 60)}`;
+    const good = `qm_session=${sign('session', { sub: 'x' }, SECRET, 60)}`;
     expect((await request(app).get('/api/secret').set('Cookie', good)).status).toBe(200);
     expect((await request(app).get('/api/secret').set('Cookie', good.slice(0, -2) + 'xx')).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign({ sub: 'x' }, 'z'.repeat(40), 60)}`)).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign({ sub: 'x' }, SECRET, -1)}`)).status).toBe(401);
+    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x' }, 'z'.repeat(40), 60)}`)).status).toBe(401);
+    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x' }, SECRET, -1)}`)).status).toBe(401);
     expect((await request(app).get('/api/secret').set('x-treasurer-token', 'letmein')).status).toBe(200);
     // with no TREASURER_TOKEN configured the header means nothing
     expect((await request(build().app).get('/api/secret').set('x-treasurer-token', 'letmein')).status).toBe(401);
+  });
+
+  it('does not accept the state cookie that /login hands to anyone as a session', async () => {
+    const { app } = build();
+    const { stateCookie } = await startLogin(app);
+    const asSession = stateCookie.replace('qm_oauth_state=', 'qm_session=');
+    expect((await request(app).get('/api/secret').set('Cookie', asSession)).status).toBe(401);
+    expect((await request(app).get('/api/auth/me').set('Cookie', asSession)).status).toBe(401);
+    // and a session is not accepted as a state
+    const sessionAsState = `qm_oauth_state=${sign('session', { state: 'forged' }, SECRET, 60)}`;
+    const cb = await request(app).get('/api/auth/paypal/callback?code=abc&state=forged').set('Cookie', sessionAsState);
+    expect(cb.headers.location).toBe('https://qm.example.com/?login=error');
   });
 
   it('keeps demo login off unless DEMO_LOGIN=true, and answers 503 when login is not configured', async () => {
@@ -126,7 +138,7 @@ describe('allowlist', () => {
   it('matches user id or email case-insensitively, ignores an unverified email, and is closed when empty', () => {
     expect(isAllowed({ user_id: 'abc' }, 'ABC')).toBe(true);
     expect(isAllowed({ email: 'A@x.com', email_verified: true }, 'a@x.com')).toBe(true);
-    expect(isAllowed({ email: 'a@x.com' }, 'a@x.com')).toBe(true);
+    expect(isAllowed({ email: 'a@x.com' }, 'a@x.com')).toBe(false); // PayPal did not say the email is verified
     expect(isAllowed({ email: 'a@x.com', email_verified: false }, 'a@x.com')).toBe(false);
     expect(isAllowed({ user_id: 'abc', email: 'a@x.com' }, '')).toBe(false);
     expect(isAllowed({}, 'a@x.com')).toBe(false);

@@ -73,11 +73,11 @@ export async function loginWithCode(code: string, redirectUri: string, deps: Dep
 }
 
 // TREASURER_ALLOWLIST is a comma-separated list of PayPal user ids and/or emails. Empty list = nobody can log in.
-// An email only counts when PayPal did not say it is unverified.
+// An email only counts when PayPal says it is verified; a user id always counts (and is the safer entry).
 export function isAllowed(profile: PayPalProfile, allowlist: string | undefined): boolean {
   const entries = (allowlist ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
   if (entries.length === 0) return false;
   const ids = [profile.user_id, profile.sub].filter((v): v is string => Boolean(v)).map((v) => v.toLowerCase());
-  const email = profile.email_verified === false ? undefined : profile.email?.toLowerCase();
+  const email = profile.email_verified === true ? profile.email?.toLowerCase() : undefined;
   return [...ids, ...(email ? [email] : [])].some((v) => entries.includes(v));
 }

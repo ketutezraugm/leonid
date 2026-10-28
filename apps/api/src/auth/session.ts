@@ -17,21 +17,25 @@ export interface Session {
 const b64 = (s: string) => Buffer.from(s).toString('base64url');
 const mac = (body: string, secret: string) => createHmac('sha256', secret).update(body).digest('base64url');
 
-export function sign(payload: object, secret: string, ttlS: number, now = Date.now()): string {
-  const body = b64(JSON.stringify({ ...payload, exp: Math.floor(now / 1000) + ttlS }));
+// Every cookie carries a type, and verify() demands it: the unauthenticated /login hands out validly signed
+// 'state' cookies, which must never be accepted as a 'session'.
+export type CookieType = 'session' | 'state';
+
+export function sign(typ: CookieType, payload: object, secret: string, ttlS: number, now = Date.now()): string {
+  const body = b64(JSON.stringify({ ...payload, typ, exp: Math.floor(now / 1000) + ttlS }));
   return `${body}.${mac(body, secret)}`;
 }
 
 // Returns the payload only for an untampered, unexpired value.
-export function verify<T extends object>(value: string | undefined, secret: string, now = Date.now()): T | null {
+export function verify<T extends object>(typ: CookieType, value: string | undefined, secret: string, now = Date.now()): T | null {
   const [body, tag, extra] = (value ?? '').split('.');
   if (!body || !tag || extra !== undefined) return null;
   const expected = Buffer.from(mac(body, secret));
   const got = Buffer.from(tag);
   if (got.length !== expected.length || !timingSafeEqual(got, expected)) return null;
   try {
-    const parsed = JSON.parse(Buffer.from(body, 'base64url').toString()) as T & { exp?: unknown };
-    return typeof parsed.exp === 'number' && parsed.exp > now / 1000 ? parsed : null;
+    const parsed = JSON.parse(Buffer.from(body, 'base64url').toString()) as T & { exp?: unknown; typ?: unknown };
+    return parsed.typ === typ && typeof parsed.exp === 'number' && parsed.exp > now / 1000 ? parsed : null;
   } catch {
     return null;
   }
@@ -46,7 +50,8 @@ export function readCookie(req: Request, name: string): string | undefined {
 }
 
 export function readSession(req: Request, secret: string): Session | null {
-  return verify<Session>(readCookie(req, SESSION_COOKIE), secret);
+  const session = verify<Session>('session', readCookie(req, SESSION_COOKIE), secret);
+  return session && typeof session.sub === 'string' && session.sub ? session : null;
 }
 
 // Lax, not Strict: the browser comes back from PayPal on a cross-site redirect and must still send the state cookie.
