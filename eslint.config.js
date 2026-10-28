@@ -12,6 +12,24 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    // Invariant: money-moving PayPal calls are reachable only through the rules-engine executor.
+    files: ['apps/api/**/*.ts'],
+    ignores: ['apps/api/src/payments/**', 'apps/api/src/paypal/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/paypal/spend.js'],
+              message: 'Money-moving PayPal calls may only be imported by payments/executor.ts (money-safety.md).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },
