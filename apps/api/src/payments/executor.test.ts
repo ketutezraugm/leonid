@@ -159,6 +159,16 @@ describe('requestSpend', () => {
     expect(auditRows.at(-1)!.patch).toMatchObject({ outcome: 'refused' });
   });
 
+  it('treats the same id and amount with a different vendor, category or actor as a different spend', async () => {
+    const { executor, fetch } = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
+    await executor.requestSpend({ ...spend(14000, 'cart-5'), vendor: 'merch-co', category: 'swag' });
+    for (const changed of [{ vendor: 'other-co' }, { category: 'prizes' }, { actor: 'treasury-agent' }]) {
+      const out = await executor.requestSpend({ ...spend(14000, 'cart-5'), vendor: 'merch-co', category: 'swag', ...changed });
+      expect(out).toEqual({ status: 'refused', reason: 'reference_reused' });
+    }
+    expect(chargeCalls(fetch)).toHaveLength(1);
+  });
+
   it('lets an identical spend be retried under the same reference id', async () => {
     const { executor, fetch } = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
     await executor.requestSpend(spend(14000, 'cart-8'));

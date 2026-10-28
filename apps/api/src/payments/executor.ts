@@ -23,7 +23,11 @@ export interface ExecutorDeps {
   references: ReferencePort;
 }
 
-const fingerprintOf = (s: Spend) => `${s.amountMinor}|${s.currency}`;
+// Every field that gives a spend its meaning or changes its rules outcome. Free-text `reason` is left out on purpose,
+// so a retry may reword it. ponytail: once references live in the DB, also store the PayPal order id per reference and
+// check that a 'same' retry resolves to that same order.
+const fingerprintOf = (s: Spend) =>
+  JSON.stringify([s.amountMinor, s.currency, s.vendor ?? null, s.category ?? null, s.actor]);
 
 export function createExecutor(deps: ExecutorDeps) {
   const { client, check, audit, wallet, approvals, references } = deps;
