@@ -21,11 +21,17 @@ Other commands: `pnpm build`, `pnpm start` (serves the built web app from the AP
 | `apps/web`        | React + Vite front end                                 |
 | `apps/api`        | Express API: agents, rules engine, PayPal webhooks     |
 | `packages/shared` | API contract types and zod schemas shared by web + API |
-| `render.yaml`     | Render Blueprint (web service + Postgres)              |
+| `render.yaml`     | Render Blueprint (web service; Postgres is Supabase)   |
 
 ## PayPal capabilities used
 
 _TODO: list each capability with a link to its code path._
+
+| Capability                                        | Code                                                                                                                                                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| OAuth client credentials (per app, cached token)  | [`apps/api/src/paypal/client.ts`](apps/api/src/paypal/client.ts)                                                                                                                           |
+| Orders v2: create order, show order               | [`apps/api/src/paypal/orders.ts`](apps/api/src/paypal/orders.ts)                                                                                                                           |
+| Sandbox negative testing (`PayPal-Mock-Response`) | [`apps/api/src/paypal/client.ts`](apps/api/src/paypal/client.ts), [`apps/api/scripts/paypal-smoke.ts`](apps/api/scripts/paypal-smoke.ts) (`pnpm --filter @quartermaster/api paypal:smoke`) |
 
 ## Sponsor integrations
 
@@ -40,6 +46,24 @@ _TODO (P4)_
 ### Channel3
 
 _TODO (P1)_
+
+## Agent loop (P1)
+
+The Event home chat is a tool loop, not a single completion. An orchestrator agent writes a checklist for the organizer's goal, works through it with tools, and stops when every item is done or blocked. The checklist is saved as a mandate in Postgres (Supabase), so it survives reloads.
+
+| Piece                                     | Code                                                                                                                                    |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Orchestrator (read, checklist, delegate)  | [`apps/api/src/agents/orchestrator.ts`](apps/api/src/agents/orchestrator.ts)                                                            |
+| Planning subagent (its PRD §7 tools only) | [`apps/api/src/agents/planning.ts`](apps/api/src/agents/planning.ts), [`tools/`](apps/api/src/agents/tools)                             |
+| Streaming chat route + rate limit         | [`apps/api/src/routes/chat.ts`](apps/api/src/routes/chat.ts)                                                                            |
+| Schema, migrations, seed                  | [`apps/api/src/db/schema.ts`](apps/api/src/db/schema.ts), [`apps/api/drizzle/`](apps/api/drizzle), [`seed.ts`](apps/api/src/db/seed.ts) |
+| Web chat with live checklist              | [`apps/web/src/chat/AgentChat.tsx`](apps/web/src/chat/AgentChat.tsx)                                                                    |
+
+Setup: set `DATABASE_URL` (Supabase transaction pooler), then `pnpm --filter @quartermaster/api db:migrate && pnpm --filter @quartermaster/api db:seed`.
+
+Safety: no agent has a money tool yet. Procurement and treasury subagents arrive with the rules engine, and every money call will pass `check()`. Every tool call writes an `audit_log` row with its input and a one-sentence reason.
+
+Differs from the PRD: the database is Supabase Postgres instead of Render Postgres, and the orchestrator is a sixth agent (it holds no money tools). Update the PRD to match.
 
 ### Render
 

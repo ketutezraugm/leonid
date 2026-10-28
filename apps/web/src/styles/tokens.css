@@ -5,6 +5,8 @@
   --color-muted: #6b6b66;
   --color-border: #e3e3de;
   --color-accent: #0070e0;
+  --color-on-accent: #ffffff;
+  --color-danger: #c4320a;
   --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --space-1: 4px;
   --space-2: 8px;
@@ -62,4 +64,13 @@ body {
 
 .muted {
   color: var(--color-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

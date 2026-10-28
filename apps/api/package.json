@@ -8,22 +8,33 @@
     "build": "tsup",
     "start": "NODE_ENV=production node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "paypal:smoke": "tsx --env-file-if-exists=../../.env scripts/paypal-smoke.ts",
+    "channel3:coverage": "tsx --env-file-if-exists=../../.env scripts/channel3-coverage.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=../../.env scripts/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=../../.env scripts/seed.ts"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "@types/supertest": "^7.2.1",
+    "drizzle-kit": "^0.31.11",
     "supertest": "^7.3.1",
     "tsup": "^9.0.0",
     "tsx": "^4.23.15",
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.79",
     "@quartermaster/shared": "workspace:*",
+    "ai": "7.0.154",
     "cors": "^2.8.6",
+    "drizzle-orm": "^0.45.4",
     "express": "^5.3.0",
+    "postgres": "^3.4.9",
     "zod": "^4.6.7"
   }
 }
