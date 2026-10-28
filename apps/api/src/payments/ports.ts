@@ -30,6 +30,13 @@ export interface WalletPort {
   markRevoked(): Promise<void>;
 }
 
+// One referenceId = one spend. PayPal's idempotency key is derived from it, so reusing an id for a different
+// spend would silently return the first spend's order. Back this with a unique constraint in the DB.
+export interface ReferencePort {
+  // 'same': an identical spend is being retried (safe, PayPal returns the same order); 'conflict': id used for something else
+  claim(referenceId: string, fingerprint: string): Promise<'new' | 'same' | 'conflict'>;
+}
+
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'paid';
 export interface ApprovalsPort {
   create(spend: Spend, result: CheckResult, auditId: string): Promise<string>;

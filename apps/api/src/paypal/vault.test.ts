@@ -91,7 +91,12 @@ describe('chargeVaultedWallet', () => {
       }),
     );
     const charge = await chargeVaultedWallet(client, { referenceId: 'cart-9', paymentTokenId: 'pt_123', amountMinor: 14000, currency: 'USD' });
-    expect(charge).toEqual({ orderId: 'ORDER1', captureId: 'CAP1', status: 'COMPLETED' });
+    expect(charge).toEqual({
+      orderId: 'ORDER1',
+      captureId: 'CAP1',
+      status: 'COMPLETED',
+      amount: { amountMinor: 14000, currency: 'USD' },
+    });
     const call = lastCall(fetch);
     expect((call.init.headers as Record<string, string>)['PayPal-Request-Id']).toBe('charge-cart-9');
     expect(call.body.payment_source).toEqual({ paypal: { vault_id: 'pt_123' } });

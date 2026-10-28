@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createPayPalClient } from '../paypal/client.js';
 import { createExecutor } from './executor.js';
-import type { ApprovalStatus, ApprovalsPort, AuditPort, Spend, WalletPort } from './ports.js';
+import type { ApprovalStatus, ApprovalsPort, AuditPort, ReferencePort, Spend, WalletPort } from './ports.js';
 import { stubCheck } from './stub-check.js';
 
 const json = (status: number, body: unknown) =>
@@ -68,7 +68,19 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
     },
   };
 
-  const executor = createExecutor({ client, check: stubCheck, audit, wallet, approvals });
+  const used = new Map<string, string>();
+  const references: ReferencePort = {
+    async claim(referenceId, fingerprint) {
+      const existing = used.get(referenceId);
+      if (existing === undefined) {
+        used.set(referenceId, fingerprint);
+        return 'new';
+      }
+      return existing === fingerprint ? 'same' : 'conflict';
+    },
+  };
+
+  const executor = createExecutor({ client, check: stubCheck, audit, wallet, approvals, references });
   return { executor, events, fetch, auditRows, approvalRows };
 }
 
@@ -107,6 +119,7 @@ describe('requestSpend', () => {
       audit: { record: async (e) => { auditRows.push({ id: 'B1', entry: e }); return 'B1'; }, update: async () => {} },
       wallet: { getActive: async () => ({ paymentTokenId: 'pt_1' }), markRevoked: async () => {} },
       approvals: { create: async () => 'x', get: async () => null, markPaid: async () => {} },
+      references: { claim: async () => 'new' },
     });
     expect(await blocking.requestSpend(spend(5000))).toEqual({ status: 'blocked', reasons: ['vendor not on the approved list'] });
     expect(chargeCalls(fetch)).toHaveLength(0);
@@ -135,6 +148,32 @@ describe('requestSpend', () => {
     const out = await executor.requestSpend(spend(14000));
     expect(out.status).toBe('failed');
     expect(events).not.toContain('wallet.markRevoked');
+  });
+
+  it('refuses a reference id that was already used for a different spend, without calling PayPal', async () => {
+    const { executor, fetch, auditRows } = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
+    expect((await executor.requestSpend(spend(14000, 'cart-7'))).status).toBe('paid');
+    const out = await executor.requestSpend(spend(900, 'cart-7')); // same id, different amount
+    expect(out).toEqual({ status: 'refused', reason: 'reference_reused' });
+    expect(chargeCalls(fetch)).toHaveLength(1);
+    expect(auditRows.at(-1)!.patch).toMatchObject({ outcome: 'refused' });
+  });
+
+  it('lets an identical spend be retried under the same reference id', async () => {
+    const { executor, fetch } = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
+    await executor.requestSpend(spend(14000, 'cart-8'));
+    expect((await executor.requestSpend(spend(14000, 'cart-8'))).status).toBe('paid');
+    // PayPal's idempotency key (charge-cart-8) makes both calls resolve to the same order
+    const keys = chargeCalls(fetch).map(([, init]) => (init?.headers as Record<string, string>)['PayPal-Request-Id']);
+    expect(keys).toEqual(['charge-cart-8', 'charge-cart-8']);
+  });
+
+  it('never records paid when PayPal captured a different amount than was asked', async () => {
+    const { executor, auditRows } = setup({ routes: { 'POST /v2/checkout/orders': () => paid('10.00') } });
+    const out = await executor.requestSpend(spend(14000, 'cart-9'));
+    expect(out.status).toBe('failed');
+    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'mismatch', paypalId: 'CAP1' });
+    expect(auditRows[0]!.patch?.detail).toContain('asked 14000 USD');
   });
 
   it('records the audit outcome even when the call blows up unexpectedly', async () => {

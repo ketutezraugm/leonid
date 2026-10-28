@@ -2,7 +2,7 @@ import { PayPalApiError } from '../paypal/errors.js';
 import type { PayPalClient } from '../paypal/client.js';
 import { chargeVaultedWallet } from '../paypal/spend.js';
 import { deletePaymentToken } from '../paypal/vault.js';
-import type { ApprovalsPort, AuditPort, CheckSpend, Spend, WalletPort } from './ports.js';
+import type { ApprovalsPort, AuditPort, CheckSpend, ReferencePort, Spend, WalletPort } from './ports.js';
 
 // The only path to PayPal's money-moving calls. Every spend goes: rules check -> audit row -> (approval) -> charge.
 // Invariants (AGENTS.md): rules are code, the kill switch is PayPal-enforced, and with no wallet there is no fallback payment path.
@@ -11,8 +11,8 @@ export type SpendOutcome =
   | { status: 'paid'; orderId: string; captureId?: string }
   | { status: 'needs_approval'; approvalId: string; reasons: string[] }
   | { status: 'blocked'; reasons: string[] }
-  | { status: 'refused'; reason: 'no_wallet' | 'paypal_refused' | 'not_approved' }
-  | { status: 'failed'; detail: string }; // safe to retry with the same referenceId
+  | { status: 'refused'; reason: 'no_wallet' | 'paypal_refused' | 'not_approved' | 'reference_reused' }
+  | { status: 'failed'; detail: string }; // safe to retry with the same referenceId, except a capture mismatch (needs a human)
 
 export interface ExecutorDeps {
   client: PayPalClient; // the Procurement app's client
@@ -20,10 +20,13 @@ export interface ExecutorDeps {
   audit: AuditPort;
   wallet: WalletPort;
   approvals: ApprovalsPort;
+  references: ReferencePort;
 }
 
+const fingerprintOf = (s: Spend) => `${s.amountMinor}|${s.currency}`;
+
 export function createExecutor(deps: ExecutorDeps) {
-  const { client, check, audit, wallet, approvals } = deps;
+  const { client, check, audit, wallet, approvals, references } = deps;
 
   async function pay(spend: Spend, auditId: string): Promise<SpendOutcome> {
     const active = await wallet.getActive();
@@ -42,6 +45,16 @@ export function createExecutor(deps: ExecutorDeps) {
         await audit.update(auditId, { outcome: 'failed', paypalId: charge.orderId, detail: `capture ${charge.status}` });
         return { status: 'failed', detail: `capture ${charge.status}` };
       }
+      // Never record "paid" for money we did not ask for: the captured amount must be exactly the spend.
+      if (charge.amount?.amountMinor !== spend.amountMinor || charge.amount.currency !== spend.currency) {
+        const got = charge.amount ? `${charge.amount.amountMinor} ${charge.amount.currency}` : 'no amount';
+        await audit.update(auditId, {
+          outcome: 'mismatch',
+          paypalId: charge.captureId ?? charge.orderId,
+          detail: `asked ${spend.amountMinor} ${spend.currency}, PayPal captured ${got}`,
+        });
+        return { status: 'failed', detail: 'captured amount does not match the spend; needs a human to review' };
+      }
       await audit.update(auditId, { outcome: 'paid', paypalId: charge.captureId ?? charge.orderId });
       return { status: 'paid', orderId: charge.orderId, captureId: charge.captureId };
     } catch (err) {
@@ -58,6 +71,17 @@ export function createExecutor(deps: ExecutorDeps) {
   }
 
   async function requestSpend(spend: Spend): Promise<SpendOutcome> {
+    // One reference id = one spend. Reusing it for something else is refused before any rules check or PayPal call.
+    if ((await references.claim(spend.referenceId, fingerprintOf(spend))) === 'conflict') {
+      const rejectedId = await audit.record({
+        actor: spend.actor,
+        action: 'spend.rejected',
+        input: spend,
+        reason: spend.reason,
+      });
+      await audit.update(rejectedId, { outcome: 'refused', detail: `referenceId ${spend.referenceId} is already used for a different spend` });
+      return { status: 'refused', reason: 'reference_reused' };
+    }
     const result = await check(spend);
     const auditId = await audit.record({
       actor: spend.actor,

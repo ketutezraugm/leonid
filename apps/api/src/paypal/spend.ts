@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { PayPalClient } from './client.js';
-import { PayPalMoney, toPayPalMoney } from './money.js';
+import { fromPayPalMoney, PayPalMoney, toPayPalMoney } from './money.js';
 
 // MONEY MOVES HERE. Import this file only from payments/executor.ts, after the rules engine said "allow"
 // or the treasurer approved (money-safety.md). ESLint blocks imports from anywhere else.
@@ -24,7 +24,8 @@ const ChargeResponse = z.object({
 export interface VaultCharge {
   orderId: string;
   captureId?: string;
-  status: string; // COMPLETED when the money moved
+  status: string; // COMPLETED when the money moved; NO_CAPTURE if PayPal returned no capture
+  amount?: { amountMinor: number; currency: string }; // what PayPal actually captured, for the caller to verify
 }
 
 // Charge the saved wallet with nobody present. PayPal refuses it if the payment token was deleted (kill switch).
@@ -50,5 +51,10 @@ export async function chargeVaultedWallet(
     },
   });
   const capture = res.purchase_units[0]?.payments?.captures[0];
-  return { orderId: res.id, captureId: capture?.id, status: capture?.status ?? res.status };
+  return {
+    orderId: res.id,
+    captureId: capture?.id,
+    status: capture?.status ?? 'NO_CAPTURE',
+    amount: capture ? fromPayPalMoney(capture.amount) : undefined,
+  };
 }
