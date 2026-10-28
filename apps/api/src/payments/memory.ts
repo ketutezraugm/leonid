@@ -10,6 +10,7 @@ export interface SavedWallet {
 }
 
 export interface WalletStore extends WalletPort {
+  queueDeletion(paymentTokenId: string): Promise<void>; // a token that must be deleted at PayPal and was never made active
   beginSetup(setupTokenId: string): void; // remember a setup token we created
   takeSetup(setupTokenId: string): boolean; // true once, only for a setup token we created
   activate(wallet: SavedWallet): void;
@@ -35,6 +36,9 @@ export function createMemoryWalletStore(): WalletStore {
     },
     async confirmDeleted(id) {
       toDelete.delete(id);
+    },
+    async queueDeletion(id) {
+      toDelete.add(id);
     },
     beginSetup: (id) => void pending.add(id),
     takeSetup: (id) => pending.delete(id),

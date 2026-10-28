@@ -87,7 +87,15 @@ export function walletRouter(options: WalletRouterOptions = {}) {
       } catch (err) {
         // Another wallet became active in the meantime: the token we just created must not be left chargeable.
         console.error('wallet not activated, deleting the new token', err);
-        await deletePaymentToken(client, saved.paymentTokenId).catch((e) => console.error('cleanup failed', e));
+        // Queue it first: if the delete below fails, the kill switch still finds and retries it.
+        await wallet.queueDeletion(saved.paymentTokenId);
+        try {
+          await deletePaymentToken(client, saved.paymentTokenId);
+          await wallet.confirmDeleted(saved.paymentTokenId);
+        } catch (cleanupErr) {
+          if (cleanupErr instanceof PayPalApiError && cleanupErr.status === 404) await wallet.confirmDeleted(saved.paymentTokenId);
+          else console.error('cleanup failed; token stays on the pending-deletion list', cleanupErr);
+        }
         res.redirect(`${base}/?wallet=error`);
         return;
       }

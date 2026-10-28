@@ -123,6 +123,23 @@ describe('connecting the wallet', () => {
     expect(wallet.snapshot().status).toBe('active'); // the existing wallet is untouched
   });
 
+  it('keeps a surplus token on the pending list if its cleanup fails, and the kill switch deletes it later', async () => {
+    let attempts = 0;
+    const { app, calls, wallet } = build({
+      'POST /v3/vault/setup-tokens': setupToken,
+      'POST /v3/vault/payment-tokens': () => json(201, { id: 'pt_new' }),
+      'DELETE /v3/vault/payment-tokens/pt_new': () => (++attempts === 1 ? json(500, { name: 'INTERNAL_SERVER_ERROR' }) : new Response(null, { status: 204 })),
+      'DELETE /v3/vault/payment-tokens/pt_existing': () => new Response(null, { status: 204 }),
+    });
+    await request(app).post('/api/wallet/connect').set(treasurer);
+    wallet.activate({ paymentTokenId: 'pt_existing' });
+    await request(app).get('/api/wallet/return?approval_session_id=ST1');
+    expect(await wallet.pendingDeletions()).toEqual(['pt_new']); // cleanup failed, nothing lost
+    expect((await request(app).post('/api/wallet/revoke').set(treasurer)).body).toEqual({ revoked: true });
+    expect(await wallet.pendingDeletions()).toEqual([]);
+    expect(calls.filter((c) => c === 'DELETE /v3/vault/payment-tokens/pt_new')).toHaveLength(2);
+  });
+
   it('sends a cancelled approval back to the app', async () => {
     const { app } = build();
     const res = await request(app).get('/api/wallet/cancel');
