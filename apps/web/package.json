@@ -22,6 +22,8 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@bryntum/gantt": "npm:@bryntum/gantt-trial@7.3.7",
+    "@bryntum/gantt-react": "7.3.7",
     "@quartermaster/shared": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

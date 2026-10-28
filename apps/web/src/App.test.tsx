@@ -19,4 +19,23 @@ describe('App', () => {
     expect(screen.getByText('Quartermaster')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Event home' })).toBeInTheDocument();
   });
+
+  it('renders sponsor reports without organizer navigation', () => {
+    render(
+      <MemoryRouter initialEntries={['/report/sp_1']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { name: 'Sponsor report' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+  });
+
+  it('shows a not-found page for unknown routes', () => {
+    render(
+      <MemoryRouter initialEntries={['/nope']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
+  });
 });
