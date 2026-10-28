@@ -289,6 +289,14 @@ describe('captureApproved (the treasurer approved in the PayPal popup)', () => {
     expect((await executor.captureApproved('nope', 'treasurer')).status).toBe('refused');
   });
 
+  it('refuses to capture after the kill switch, without calling PayPal, and leaves the approval pending', async () => {
+    const { executor, fetch, approvalRows, auditRows } = setup({ wallet: false, approvals: { AP1: pending } });
+    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'no_wallet' });
+    expect(fetch.mock.calls.filter(([u]) => !String(u).includes('oauth2'))).toHaveLength(0);
+    expect(approvalRows.get('AP1')?.status).toBe('pending');
+    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'refused', paypalId: 'ORD-1' });
+  });
+
   it('reports a PayPal failure on capture and leaves the approval pending so it can be retried', async () => {
     const { executor, approvalRows, auditRows } = setup({
       routes: { ...approvedAtPayPal, 'POST /v2/checkout/orders/ORD-1/capture': () => json(422, { name: 'UNPROCESSABLE_ENTITY' }) },
@@ -321,6 +329,19 @@ describe('revokeWallet (kill switch)', () => {
     expect(events.indexOf('wallet.markRevoked')).toBeLessThan(events.indexOf('paypal DELETE /v3/vault/payment-tokens/pt_1'));
     expect(await executor.requestSpend(spend(14000))).toEqual({ status: 'refused', reason: 'no_wallet' });
     expect(orderPosts(fetch)).toHaveLength(0);
+  });
+
+  it('refuses a spend that needs approval after the kill switch, and sends nothing to the treasurer', async () => {
+    const { executor, fetch, approvalRows, auditRows } = setup({
+      routes: { 'DELETE /v3/vault/payment-tokens/pt_1': () => new Response(null, { status: 204 }) },
+    });
+    await executor.revokeWallet('treasurer');
+    expect(await executor.requestSpend(spend(42000, 'prizes-1'))).toEqual({ status: 'refused', reason: 'no_wallet' });
+    expect(orderPosts(fetch)).toHaveLength(0);
+    expect(approvalRows.size).toBe(0);
+    const row = auditRows.find((r) => r.entry.action === 'spend.check')!;
+    expect(row.entry.ruleResult?.decision).toBe('needs_approval');
+    expect(row.patch).toMatchObject({ outcome: 'refused' });
   });
 
   it('tolerates a token PayPal already deleted (404)', async () => {

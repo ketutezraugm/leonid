@@ -10,6 +10,7 @@ import type { ApprovalsPort, AuditPort, CheckSpend, ReferencePort, Spend, Wallet
 //   allow          -> charge the saved wallet (automatic payment, F13)
 //   needs_approval -> create a PayPal order; the treasurer approves it in the PayPal popup; we capture it (F14)
 // Invariants (AGENTS.md): rules are code, the kill switch is PayPal-enforced, and with no wallet there is no fallback payment path.
+// The kill switch stops every agent spend, including the approval path: with no active wallet nothing reaches the treasurer.
 
 export type SpendOutcome =
   | { status: 'paid'; orderId: string; captureId?: string }
@@ -106,6 +107,12 @@ export function createExecutor(deps: ExecutorDeps) {
       await audit.update(auditId, { outcome: 'blocked', detail: result.reasons.join('; ') });
       return { status: 'blocked', reasons: result.reasons };
     }
+    // Checked before the approval branch too, so a revoked wallet cannot be routed around through the PayPal popup.
+    // pay() checks again, in case the wallet is revoked while this request is in flight.
+    if (!(await wallet.getActive())) {
+      await audit.update(auditId, { outcome: 'refused', detail: 'no active agent wallet' });
+      return { status: 'refused', reason: 'no_wallet' };
+    }
     if (result.decision === 'needs_approval') {
       const approvalId = await approvals.create(spend, result, auditId);
       try {
@@ -137,6 +144,11 @@ export function createExecutor(deps: ExecutorDeps) {
     }
     const { spend, paypalOrderId } = approval;
     const auditId = await audit.record({ actor, action: 'spend.capture', input: spend, reason: 'treasurer approved in PayPal' });
+    // An approval created before the kill switch stays pending, but nothing is captured until a wallet is active again.
+    if (!(await wallet.getActive())) {
+      await audit.update(auditId, { outcome: 'refused', paypalId: paypalOrderId, detail: 'no active agent wallet' });
+      return { status: 'refused', reason: 'no_wallet' };
+    }
     try {
       const order = await getOrder(client, paypalOrderId);
       if (order.status !== 'APPROVED') {

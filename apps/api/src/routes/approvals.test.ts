@@ -37,6 +37,7 @@ function build(orderStatus: () => Response) {
   });
   const client = createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch });
   const wallet = createMemoryWalletStore();
+  wallet.activate({ paymentTokenId: 'pt_1' }); // the executor refuses every spend while no wallet is active (kill switch)
   const approvals = createMemoryApprovals();
   const executor = createExecutor({
     client,
