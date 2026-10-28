@@ -1,7 +1,7 @@
 import type { ApprovalStatus, ApprovalsPort, AuditPort, CheckResult, ReferencePort, Spend, WalletPort } from './ports.js';
 
-// ponytail: in-memory adapters, so a restart forgets the wallet, approvals, audit rows and used reference ids.
-// Replace each with a DB-backed version (unique constraint on the reference id) once the schema is agreed.
+// In-memory adapters for tests and for local runs without DATABASE_URL: a restart forgets everything.
+// The server uses the DB-backed versions in db.ts.
 
 export interface SavedWallet {
   paymentTokenId: string;
@@ -11,10 +11,10 @@ export interface SavedWallet {
 
 export interface WalletStore extends WalletPort {
   queueDeletion(paymentTokenId: string): Promise<void>; // a token that must be deleted at PayPal and was never made active
-  beginSetup(setupTokenId: string): void; // remember a setup token we created
-  takeSetup(setupTokenId: string): boolean; // true once, only for a setup token we created
-  activate(wallet: SavedWallet): void;
-  snapshot(): { status: 'none' | 'active' | 'revoked'; payerEmail?: string };
+  beginSetup(setupTokenId: string): Promise<void>; // remember a setup token we created
+  takeSetup(setupTokenId: string): Promise<boolean>; // true once, only for a setup token we created
+  activate(wallet: SavedWallet): Promise<void>; // throws while another wallet is active
+  snapshot(): Promise<{ status: 'none' | 'active' | 'revoked'; payerEmail?: string }>;
 }
 
 export function createMemoryWalletStore(): WalletStore {
@@ -40,15 +40,15 @@ export function createMemoryWalletStore(): WalletStore {
     async queueDeletion(id) {
       toDelete.add(id);
     },
-    beginSetup: (id) => void pending.add(id),
-    takeSetup: (id) => pending.delete(id),
-    activate(wallet) {
+    beginSetup: async (id) => void pending.add(id),
+    takeSetup: async (id) => pending.delete(id),
+    async activate(wallet) {
       // Never overwrite a live token: it would stay chargeable at PayPal with nothing left that can delete it.
       if (active) throw new Error('a wallet is already active; revoke it first');
       active = wallet;
       revoked = false;
     },
-    snapshot: () => (active ? { status: 'active', payerEmail: active.payerEmail } : { status: revoked ? 'revoked' : 'none' }),
+    snapshot: async () => (active ? { status: 'active', payerEmail: active.payerEmail } : { status: revoked ? 'revoked' : 'none' }),
   };
 }
 
@@ -102,7 +102,7 @@ export interface ApprovalView {
   paypalOrderId?: string;
 }
 
-export function createMemoryApprovals(): ApprovalsPort & { list(): ApprovalView[] } {
+export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<ApprovalView[]> } {
   const rows = new Map<string, Omit<ApprovalView, 'id'> & { rejectedBy?: string }>();
   return {
     async create(spend, result) {
@@ -125,6 +125,6 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): ApprovalView[
       const row = rows.get(id);
       if (row) row.status = 'paid';
     },
-    list: () => [...rows].map(([id, r]) => ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId })),
+    list: async () => [...rows].map(([id, r]) => ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId })),
   };
 }
