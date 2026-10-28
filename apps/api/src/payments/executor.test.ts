@@ -43,13 +43,21 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
   };
 
   let active = opts.wallet === false ? null : { paymentTokenId: 'pt_1' };
+  const toDelete = new Set<string>();
   const wallet: WalletPort = {
     async getActive() {
       return active;
     },
     async markRevoked() {
       events.push('wallet.markRevoked');
+      if (active) toDelete.add(active.paymentTokenId);
       active = null;
+    },
+    async pendingDeletions() {
+      return [...toDelete];
+    },
+    async confirmDeleted(id) {
+      toDelete.delete(id);
     },
   };
 
@@ -117,7 +125,12 @@ describe('requestSpend', () => {
       client: createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch }),
       check: () => ({ decision: 'block', reasons: ['vendor not on the approved list'], ruleIds: ['approved-vendors'] }),
       audit: { record: async (e) => { auditRows.push({ id: 'B1', entry: e }); return 'B1'; }, update: async () => {} },
-      wallet: { getActive: async () => ({ paymentTokenId: 'pt_1' }), markRevoked: async () => {} },
+      wallet: {
+        getActive: async () => ({ paymentTokenId: 'pt_1' }),
+        markRevoked: async () => {},
+        pendingDeletions: async () => [],
+        confirmDeleted: async () => {},
+      },
       approvals: { create: async () => 'x', get: async () => null, markPaid: async () => {} },
       references: { claim: async () => 'new' },
     });
@@ -250,6 +263,21 @@ describe('revokeWallet (kill switch)', () => {
     await expect(executor.revokeWallet('treasurer')).rejects.toThrow();
     expect(events).toContain('wallet.markRevoked');
     expect(await executor.requestSpend(spend(14000))).toEqual({ status: 'refused', reason: 'no_wallet' });
+  });
+
+  it('retries the PayPal delete on a second call, so a failed delete never leaves a live token behind', async () => {
+    let attempts = 0;
+    const { executor, fetch } = setup({
+      routes: {
+        'DELETE /v3/vault/payment-tokens/pt_1': () => (++attempts === 1 ? json(500, { name: 'INTERNAL_SERVER_ERROR' }) : new Response(null, { status: 204 })),
+      },
+    });
+    await expect(executor.revokeWallet('treasurer')).rejects.toThrow();
+    // our side is already revoked, but the token still counts as "to delete"
+    expect(await executor.revokeWallet('treasurer')).toEqual({ revoked: true });
+    expect(attempts).toBe(2);
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(2);
+    expect(await executor.revokeWallet('treasurer')).toEqual({ revoked: false }); // nothing left to delete
   });
 
   it('does nothing when there is no active wallet', async () => {

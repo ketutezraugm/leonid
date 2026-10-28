@@ -27,7 +27,10 @@ export interface AuditPort {
 
 export interface WalletPort {
   getActive(): Promise<{ paymentTokenId: string } | null>;
+  // Stops our own spending at once AND remembers the token as "still to delete at PayPal" until confirmDeleted.
   markRevoked(): Promise<void>;
+  pendingDeletions(): Promise<string[]>;
+  confirmDeleted(paymentTokenId: string): Promise<void>;
 }
 
 // One referenceId = one spend. PayPal's idempotency key is derived from it, so reusing an id for a different

@@ -100,6 +100,29 @@ describe('connecting the wallet', () => {
     expect(wallet.snapshot().status).toBe('none');
   });
 
+  it('refuses to connect over a live wallet', async () => {
+    const { app, calls } = build({ 'POST /v3/vault/setup-tokens': setupToken, 'POST /v3/vault/payment-tokens': paymentToken });
+    await request(app).post('/api/wallet/connect').set(treasurer);
+    await request(app).get('/api/wallet/return?approval_session_id=ST1');
+    const res = await request(app).post('/api/wallet/connect').set(treasurer);
+    expect(res.status).toBe(409);
+    expect(calls.filter((c) => c === 'POST /v3/vault/setup-tokens')).toHaveLength(1);
+  });
+
+  it('deletes a token it just created if another wallet became active in the meantime', async () => {
+    const { app, calls, wallet } = build({
+      'POST /v3/vault/setup-tokens': setupToken,
+      'POST /v3/vault/payment-tokens': () => json(201, { id: 'pt_new', customer: { id: 'c2' } }),
+      'DELETE /v3/vault/payment-tokens/pt_new': () => new Response(null, { status: 204 }),
+    });
+    await request(app).post('/api/wallet/connect').set(treasurer);
+    wallet.activate({ paymentTokenId: 'pt_existing' }); // a second approval raced in
+    const res = await request(app).get('/api/wallet/return?approval_session_id=ST1');
+    expect(res.headers.location).toBe('https://qm.example.com/?wallet=error');
+    expect(calls).toContain('DELETE /v3/vault/payment-tokens/pt_new');
+    expect(wallet.snapshot().status).toBe('active'); // the existing wallet is untouched
+  });
+
   it('sends a cancelled approval back to the app', async () => {
     const { app } = build();
     const res = await request(app).get('/api/wallet/cancel');

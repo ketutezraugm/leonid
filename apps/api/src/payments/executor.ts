@@ -124,20 +124,29 @@ export function createExecutor(deps: ExecutorDeps) {
   }
 
   // The kill switch. Our flag flips first, so spending stops even if the PayPal call fails; PayPal then enforces it.
+  // A token stays on the "pending deletion" list until PayPal confirms, so calling this again retries a failed delete.
   async function revokeWallet(actor: string): Promise<{ revoked: boolean }> {
-    const active = await wallet.getActive();
-    if (!active) return { revoked: false };
-    await wallet.markRevoked();
-    const auditId = await audit.record({ actor, action: 'wallet.revoke', input: {}, reason: 'kill switch' });
-    try {
-      await deletePaymentToken(client, active.paymentTokenId);
-    } catch (err) {
-      if (!(err instanceof PayPalApiError && err.status === 404)) {
-        await audit.update(auditId, { outcome: 'error', detail: err instanceof Error ? err.message : String(err) });
-        throw err; // wallet stays revoked locally; the treasurer can retry the PayPal delete
+    if (await wallet.getActive()) await wallet.markRevoked();
+    const pending = await wallet.pendingDeletions();
+    if (pending.length === 0) return { revoked: false };
+    const auditId = await audit.record({ actor, action: 'wallet.revoke', input: { tokens: pending.length }, reason: 'kill switch' });
+    let failure: unknown;
+    for (const tokenId of pending) {
+      try {
+        await deletePaymentToken(client, tokenId);
+      } catch (err) {
+        if (!(err instanceof PayPalApiError && err.status === 404)) {
+          failure ??= err; // keep going: delete every token we can, report the first failure
+          continue;
+        }
       }
+      await wallet.confirmDeleted(tokenId);
     }
-    await audit.update(auditId, { outcome: 'revoked', paypalId: active.paymentTokenId });
+    if (failure) {
+      await audit.update(auditId, { outcome: 'error', detail: failure instanceof Error ? failure.message : String(failure) });
+      throw failure;
+    }
+    await audit.update(auditId, { outcome: 'revoked', paypalId: pending.join(',') });
     return { revoked: true };
   }
 

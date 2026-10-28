@@ -3,7 +3,7 @@ import { Router, type Request, type RequestHandler, type Response } from 'expres
 import { requireTreasurer } from '../auth/treasurer.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import { PayPalApiError } from '../paypal/errors.js';
-import { createPaymentToken, createWalletSetup } from '../paypal/vault.js';
+import { createPaymentToken, createWalletSetup, deletePaymentToken } from '../paypal/vault.js';
 
 export interface WalletRouterOptions {
   env?: NodeJS.ProcessEnv;
@@ -48,6 +48,11 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     '/connect',
     guard,
     safe(async (_req, res, { client, wallet }, base) => {
+      // One live wallet at a time: connecting over it would leave the old token chargeable with no way to delete it.
+      if (wallet.snapshot().status === 'active') {
+        res.status(409).json({ error: 'a wallet is already connected; revoke it first' });
+        return;
+      }
       const setup = await createWalletSetup(client, {
         referenceId: randomUUID(),
         returnUrl: `${base}/api/wallet/return`,
@@ -69,10 +74,20 @@ export function walletRouter(options: WalletRouterOptions = {}) {
         res.redirect(`${base}/?wallet=error`);
         return;
       }
+      let saved: Awaited<ReturnType<typeof createPaymentToken>>;
       try {
-        wallet.activate(await createPaymentToken(client, { setupTokenId }));
+        saved = await createPaymentToken(client, { setupTokenId });
       } catch (err) {
         console.error('wallet approval could not be completed', err);
+        res.redirect(`${base}/?wallet=error`);
+        return;
+      }
+      try {
+        wallet.activate(saved);
+      } catch (err) {
+        // Another wallet became active in the meantime: the token we just created must not be left chargeable.
+        console.error('wallet not activated, deleting the new token', err);
+        await deletePaymentToken(client, saved.paymentTokenId).catch((e) => console.error('cleanup failed', e));
         res.redirect(`${base}/?wallet=error`);
         return;
       }

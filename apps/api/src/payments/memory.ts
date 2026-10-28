@@ -19,18 +19,28 @@ export interface WalletStore extends WalletPort {
 export function createMemoryWalletStore(): WalletStore {
   let active: SavedWallet | null = null;
   let revoked = false;
-  const pending = new Set<string>();
+  const pending = new Set<string>(); // setup tokens we created
+  const toDelete = new Set<string>(); // payment tokens revoked locally but not yet confirmed deleted at PayPal
   return {
     async getActive() {
       return active ? { paymentTokenId: active.paymentTokenId } : null;
     },
     async markRevoked() {
+      if (active) toDelete.add(active.paymentTokenId);
       active = null;
       revoked = true;
+    },
+    async pendingDeletions() {
+      return [...toDelete];
+    },
+    async confirmDeleted(id) {
+      toDelete.delete(id);
     },
     beginSetup: (id) => void pending.add(id),
     takeSetup: (id) => pending.delete(id),
     activate(wallet) {
+      // Never overwrite a live token: it would stay chargeable at PayPal with nothing left that can delete it.
+      if (active) throw new Error('a wallet is already active; revoke it first');
       active = wallet;
       revoked = false;
     },
