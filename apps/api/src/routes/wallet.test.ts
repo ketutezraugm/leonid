@@ -98,7 +98,7 @@ describe('connecting the wallet', () => {
     await request(app).post('/api/wallet/connect').set(treasurer);
     const res = await request(app).get('/api/wallet/return?approval_session_id=ST1');
     expect(res.headers.location).toBe('https://qm.example.com/?wallet=error');
-    expect(wallet.snapshot().status).toBe('none');
+    expect((await wallet.snapshot()).status).toBe('none');
   });
 
   it('refuses to connect over a live wallet', async () => {
@@ -117,11 +117,11 @@ describe('connecting the wallet', () => {
       'DELETE /v3/vault/payment-tokens/pt_new': () => new Response(null, { status: 204 }),
     });
     await request(app).post('/api/wallet/connect').set(treasurer);
-    wallet.activate({ paymentTokenId: 'pt_existing' }); // a second approval raced in
+    await wallet.activate({ paymentTokenId: 'pt_existing' }); // a second approval raced in
     const res = await request(app).get('/api/wallet/return?approval_session_id=ST1');
     expect(res.headers.location).toBe('https://qm.example.com/?wallet=error');
     expect(calls).toContain('DELETE /v3/vault/payment-tokens/pt_new');
-    expect(wallet.snapshot().status).toBe('active'); // the existing wallet is untouched
+    expect((await wallet.snapshot()).status).toBe('active'); // the existing wallet is untouched
   });
 
   it('keeps a surplus token on the pending list if its cleanup fails, and the kill switch deletes it later', async () => {
@@ -133,7 +133,7 @@ describe('connecting the wallet', () => {
       'DELETE /v3/vault/payment-tokens/pt_existing': () => new Response(null, { status: 204 }),
     });
     await request(app).post('/api/wallet/connect').set(treasurer);
-    wallet.activate({ paymentTokenId: 'pt_existing' });
+    await wallet.activate({ paymentTokenId: 'pt_existing' });
     await request(app).get('/api/wallet/return?approval_session_id=ST1');
     expect(await wallet.pendingDeletions()).toEqual(['pt_new']); // cleanup failed, nothing lost
     expect((await request(app).post('/api/wallet/revoke').set(treasurer)).body).toEqual({ revoked: true });
