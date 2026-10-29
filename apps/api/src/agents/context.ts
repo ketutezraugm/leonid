@@ -24,16 +24,19 @@ export function requireEvent(ctx: AgentContext): string {
 }
 
 // Every tool takes a one-sentence reason; it becomes the audit log's reasoning summary.
+// `summarize`, when given, records what the tool produced next to the model's input, as `result`.
 export function auditedExecute<Input extends { reason?: string }, Output>(
   ctx: AgentContext,
   actor: string,
   action: string,
   run: (input: Input) => Promise<Output>,
+  summarize?: (output: Output) => unknown,
 ) {
   return async (input: Input): Promise<Output> => {
     try {
       const output = await run(input);
-      await writeAudit(ctx.db, { actor, action, input, reason: input.reason });
+      const audited = summarize ? { ...input, result: summarize(output) } : input;
+      await writeAudit(ctx.db, { actor, action, input: audited, reason: input.reason });
       return output;
     } catch (err) {
       await writeAudit(ctx.db, {
