@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createPayPalClient } from './client.js';
-import { buildInvoiceBody, createInvoice, getInvoice, sendInvoice } from './invoicing.js';
+import {
+  buildInvoiceBody,
+  createInvoice,
+  getInvoice,
+  searchInvoicesByReference,
+  sendInvoice,
+} from './invoicing.js';
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -19,6 +25,7 @@ function clientWith(...responses: Response[]) {
 }
 
 const base = {
+  reference: 'sponsor-1',
   currency: 'USD',
   invoiceDate: '2026-11-01',
   dueDate: '2026-11-15',
@@ -30,7 +37,7 @@ const base = {
 };
 
 describe('buildInvoiceBody', () => {
-  it('converts cents to PayPal money and sets a specified due date', () => {
+  it('converts cents to PayPal money, sets the reference and a due date without a term type', () => {
     const body = buildInvoiceBody(base);
     expect(body.items).toEqual([
       {
@@ -41,10 +48,12 @@ describe('buildInvoiceBody', () => {
       },
     ]);
     expect(body.detail).toMatchObject({
+      reference: 'sponsor-1',
       currency_code: 'USD',
       invoice_date: '2026-11-01',
-      payment_term: { term_type: 'DUE_ON_DATE_SPECIFIED', due_date: '2026-11-15' },
     });
+    // PayPal's spec: "either but not both" term_type or due_date.
+    expect(body.detail.payment_term).toEqual({ due_date: '2026-11-15' });
     expect(body.primary_recipients[0]?.billing_info).toEqual({
       business_name: 'Harbor Cloud',
       email_address: 'sponsor@example.com',
@@ -134,9 +143,11 @@ describe('getInvoice', () => {
         id: 'INV2-TEST-1',
         status: 'SENT',
         detail: {
+          reference: 'sponsor-1',
           invoice_number: '0001',
           metadata: { recipient_view_url: 'https://www.sandbox.paypal.com/invoice/p/#TEST1' },
         },
+        amount: { currency_code: 'USD', value: '3500.00' },
       }),
     );
     expect(await getInvoice(client, 'INV2-TEST-1')).toEqual({
@@ -144,6 +155,8 @@ describe('getInvoice', () => {
       status: 'SENT',
       invoiceNumber: '0001',
       recipientViewUrl: 'https://www.sandbox.paypal.com/invoice/p/#TEST1',
+      reference: 'sponsor-1',
+      total: { amountMinor: 350_000, currency: 'USD' },
     });
   });
 
@@ -153,6 +166,35 @@ describe('getInvoice', () => {
       status: 'DRAFT',
       invoiceNumber: null,
       recipientViewUrl: null,
+      reference: null,
+      total: null,
     });
+  });
+});
+
+describe('searchInvoicesByReference', () => {
+  it('posts the reference filter and keeps only exact matches', async () => {
+    const { client, fetch } = clientWith(
+      json(200, {
+        items: [
+          { id: 'INV2-A', status: 'DRAFT', detail: { reference: 'sponsor-1' }, amount: { currency_code: 'USD', value: '3500.00' } },
+          { id: 'INV2-B', status: 'SENT', detail: { reference: 'sponsor-10' } },
+        ],
+      }),
+    );
+
+    const found = await searchInvoicesByReference(client, 'sponsor-1');
+
+    expect(found.map((i) => i.id)).toEqual(['INV2-A']);
+    expect(found[0]?.total).toEqual({ amountMinor: 350_000, currency: 'USD' });
+    const [url, init] = fetch.mock.calls[1] ?? [];
+    expect(url).toBe('https://api-m.sandbox.paypal.com/v2/invoicing/search-invoices?page=1&page_size=100');
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body))).toEqual({ reference: 'sponsor-1' });
+  });
+
+  it('returns nothing when PayPal lists no items', async () => {
+    const { client } = clientWith(json(200, {}));
+    expect(await searchInvoicesByReference(client, 'sponsor-1')).toEqual([]);
   });
 });
