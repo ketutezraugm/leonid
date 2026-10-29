@@ -32,7 +32,7 @@ const loft = {
 };
 
 function stubThread(parts: object[], after: object[] = []) {
-  const fetchMock = vi.fn((url: string, _init?: RequestInit) => {
+  const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>((url) => {
     if (url === '/api/chat/threads/lookup') {
       return Promise.resolve(Response.json({ threads: [], demoEvent: null }));
     }
@@ -147,5 +147,85 @@ describe('Workspace', () => {
     expect(within(canvas).queryByText(/Pick a venue to continue/)).not.toBeInTheDocument();
     const chat = screen.getByRole('region', { name: 'Agent chat' });
     expect(within(chat).getByText(/Chosen: Harbor Hall/)).toBeInTheDocument();
+  });
+
+  it('offers the picked venue deposit and pays it with PayPal', async () => {
+    const pick = {
+      id: 'u2',
+      role: 'user',
+      parts: [
+        { type: 'text', text: 'Venue chosen: Harbor Hall\nSource: https://harbor.example/rooms' },
+      ],
+    };
+    const threadFetch = stubThread([scoutPart('s1', 'Jakarta', [loft, hall])], [pick]);
+    const deposit = {
+      venue: 'Harbor Hall',
+      area: 'Central, Jakarta',
+      amountMinor: 15_000,
+      currency: 'USD',
+    };
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>((url, init) => {
+      if (!url.startsWith('/api/venue-deposit/')) return threadFetch(url, init);
+      return Promise.resolve(
+        init?.method === 'POST'
+          ? Response.json({
+              deposit,
+              outcome: { status: 'paid', orderId: 'ORD-1', captureId: 'CAP-1' },
+            })
+          : Response.json({ deposit }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Workspace />);
+
+    const panel = await screen.findByRole('region', { name: 'Venue deposit' });
+    expect(
+      within(panel).getByRole('heading', { name: /deposit for Harbor Hall/ }),
+    ).toHaveTextContent('$150.00');
+    fireEvent.click(within(panel).getByRole('button', { name: 'Pay deposit with PayPal' }));
+
+    expect(await within(panel).findByText(/Deposit paid with PayPal/)).toHaveTextContent('CAP-1');
+    const post = fetchMock.mock.calls.find(
+      ([url, init]) => url.startsWith('/api/venue-deposit/') && init?.method === 'POST',
+    );
+    expect(post?.[0]).toMatch(/^\/api\/venue-deposit\/[0-9a-f-]{36}$/);
+    // The browser sends no amount: the server takes it from the venue catalog.
+    expect(post?.[1]?.body).toBeUndefined();
+  });
+
+  it('asks the treasurer to sign in before paying', async () => {
+    const pick = {
+      id: 'u2',
+      role: 'user',
+      parts: [
+        { type: 'text', text: 'Venue chosen: Harbor Hall\nSource: https://harbor.example/rooms' },
+      ],
+    };
+    const threadFetch = stubThread([scoutPart('s1', 'Jakarta', [loft, hall])], [pick]);
+    const deposit = {
+      venue: 'Harbor Hall',
+      area: 'Central, Jakarta',
+      amountMinor: 45_000,
+      currency: 'USD',
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        if (!url.startsWith('/api/venue-deposit/')) return threadFetch(url, init);
+        return Promise.resolve(
+          init?.method === 'POST'
+            ? Response.json({ error: 'treasurer only' }, { status: 401 })
+            : Response.json({ deposit }),
+        );
+      }),
+    );
+    render(<Workspace />);
+
+    const panel = await screen.findByRole('region', { name: 'Venue deposit' });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Pay deposit with PayPal' }));
+    expect(await within(panel).findByRole('link', { name: 'Log in with PayPal' })).toHaveAttribute(
+      'href',
+      '/api/auth/paypal/login',
+    );
   });
 });

@@ -601,3 +601,92 @@
   background: var(--color-success-soft);
   border-radius: var(--radius);
 }
+
+/* The PayPal deposit for the picked venue, above the results. */
+.deposit {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.deposit.is-paid {
+  border-color: var(--color-success);
+}
+
+.deposit-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.deposit-head h3 {
+  margin: 0 0 var(--space-1);
+}
+
+.deposit-head .muted {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.deposit-eyebrow {
+  margin: 0 0 var(--space-1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.deposit-pay {
+  display: inline-block;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-on-accent);
+  text-decoration: none;
+  background: var(--color-accent);
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.deposit-status {
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.deposit-body {
+  margin: var(--space-3) 0 0;
+}
+
+.deposit-body p {
+  margin: 0 0 var(--space-2);
+}
+
+.deposit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.deposit-paid {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  border-radius: var(--radius);
+}
+
+.deposit-error {
+  color: var(--color-danger);
+}
+
+.deposit-paypal {
+  max-width: 320px;
+  margin-top: var(--space-2);
+}

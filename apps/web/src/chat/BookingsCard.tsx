@@ -2,11 +2,10 @@ import { useState, type FormEvent } from 'react';
 import {
   BOOKING_ITEMS,
   bookingChoiceText,
+  isBookingAvailable,
   type BookingItemId,
   type ChooseBookingsInput,
 } from '@quartermaster/shared';
-
-const EXTRA_MAX_LENGTH = 300;
 
 // What to book for the event, as a checklist. The items are a fixed list from the shared contract;
 // the agent only pre-ticks its suggestions. The choice goes back as one user message.
@@ -20,9 +19,11 @@ export function BookingsCard({
   active: boolean;
   onAnswer: (text: string) => void;
 }) {
-  const [chosen, setChosen] = useState<BookingItemId[]>(input.suggested);
-  const [extra, setExtra] = useState('');
-  const count = chosen.length + (extra.trim() ? 1 : 0);
+  // In-development items can be seen but not chosen, even if the agent suggested one.
+  const [chosen, setChosen] = useState<BookingItemId[]>(() =>
+    input.suggested.filter(isBookingAvailable),
+  );
+  const count = chosen.length;
 
   function toggle(id: BookingItemId) {
     setChosen((current) =>
@@ -33,7 +34,7 @@ export function BookingsCard({
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!active || count === 0) return;
-    onAnswer(bookingChoiceText({ chosen, extra: extra.trim() || null }));
+    onAnswer(bookingChoiceText({ chosen, extra: null }));
   }
 
   return (
@@ -42,38 +43,35 @@ export function BookingsCard({
         <legend>
           <strong>What do you want to book for this event?</strong>
           <span className="muted">
-            These are what events usually pay for. Ticked ones are suggestions; the agent plans and
-            searches only for what you keep.
+            These are what events usually pay for. The venue is ready today, with seeded venues and
+            a PayPal deposit; the rest are still in development.
           </span>
         </legend>
         <ul className="bookings-list">
           {BOOKING_ITEMS.map((item) => (
             <li key={item.id}>
-              <label>
+              <label className={item.available ? undefined : 'is-unavailable'}>
                 <input
                   type="checkbox"
-                  checked={chosen.includes(item.id)}
+                  checked={item.available && chosen.includes(item.id)}
+                  disabled={!item.available}
                   onChange={() => toggle(item.id)}
                 />
                 <span>
                   <strong>{item.label}</strong>
                   <span className="muted">{item.description}</span>
                 </span>
-                {input.suggested.includes(item.id) && (
-                  <small className="bookings-suggested">Suggested</small>
+                {!item.available ? (
+                  <small className="bookings-soon">In development</small>
+                ) : (
+                  input.suggested.includes(item.id) && (
+                    <small className="bookings-suggested">Suggested</small>
+                  )
                 )}
               </label>
             </li>
           ))}
         </ul>
-        <input
-          className="bookings-extra"
-          aria-label="Anything else to book"
-          placeholder="Anything else? (optional)"
-          maxLength={EXTRA_MAX_LENGTH}
-          value={extra}
-          onChange={(e) => setExtra(e.target.value)}
-        />
       </fieldset>
       {active && (
         <button type="submit" className="ask-user-submit" disabled={count === 0}>

@@ -218,7 +218,7 @@ describe('AgentChat', () => {
     });
   });
 
-  it('shows the booking checklist with suggestions and sends the choice', async () => {
+  it('offers only the venue to book and shows the rest as in development', async () => {
     const fetchMock = stubFetch({
       reply: () =>
         sse([
@@ -240,21 +240,20 @@ describe('AgentChat', () => {
 
     const card = await screen.findByRole('form', { name: 'What to book' });
     expect(within(card).getByRole('checkbox', { name: /Venue/ })).toBeChecked();
-    expect(within(card).getByRole('checkbox', { name: /Swag/ })).not.toBeChecked();
+    // Suggested by the agent, but still in development: shown, not choosable.
+    const food = within(card).getByRole('checkbox', { name: /Food & drinks/ });
+    expect(food).toBeDisabled();
+    expect(food).not.toBeChecked();
+    expect(within(card).getByRole('checkbox', { name: /Swag/ })).toBeDisabled();
+    expect(within(card).getAllByText('In development')).toHaveLength(7);
 
-    fireEvent.click(within(card).getByRole('checkbox', { name: /Food & drinks/ }));
-    fireEvent.click(within(card).getByRole('checkbox', { name: /Swag/ }));
-    fireEvent.change(within(card).getByLabelText('Anything else to book'), {
-      target: { value: 'A DJ' },
-    });
-    fireEvent.click(within(card).getByRole('button', { name: 'Plan 3 items' }));
+    fireEvent.click(within(card).getByRole('button', { name: 'Plan 1 item' }));
 
     await waitFor(() => {
       const posts = fetchMock.mock.calls.filter(([url]) => url === '/api/chat');
       expect(posts).toHaveLength(2);
       const body = JSON.parse(String(posts[1]?.[1]?.body));
-      expect(body.message.parts[0].text).toMatch(/^Book for this event: Venue, Swag\n/);
-      expect(body.message.parts[0].text).toMatch(/\nAlso: A DJ$/);
+      expect(body.message.parts[0].text).toBe('Book for this event: Venue');
     });
   });
 
@@ -333,10 +332,10 @@ describe('AgentChat', () => {
     render(<AgentChat />);
 
     await screen.findByLabelText('Message');
-    fireEvent.click(screen.getByRole('button', { name: /Plan a new event/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Plan a hackathon in Jakarta/ }));
 
     const box = screen.getByLabelText('Message');
-    expect((box as HTMLTextAreaElement).value).toContain('Jakarta for 30 people');
+    expect((box as HTMLTextAreaElement).value).toContain('West Jakarta for 150 people');
     expect(box).toHaveFocus();
     expect(
       fetchMock.mock.calls.some(

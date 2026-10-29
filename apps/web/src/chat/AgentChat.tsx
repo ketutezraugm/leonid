@@ -36,32 +36,33 @@ import { loadActiveId, loadIds, newThreadId, saveActiveId, saveIds, withId } fro
 import { ThreadList } from './ThreadList';
 import './chat.css';
 
-// Written for first-time organizers: full sentences with the details the agent needs. Each one only
-// asks for what the agent can do today (read the event, plan tasks, scout venues).
+// Written for first-time organizers: full sentences with the details the agent needs. The cities are
+// ones the seeded demo venue listings cover (Indonesia, Malaysia, Singapore), so every example finds
+// real results, and each venue lists a deposit the organizer can pay with PayPal after picking it.
 const suggestions = [
   {
-    title: 'Plan a new event',
+    title: 'Plan a hackathon in Jakarta',
     prompt:
-      'I want to run a tech meetup in Jakarta for 30 people on Saturday, 21 November 2026, ' +
-      'from 1 pm to 5 pm. My budget is $2,000. What do I need to prepare, and in what order?',
+      'I want to run a hackathon in West Jakarta for 150 people on Saturday, 21 November 2026, ' +
+      'from 9 am to 9 pm. My budget is $8,000. Find a venue first, then help me plan the rest.',
   },
   {
-    title: 'Find a venue',
+    title: 'Find a venue in Kuala Lumpur',
     prompt:
-      'Find 3 venues in Jakarta that fit 30 people for a half-day workshop on Saturday, ' +
-      '21 November 2026, under $500 for the room. Show the price, the capacity and where you ' +
-      'found each one.',
+      'Find venues in Kuala Lumpur for a 60-person workshop on Saturday, 5 December 2026, ' +
+      'ideally with catering included. Show the price, the capacity and the deposit to hold the date.',
+  },
+  {
+    title: 'Book a meetup space in Singapore',
+    prompt:
+      'Find a coworking space or rooftop in Singapore for an evening meetup of 80 people on ' +
+      'Friday, 13 November 2026. Once I pick one, I want to pay the deposit with PayPal.',
   },
   {
     title: 'Check my event',
     prompt:
       'Give me a quick summary of my event: the date, how many people, the sponsors, ' +
       'and what is still left to do.',
-  },
-  {
-    title: 'I am new to this',
-    prompt:
-      'I have never organized an event before. Explain in simple steps what you can help me with.',
   },
 ];
 
@@ -73,6 +74,8 @@ interface CanvasLink {
   onViewSearch?: (id: string) => void;
   // Lets the canvas send a message (a venue pick) through this chat. Null while a run is going.
   onSendChange?: (send: ((text: string) => void) | null) => void;
+  // The open chat's id, so the canvas can ask the server about this chat (the venue deposit).
+  onThreadChange?: (threadId: string) => void;
 }
 
 export function AgentChat({
@@ -81,6 +84,7 @@ export function AgentChat({
   viewingSearchId = null,
   onViewSearch,
   onSendChange,
+  onThreadChange,
 }: { variant?: 'panel' | 'rail' } & CanvasLink = {}) {
   const [threadId, setThreadId] = useState(loadActiveId);
   const [ids, setIds] = useState(() => withId(loadIds(), threadId));
@@ -127,6 +131,9 @@ export function AgentChat({
   useEffect(() => {
     onMessagesChange?.([]);
   }, [threadId, onMessagesChange]);
+  useEffect(() => {
+    onThreadChange?.(threadId);
+  }, [threadId, onThreadChange]);
 
   // Ask the server which of this browser's chats exist; ones it does not return (archived, never
   // messaged, gone) drop out of the local list, except the one being viewed.
@@ -492,7 +499,7 @@ function ChatPanel({
         <textarea
           ref={inputRef}
           aria-label="Message"
-          placeholder="e.g. Plan a meetup in Jakarta for 30 people, budget $2,000 (Enter to send)"
+          placeholder="e.g. Find a venue in Bandung for 100 people, budget $3,000 (Enter to send)"
           rows={2}
           maxLength={CHAT_MESSAGE_MAX_LENGTH}
           value={draft}
