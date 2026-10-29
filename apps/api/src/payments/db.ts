@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { agentWallet, approvals as approvalsTable, auditLog, spendReferences, walletSetups } from '../db/schema.js';
 import type { ApprovalView, SavedWallet, WalletStore } from './memory.js';
@@ -111,13 +111,14 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
       await db.update(approvalsTable).set({ status: 'paid' }).where(pick(id));
     },
     async list() {
-      const rows = await db.select().from(approvalsTable).orderBy(desc(approvalsTable.createdAt));
+      const rows = await db.select().from(approvalsTable).orderBy(asc(approvalsTable.createdAt));
       return rows.map((r) => ({
         id: r.id,
         spend: r.spend as Spend,
         status: r.status,
         reasons: r.reasons,
         paypalOrderId: r.paypalOrderId ?? undefined,
+        createdAt: r.createdAt.toISOString(),
       }));
     },
   };

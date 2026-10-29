@@ -171,11 +171,11 @@ export function createExecutor(deps: ExecutorDeps) {
     }
   }
 
-  async function rejectApproval(approvalId: string, actor: string): Promise<{ rejected: boolean }> {
+  async function rejectApproval(approvalId: string, actor: string, why?: string): Promise<{ rejected: boolean }> {
     const approval = await approvals.get(approvalId);
     if (!approval || approval.status !== 'pending') return { rejected: false };
     await approvals.reject(approvalId, actor);
-    const auditId = await audit.record({ actor, action: 'spend.rejected_by_treasurer', input: approval.spend, reason: 'treasurer rejected' });
+    const auditId = await audit.record({ actor, action: 'spend.rejected_by_treasurer', input: approval.spend, reason: why ? `treasurer rejected: ${why}` : 'treasurer rejected' });
     await audit.update(auditId, { outcome: 'rejected', paypalId: approval.paypalOrderId });
     return { rejected: true };
   }

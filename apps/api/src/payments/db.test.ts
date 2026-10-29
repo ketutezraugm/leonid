@@ -68,6 +68,9 @@ describe('audit and approvals', () => {
     expect((await createDbApprovals(db).list())[0]).toMatchObject({ id, status: 'paid', reasons: ['over $200'], paypalOrderId: 'ORDER-1' });
     expect(await approvals.get('not-a-uuid')).toBeNull();
     expect(await approvals.findByOrder('ORDER-1')).toBe(id);
+    const second = await approvals.create({ ...spend, referenceId: 'cart-2' }, result, auditId);
+    expect((await approvals.list()).map((a) => a.id)).toEqual([id, second]); // oldest first
+    expect((await approvals.list())[0]?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(await approvals.findByOrder('ORDER-2')).toBeNull();
   });
 });

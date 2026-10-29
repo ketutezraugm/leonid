@@ -100,6 +100,7 @@ export interface ApprovalView {
   status: ApprovalStatus;
   reasons: string[];
   paypalOrderId?: string;
+  createdAt: string; // ISO; the list is oldest first
 }
 
 export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<ApprovalView[]> } {
@@ -107,7 +108,7 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
   return {
     async create(spend, result) {
       const id = `approval-${rows.size + 1}`;
-      rows.set(id, { spend, status: 'pending', reasons: result.reasons });
+      rows.set(id, { spend, status: 'pending', reasons: result.reasons, createdAt: new Date().toISOString() });
       return id;
     },
     async attachOrder(id, paypalOrderId) {
@@ -128,6 +129,6 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
       const row = rows.get(id);
       if (row) row.status = 'paid';
     },
-    list: async () => [...rows].map(([id, r]) => ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId })),
+    list: async () => [...rows].map(([id, r]) => ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId, createdAt: r.createdAt })),
   };
 }
