@@ -1,0 +1,391 @@
+/*
+ * Screen-level styles (owner: P4): Event home, Approvals, Sign in and the small parts they share.
+ * Values come only from tokens.css.
+ */
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Copyable PayPal IDs --- */
+.copy-id {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.copy-id .id {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.copy-id:hover .id {
+  color: var(--color-accent);
+}
+
+.copy-id-state {
+  min-width: 48px;
+  font-size: var(--font-size-xs);
+  color: var(--color-status-done-text);
+}
+
+/* --- Budget bar: committed, unlocked, then the money that cannot be spent yet --- */
+.budget-bar {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.budget-bar-track {
+  display: flex;
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.budget-seg--committed {
+  background: var(--color-data);
+}
+
+.budget-seg--unlocked {
+  background: var(--color-data-soft);
+}
+
+.budget-seg--invoiced {
+  background: var(--color-hold);
+}
+
+.budget-seg--pledged {
+  background: repeating-linear-gradient(135deg, var(--color-hold) 0 3px, var(--color-surface) 3px 6px);
+}
+
+.budget-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.budget-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- Event home --- */
+.home {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.home .card + .card {
+  margin-top: 0;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.home-hero {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.home-hero .stat {
+  padding: 0;
+  border: 0;
+}
+
+.sample-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+}
+
+.waiting {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.waiting p {
+  margin: 0;
+}
+
+.table-wrap--flush {
+  padding: 0;
+  border: 0;
+}
+
+.alert-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-list li {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
+@media (max-width: 900px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Runway strip: every task on one time axis, event day marked --- */
+.runway {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.runway-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.runway-track {
+  position: relative;
+  height: 110px;
+  border-radius: var(--radius);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(100% / 12 - 1px),
+    var(--color-rule) calc(100% / 12 - 1px) calc(100% / 12)
+  );
+}
+
+.runway-bar {
+  position: absolute;
+  height: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-status-pending);
+}
+
+.runway-bar--done {
+  background: var(--color-status-done);
+}
+
+.runway-bar--progress {
+  background: var(--color-data);
+}
+
+.runway-bar--risk {
+  background: var(--color-status-risk);
+}
+
+.runway-bar--blocked {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-status-blocked) 0 3px,
+    var(--color-status-blocked-soft) 3px 6px
+  );
+}
+
+.runway-event {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-text);
+}
+
+.runway-event-label {
+  position: absolute;
+  bottom: 0;
+  right: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+/* --- Plan: the Gantt draws its own frame --- */
+.plan-gantt {
+  margin-top: var(--space-4);
+}
+
+/* --- Approvals: queue on the left, the selected item on the right --- */
+.approvals-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.approval-queue ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approval-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.approval-row:hover {
+  background: var(--color-surface-sunken);
+}
+
+.approval-row[aria-current='true'] {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.approval-row-title {
+  font-weight: var(--font-weight-medium);
+}
+
+.approval-detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.approval-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.approval-head p {
+  margin: 4px 0 0;
+}
+
+.approval-amount {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.approval-block h3 {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.approval-block p,
+.approval-block ul {
+  margin: 0;
+}
+
+.approval-block ul {
+  padding-left: var(--space-4);
+}
+
+.approval-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.paypal-mount {
+  min-height: 40px;
+  max-width: 360px;
+}
+
+.approval-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .approvals-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Sign in: bare, centered on the frame --- */
+.signin {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-3);
+}
+
+.signin-card {
+  display: grid;
+  gap: var(--space-3);
+  width: min(480px, 100%);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sheet);
+}
+
+.signin-card p {
+  margin: 0;
+}
+
+.signin-actions {
+  margin-top: var(--space-2);
+}
+
+.signin-note {
+  font-size: var(--font-size-xs);
+}
+
+/* --- Small shared bits --- */
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.rule-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.rule-input .field {
+  flex: 1 1 280px;
+  max-width: none;
+}
+
+.field input:disabled {
+  background: var(--color-surface-sunken);
+  cursor: not-allowed;
+}
+
+.card .btn-row {
+  margin-top: var(--space-3);
+}

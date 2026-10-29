@@ -1,19 +1,45 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { PageHeader } from '../ui/PageHeader';
+import { PageState } from '../ui/PageState';
+import { TabPanel, Tabs } from '../ui/Tabs';
 
-// AG Studio is a large bundle, so it loads only when the Money page opens.
+// AG Studio is a large bundle, so it loads only when the Command center tab is first shown.
 const CommandCenter = lazy(() => import('../money/CommandCenter'));
 
+const tabs = [
+  { id: 'command', label: 'Command center' },
+  { id: 'sponsors', label: 'Sponsors and invoices' },
+  { id: 'audit', label: 'Audit log' },
+];
+
 export function Money() {
+  const [tab, setTab] = useState('command');
   return (
     <section>
       <PageHeader
         title="Money"
         description="Sample data for now: the widgets switch to the live ledger endpoints once webhooks land."
       />
-      <Suspense fallback={<p className="muted">Loading the command center…</p>}>
-        <CommandCenter />
-      </Suspense>
+      <Tabs items={tabs} selected={tab} onSelect={setTab} label="Money views" />
+      <TabPanel>
+        {tab === 'command' && (
+          <Suspense fallback={<p className="muted">Loading the command center…</p>}>
+            <CommandCenter />
+          </Suspense>
+        )}
+        {tab === 'sponsors' && (
+          <PageState kind="empty" title="Sponsors and invoices">
+            Each sponsor’s tier, amount, contact email and invoice status will list here with one action per row.
+            It needs the sponsor list endpoint from P3.
+          </PageState>
+        )}
+        {tab === 'audit' && (
+          <PageState kind="empty" title="Audit log">
+            Every agent action with its rule result, reason and PayPal ID will list here. It needs the audit entries
+            endpoint from P1.
+          </PageState>
+        )}
+      </TabPanel>
     </section>
   );
 }

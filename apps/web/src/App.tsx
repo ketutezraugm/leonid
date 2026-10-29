@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { Approvals } from './pages/Approvals';
 import { Claims } from './pages/Claims';
 import { EventHome } from './pages/EventHome';
@@ -6,68 +6,49 @@ import { Money } from './pages/Money';
 import { NotFound } from './pages/NotFound';
 import { Plan } from './pages/Plan';
 import { Rules } from './pages/Rules';
+import { Settings } from './pages/Settings';
+import { SignIn } from './pages/SignIn';
 import { SponsorReport } from './pages/SponsorReport';
-import { BrandMark } from './ui/BrandMark';
-
-const nav = [
-  { to: '/', label: 'Event home' },
-  { to: '/plan', label: 'Plan' },
-  { to: '/money', label: 'Money' },
-  { to: '/approvals', label: 'Approvals' },
-  { to: '/rules', label: 'Rules' },
-  { to: '/claims', label: 'Claims' },
-];
-
-function OrganizerLayout() {
-  return (
-    <div className="shell">
-      <aside className="shell-side">
-        <span className="brand">
-          <BrandMark />
-          Quartermaster
-        </span>
-        <nav className="shell-nav" aria-label="Main">
-          {nav.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === '/'}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-      <main className="shell-sheet">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
+import { OrganizerLayout } from './shell/OrganizerLayout';
+import { SessionProvider } from './shell/session';
+import { ToastProvider } from './ui/Toast';
 
 // Sponsor reports are shared outside the team, so they get no organizer navigation.
-function PublicLayout() {
+function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <main className="public-main">
-      <Outlet />
-      <footer className="public-footer muted">
-        Prepared by Quartermaster from PayPal records.
-      </footer>
+      {children}
+      <footer className="public-footer muted">Prepared by Quartermaster from PayPal records.</footer>
     </main>
   );
 }
 
 export function App() {
   return (
-    <Routes>
-      <Route element={<OrganizerLayout />}>
-        <Route path="/" element={<EventHome />} />
-        <Route path="/plan" element={<Plan />} />
-        <Route path="/money" element={<Money />} />
-        <Route path="/approvals" element={<Approvals />} />
-        <Route path="/rules" element={<Rules />} />
-        <Route path="/claims" element={<Claims />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-      <Route element={<PublicLayout />}>
-        <Route path="/report/:sponsorId" element={<SponsorReport />} />
-      </Route>
-    </Routes>
+    <ToastProvider>
+      <SessionProvider>
+        <Routes>
+          <Route path="/signin" element={<SignIn />} />
+          <Route element={<OrganizerLayout />}>
+            <Route path="/" element={<EventHome />} />
+            <Route path="/plan" element={<Plan />} />
+            <Route path="/money" element={<Money />} />
+            <Route path="/approvals" element={<Approvals />} />
+            <Route path="/rules" element={<Rules />} />
+            <Route path="/claims" element={<Claims />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+          <Route
+            path="/report/:shareToken"
+            element={
+              <PublicLayout>
+                <SponsorReport />
+              </PublicLayout>
+            }
+          />
+        </Routes>
+      </SessionProvider>
+    </ToastProvider>
   );
 }

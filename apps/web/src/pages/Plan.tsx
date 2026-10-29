@@ -21,11 +21,12 @@ export function Plan() {
           <StatusBadge status="blocked" label="Waiting on sponsor payment" />
         </div>
       </Card>
-      <Card>
+      {/* The Gantt draws its own frame; a Card around it would double the border. */}
+      <div className="plan-gantt">
         <Suspense fallback={<p className="muted">Loading plan…</p>}>
           <PlanGantt />
         </Suspense>
-      </Card>
+      </div>
     </section>
   );
 }
