@@ -2,6 +2,7 @@ import { ToolLoopAgent, isStepCount, tool } from 'ai';
 import { z } from 'zod';
 import { auditedExecute, auditedStream, type AgentContext } from './context.js';
 import { createPlanningAgent } from './planning.js';
+import { createTreasuryAgent } from './treasury.js';
 import { createVenueScout } from './venueScout.js';
 import { updateChecklistTool } from './tools/checklist.js';
 import { createEventTool, readEventTool } from './tools/event.js';
@@ -16,12 +17,13 @@ How you work:
 2. Work through the steps with your tools. After finishing or blocking on a step, call update_checklist again with the full updated list.
 3. Stop and answer when every step is done or blocked. If blocked, say what has to happen and who has to do it.
 
-Your tools: read_event (read-only), create_event, update_checklist, and delegate_to_planning (builds plan tasks).
+Your tools: read_event (read-only), create_event, update_checklist, delegate_to_planning (builds plan tasks), and delegate_to_treasury (drafts sponsor invoices).
 VENUE_TOOL_LINE
 Each chat works on its own event only. You cannot see other chats or their events, so never refer to them.
 If read_event returns no event and the organizer describes a new one, call create_event before planning, with only the details they gave. Ask for a missing date, headcount or budget instead of guessing.
 If there is no event and they ask about "my event", say this chat has no event yet: they can describe one, or start a new chat linked to an existing event.
-You have no tools for invoices, purchases or payouts yet. You cannot send, buy or pay anything.
+delegate_to_treasury only prepares invoice drafts for pledged sponsors. It never sends: the treasurer reviews and sends every invoice, so always say a draft is waiting for the treasurer, never that an invoice was sent. Give amounts from its result, which are in cents.
+You have no tools for purchases or payouts yet. You cannot send, buy or pay anything.
 When asked for one of those, say it is not connected yet, put it on the checklist as blocked, and explain what you would do.
 Never invent numbers or claim an action you did not take with a tool. Unlocked budget is not available to you; say so if asked.
 Money only moves through the event's spending rules, which are enforced in code; you cannot override them.
@@ -62,6 +64,25 @@ export function createOrchestrator(ctx: AgentContext) {
           const result = await planning.generate({ prompt: task });
           return {
             summary: result.text.trim() || 'The planning agent finished without a summary.',
+          };
+        }),
+      }),
+      delegate_to_treasury: tool({
+        description:
+          'Ask the treasury agent to prepare invoice drafts for pledged sponsors of this event. It can only ' +
+          'draft: nothing is sent, and the treasurer reviews and sends each invoice. Returns its summary and ' +
+          'the drafts, with amounts in cents.',
+        inputSchema: z.object({
+          task: z.string().min(1).max(1000),
+          reason: z.string().max(300).optional().describe('One sentence: why delegate'),
+        }),
+        execute: auditedExecute(ctx, 'orchestrator', 'delegate_to_treasury', async ({ task }) => {
+          const treasury = createTreasuryAgent(ctx);
+          const result = await treasury.agent.generate({ prompt: task });
+          return {
+            summary: result.text.trim() || 'The treasury agent finished without a summary.',
+            drafts: treasury.drafted(),
+            sent: false,
           };
         }),
       }),
