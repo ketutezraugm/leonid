@@ -6,6 +6,8 @@ services:
     runtime: node
     plan: starter
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    # Runs after the build and before the new version takes traffic; a failed migration stops the deploy.
+    preDeployCommand: pnpm --filter @quartermaster/api db:migrate
     startCommand: pnpm start
     healthCheckPath: /api/health
     envVars:
@@ -24,6 +26,8 @@ services:
       - key: PAYPAL_TREASURY_WEBHOOK_ID
         sync: false
       - key: PAYPAL_PROCUREMENT_WEBHOOK_ID
+        sync: false
+      - key: TREASURY_PAYPAL_PAYER_ID
         sync: false
       - key: PAYPAL_WEBHOOK_VERIFY
         value: 'true'
