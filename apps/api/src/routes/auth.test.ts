@@ -71,11 +71,18 @@ describe('Log in with PayPal', () => {
   });
 
   it('refuses a PayPal account that is not on the allowlist, without giving it a session', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { app } = build(env, { user_id: 'OTHER', email: 'stranger@example.com', email_verified: true });
     const { state, stateCookie } = await startLogin(app);
     const cb = await request(app).get(`/api/auth/paypal/callback?code=abc&state=${state}`).set('Cookie', stateCookie);
     expect(cb.headers.location).toBe('https://qm.example.com/?login=denied');
     expect(cookieOf(cb, 'qm_session')).toBeUndefined();
+    // the log names the PayPal id to copy into the allowlist, and never the email or a token
+    const line = String(warn.mock.calls.at(-1)?.[0]);
+    expect(line).toContain('user_id=OTHER');
+    expect(line).toContain('email_verified=true');
+    expect(line).not.toContain('stranger@example.com');
+    warn.mockRestore();
   });
 
   it('refuses a callback whose state does not match, or that has no state cookie, before calling PayPal', async () => {
