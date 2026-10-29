@@ -9,13 +9,19 @@ import {
   Invoice,
   InvoiceDraft,
   LedgerEntry,
+  LoginResult,
   PayoutBatch,
   PayoutDestination,
   PayoutItem,
   PayoutsLedgerData,
   ReceiptExtraction,
   RulesHealthData,
+  SessionInfo,
   Sponsor,
+  WalletConnectResponse,
+  WalletResult,
+  WalletRevokeResponse,
+  WalletStatus,
   WidgetFilter,
   BOOKING_ITEMS,
   bookingChoiceText,
@@ -403,5 +409,31 @@ describe('Booking choice', () => {
   it('only lets the agent suggest items from the fixed list', () => {
     expect(ChooseBookingsInput.parse({}).suggested).toEqual([]);
     expect(ChooseBookingsInput.safeParse({ suggested: ['yacht'] }).success).toBe(false);
+  });
+});
+
+describe('session and wallet (F1, F13, F15)', () => {
+  it('parses what /api/auth/me returns for a PayPal login and for the demo login, and refuses an unknown way in', () => {
+    expect(SessionInfo.parse({ email: 'sb-mb0sv53559833@personal.example.com', via: 'paypal' }).via).toBe('paypal');
+    expect(SessionInfo.parse({ via: 'demo' })).toEqual({ via: 'demo' });
+    expect(SessionInfo.safeParse({ via: 'password' }).success).toBe(false);
+    expect(SessionInfo.safeParse({ email: 'a@b.co' }).success).toBe(false);
+  });
+
+  it('names the three ?login= and ?wallet= redirect results the API can send back', () => {
+    expect(LoginResult.options).toEqual(['ok', 'denied', 'error']);
+    expect(WalletResult.options).toEqual(['connected', 'cancelled', 'error']);
+    expect(LoginResult.safeParse('ok2').success).toBe(false);
+  });
+
+  it('parses the wallet responses seen on staging, and refuses an unknown state or a non-URL approve link', () => {
+    expect(WalletStatus.parse({ status: 'none' })).toEqual({ status: 'none' });
+    expect(WalletStatus.parse({ status: 'active', payerEmail: 'sb-mb0sv53559833@personal.example.com' }).status).toBe('active');
+    expect(WalletStatus.parse({ status: 'revoked' }).status).toBe('revoked');
+    expect(WalletStatus.safeParse({ status: 'paused' }).success).toBe(false);
+    expect(WalletConnectResponse.parse({ approveUrl: 'https://www.sandbox.paypal.com/agreements/approve?approval_session_id=X' }).approveUrl).toContain('approve');
+    expect(WalletConnectResponse.safeParse({ approveUrl: 'not a url' }).success).toBe(false);
+    expect(WalletRevokeResponse.parse({ revoked: true })).toEqual({ revoked: true });
+    expect(WalletRevokeResponse.safeParse({ revoked: 'yes' }).success).toBe(false);
   });
 });

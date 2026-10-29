@@ -298,6 +298,8 @@ export * from './claim.js';
 export * from './widgets.js';
 export * from './approvals.js';
 export * from './treasury.js';
+export * from './session.js';
+export * from './wallet.js';
 
 // The PayPal deposit that holds the organizer's picked venue. Only seeded demo venues list one. The
 // server reads the pick from the thread and the amount from its venue catalog, never from the
