@@ -13,7 +13,7 @@ const json = (status: number, body: unknown) =>
 const env = { TREASURER_TOKEN: 'letmein', PAYPAL_PROCUREMENT_CLIENT_ID: 'public-client-id' };
 const treasurer = { 'x-treasurer-token': 'letmein' };
 
-function build(orderStatus: () => Response) {
+async function build(orderStatus: () => Response) {
   const calls: string[] = [];
   const routes: Record<string, () => Response> = {
     'POST /v2/checkout/orders': () =>
@@ -37,7 +37,7 @@ function build(orderStatus: () => Response) {
   });
   const client = createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch });
   const wallet = createMemoryWalletStore();
-  wallet.activate({ paymentTokenId: 'pt_1' }); // the executor refuses every spend while no wallet is active (kill switch)
+  await wallet.activate({ paymentTokenId: 'pt_1' }); // the executor refuses every spend while no wallet is active (kill switch)
   const approvals = createMemoryApprovals();
   const executor = createExecutor({
     client,
@@ -58,7 +58,7 @@ const prizeSpend = { referenceId: 'prizes-1', amountMinor: 42000, currency: 'USD
 
 describe('approvals routes', () => {
   it('serves the public PayPal client id without a token, and 503 when it is missing', async () => {
-    const { app } = build(approved);
+    const { app } = await build(approved);
     const res = await request(app).get('/api/approvals/config');
     expect(res.body).toEqual({ clientId: 'public-client-id', environment: 'sandbox' });
     const bare = express();
@@ -67,14 +67,14 @@ describe('approvals routes', () => {
   });
 
   it('keeps list, capture and reject behind the treasurer guard', async () => {
-    const { app } = build(approved);
+    const { app } = await build(approved);
     expect((await request(app).get('/api/approvals')).status).toBe(401);
     expect((await request(app).post('/api/approvals/approval-1/capture')).status).toBe(401);
     expect((await request(app).post('/api/approvals/approval-1/reject').set('x-treasurer-token', 'wrong')).status).toBe(401);
   });
 
   it('lists a pending approval with its PayPal order and the reasons', async () => {
-    const { app, executor } = build(approved);
+    const { app, executor } = await build(approved);
     await executor.requestSpend(prizeSpend);
     const res = await request(app).get('/api/approvals').set(treasurer);
     expect(res.body.approvals).toEqual([
@@ -83,7 +83,7 @@ describe('approvals routes', () => {
   });
 
   it('captures once PayPal says the order is approved', async () => {
-    const { app, executor } = build(approved);
+    const { app, executor } = await build(approved);
     await executor.requestSpend(prizeSpend);
     const res = await request(app).post('/api/approvals/approval-1/capture').set(treasurer);
     expect(res.status).toBe(200);
@@ -92,7 +92,7 @@ describe('approvals routes', () => {
   });
 
   it('answers 409 and captures nothing when the order is not approved at PayPal yet', async () => {
-    const { app, executor, calls } = build(notYet);
+    const { app, executor, calls } = await build(notYet);
     await executor.requestSpend(prizeSpend);
     const res = await request(app).post('/api/approvals/approval-1/capture').set(treasurer);
     expect(res.status).toBe(409);
@@ -100,7 +100,7 @@ describe('approvals routes', () => {
   });
 
   it('rejects an approval, and a rejected one can no longer be captured', async () => {
-    const { app, executor } = build(approved);
+    const { app, executor } = await build(approved);
     await executor.requestSpend(prizeSpend);
     expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer)).body).toEqual({ rejected: true });
     expect((await request(app).post('/api/approvals/approval-1/capture').set(treasurer)).status).toBe(409);

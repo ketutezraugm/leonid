@@ -1,4 +1,5 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 // Money is integer minor units (cents) plus an ISO currency code.
 
@@ -25,6 +26,50 @@ export const sponsors = pgTable('sponsors', {
     .notNull()
     .default('pledged'),
 }).enableRLS();
+
+// Same values as LedgerSource in @quartermaster/shared; a test keeps the two in step.
+export const LEDGER_SOURCES = [
+  'sponsor_invoice',
+  'subscription',
+  'ticket',
+  'donation',
+  'purchase',
+  'refund',
+  'claim_payout',
+  'speaker_payout',
+  'prize_payout',
+  'income_reversal',
+] as const;
+
+// Money PayPal has confirmed, written by webhook handlers only. Cleared income is read from here.
+// (source, paypal_id) is unique so a replayed webhook can never count the same money twice, which is
+// why paypal_id is NOT NULL (Postgres treats NULLs as distinct, so a null would defeat the index).
+// capture_id is the PayPal capture that moved the money: the capture itself for ticket/donation income,
+// the invoice's PayPal transaction for sponsor income, and the original capture for an income_reversal.
+// Refund and reversal webhooks find the income they undo through it.
+export const ledgerEntries = pgTable(
+  'ledger_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    direction: text('direction', { enum: ['in', 'out'] }).notNull(),
+    amount: integer('amount').notNull(),
+    currency: text('currency').notNull(),
+    source: text('source', { enum: LEDGER_SOURCES }).notNull(),
+    paypalId: text('paypal_id').notNull(),
+    captureId: text('capture_id'),
+    sponsorId: uuid('sponsor_id').references(() => sponsors.id),
+    category: text('category'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('ledger_entries_source_paypal_idx').on(t.source, t.paypalId),
+    index('ledger_entries_event_idx').on(t.eventId),
+    index('ledger_entries_capture_idx').on(t.captureId),
+  ],
+).enableRLS();
 
 export const tasks = pgTable(
   'tasks',
@@ -53,9 +98,63 @@ export const auditLog = pgTable(
     reason: text('reason'),
     ruleResult: text('rule_result'),
     paypalId: text('paypal_id'),
+    // Filled in after the PayPal call (money-safety.md: write the row first, update it with the result).
+    outcome: text('outcome'),
+    detail: text('detail'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('audit_log_created_idx').on(t.createdAt)],
+).enableRLS();
+
+// The agent's PayPal wallet (a Vault payment token). 'revoked' with deleted_at null = still to be deleted at PayPal.
+export const agentWallet = pgTable(
+  'agent_wallet',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    paymentTokenId: text('payment_token_id').notNull().unique(),
+    customerId: text('customer_id'),
+    payerEmail: text('payer_email'),
+    status: text('status', { enum: ['active', 'revoked'] }).notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  // At most one live token: a second one would stay chargeable with nothing left that can delete it.
+  (t) => [uniqueIndex('agent_wallet_one_active').on(t.status).where(sql`${t.status} = 'active'`)],
+).enableRLS();
+
+// Vault setup tokens we created; each is accepted once on the return redirect, then deleted.
+export const walletSetups = pgTable('wallet_setups', {
+  setupTokenId: text('setup_token_id').primaryKey(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+// One reference id = one spend; PayPal's idempotency key comes from it. The fingerprint detects reuse for a different spend.
+export const spendReferences = pgTable('spend_references', {
+  referenceId: text('reference_id').primaryKey(),
+  fingerprint: text('fingerprint').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+export const approvals = pgTable(
+  'approvals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    spend: jsonb('spend').notNull(),
+    reasons: text('reasons').array().notNull().default([]),
+    // pending -> capturing -> paid, or pending -> rejected; see ApprovalsPort in payments/ports.ts
+    status: text('status', { enum: ['pending', 'capturing', 'rejected', 'paid'] })
+      .notNull()
+      .default('pending'),
+    paypalOrderId: text('paypal_order_id'),
+    auditId: uuid('audit_id').references(() => auditLog.id),
+    rejectedBy: text('rejected_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('approvals_created_idx').on(t.createdAt),
+    // One approval per PayPal order, so an order id always resolves to a single row to capture.
+    uniqueIndex('approvals_paypal_order_unique').on(t.paypalOrderId),
+  ],
 ).enableRLS();
 
 export const chatThreads = pgTable(

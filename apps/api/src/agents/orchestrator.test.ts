@@ -147,9 +147,11 @@ describe('orchestrator', () => {
       threadId,
       goal: '',
     });
+    // delegate_to_treasury only drafts invoices; sending is a treasurer-only route (treasury.test.ts).
     expect(Object.keys(agent.tools).sort()).toEqual([
       'create_event',
       'delegate_to_planning',
+      'delegate_to_treasury',
       'read_event',
       'update_checklist',
     ]);
