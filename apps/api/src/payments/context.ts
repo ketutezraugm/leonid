@@ -17,7 +17,7 @@ export interface PaymentsContext {
   client: PayPalClient; // Procurement app
   wallet: WalletStore;
   executor: Executor;
-  approvals: { list(): Promise<ApprovalView[]> };
+  approvals: { list(): Promise<ApprovalView[]>; findByOrder(paypalOrderId: string): Promise<string | null> };
 }
 
 let context: PaymentsContext | undefined;

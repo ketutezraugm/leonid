@@ -78,6 +78,9 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
     async attachOrder(id, paypalOrderId) {
       approvalRows.get(id)!.paypalOrderId = paypalOrderId;
     },
+    async findByOrder(paypalOrderId) {
+      return [...approvalRows].find(([, r]) => r.paypalOrderId === paypalOrderId)?.[0] ?? null;
+    },
     async get(id) {
       return approvalRows.get(id) ?? null;
     },
@@ -156,7 +159,7 @@ describe('requestSpend', () => {
         pendingDeletions: async () => [],
         confirmDeleted: async () => {},
       },
-      approvals: { create: async () => 'x', attachOrder: async () => {}, get: async () => null, reject: async () => {}, markPaid: async () => {} },
+      approvals: { create: async () => 'x', attachOrder: async () => {}, findByOrder: async () => null, get: async () => null, reject: async () => {}, markPaid: async () => {} },
       references: { claim: async () => 'new' },
     });
     expect(await blocking.requestSpend(spend(5000))).toEqual({ status: 'blocked', reasons: ['vendor not on the approved list'] });

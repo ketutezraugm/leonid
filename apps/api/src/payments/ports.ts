@@ -46,6 +46,7 @@ export type ApprovalStatus = 'pending' | 'rejected' | 'paid';
 export interface ApprovalsPort {
   create(spend: Spend, result: CheckResult, auditId: string): Promise<string>;
   attachOrder(id: string, paypalOrderId: string): Promise<void>;
+  findByOrder(paypalOrderId: string): Promise<string | null>; // the approval id for a PayPal order, if it is ours
   get(id: string): Promise<{ spend: Spend; status: ApprovalStatus; paypalOrderId?: string } | null>;
   reject(id: string, by: string): Promise<void>;
   markPaid(id: string): Promise<void>;
