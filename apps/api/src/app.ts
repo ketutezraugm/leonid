@@ -6,6 +6,7 @@ import type { HealthResponse } from '@quartermaster/shared';
 import { approvalsRouter } from './routes/approvals.js';
 import { chatRouter } from './routes/chat.js';
 import { invoicesRouter } from './routes/invoices.js';
+import { treasuryRouter } from './routes/treasury.js';
 import { walletRouter } from './routes/wallet.js';
 import { webhookRouter } from './webhooks/router.js';
 
@@ -26,6 +27,7 @@ export function createApp() {
   });
 
   app.use('/api/chat', chatRouter);
+  app.use('/api/treasury', treasuryRouter());
   app.use('/api/wallet', walletRouter());
   app.use('/api/approvals', approvalsRouter());
   app.use('/api/sponsors', invoicesRouter());

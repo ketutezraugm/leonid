@@ -35,3 +35,10 @@ export function fromPayPalMoney(money: PayPalMoney): { amountMinor: number; curr
   const amountMinor = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
   return { amountMinor, currency: assertCurrency(money.currency_code) };
 }
+
+// For balances, which can be negative after refunds. Never used for amounts we send or compare against a spend.
+export function fromPayPalSignedMoney(money: PayPalMoney): { amountMinor: number; currency: string } {
+  const negative = money.value.startsWith('-');
+  const { amountMinor, currency } = fromPayPalMoney({ ...money, value: negative ? money.value.slice(1) : money.value });
+  return { amountMinor: negative ? -amountMinor : amountMinor, currency };
+}

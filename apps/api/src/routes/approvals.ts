@@ -49,7 +49,7 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
     '/',
     guard,
     withPayments(async (_req, res, { approvals }) => {
-      res.json({ approvals: approvals.list() });
+      res.json({ approvals: await approvals.list() });
     }),
   );
 
