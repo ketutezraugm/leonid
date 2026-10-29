@@ -2,13 +2,13 @@
 
 Owner: P3. Source: PRD §7 (treasury agent), §14 (day-1 tests) and the Stage 1 plan. Reader: the team (P1, P2, P4) and P3.
 
-**Status: the code is merged into `development` (PRs #20, #21 and #22), but Stage 1 is not complete until the current invoice shape is verified in the sandbox and the end-to-end check at the bottom has been run on staging.** Items that are not done are marked as such throughout.
+**Status: the code is merged into `development` (PRs #20, #21 and #22), and the current invoice shape was verified in the sandbox on 2026-10-29, but Stage 1 is not complete until the end-to-end check at the bottom has been run on staging.** Items that are not done are marked as such throughout.
 
 The Stage 1 goal was: an invoice arrives in the sponsor's sandbox account, and paying it raises the unlocked budget.
 
 | Half of the goal | State |
 | --- | --- |
-| An invoice arrives in the sponsor's sandbox account | Shown for an earlier version of the code only. The invoice body has changed since, so the current code is **not yet verified** in the sandbox (see the evidence section). |
+| An invoice arrives in the sponsor's sandbox account | Shown. The earlier code sent a real invoice, and on 2026-10-29 PayPal accepted the current code's invoice shape (`due_date` only, `detail.reference`) and found it by reference (see the evidence section). A send with the current code happens in the end-to-end check. |
 | Paying it raises the unlocked budget | **Not shown yet.** The code that writes the income is merged and tested, but it needs staging deployed and P1's budget function, which does not exist yet. |
 
 ## How a sponsor invoice flows
@@ -106,16 +106,11 @@ Both routes need the `x-treasurer-token` header. With no `TREASURER_TOKEN` confi
 | --- | --- |
 | Day-1 invoice `INV2-KUAD-G3SZ-RL4H-P6QK` | Paid by the sandbox personal account. PayPal generated `INVOICING.INVOICE.PAID`, event `WH-5BB64834SP633240L-14U076465L565262C`. That event is the handler's test fixture. |
 | Day-1 payout batch `PZN4R5F4LG5NY` | `SUCCESS`. PayPal generated `PAYMENT.PAYOUTSBATCH.SUCCESS`, event `WH-5UE82990P34269438-65M4346561924914E`. |
-| Earlier invoice code | Sent a $1.00 invoice, `INV2-2SFS-ZWAG-ZJA8-9KRJ` (number 0002), which PayPal accepted. No request or response for it is committed, and the body has changed since: `payment_term` now sends only `due_date` (or `term_type: DUE_ON_RECEIPT` when due in 0 days), and `detail.reference` is set. **Unverified for the current shape.** This invoice is unpaid. |
+| Earlier invoice code | Sent a $1.00 invoice, `INV2-2SFS-ZWAG-ZJA8-9KRJ` (number 0002), which PayPal accepted. No request or response for it is committed, and the body has changed since: `payment_term` now sends only `due_date` (or `term_type: DUE_ON_RECEIPT` when due in 0 days), and `detail.reference` is set. The current shape is verified in the next row. This invoice is unpaid. |
+| Current invoice code (2026-10-29) | Two drafts created with the merged `createInvoice`, tagged with one test reference, never sent, then deleted. `INV2-KU48-3J24-FRP3-RQUV` (due on a date, `payment_term: { due_date }` only): accepted; PayPal stored it as `term_type: DUE_ON_DATE_SPECIFIED` with the due date. `INV2-PQE4-TERG-9VEF-LAR2` (`term_type: DUE_ON_RECEIPT`): accepted. Both read back with the reference and a total of 100 USD minor units. `searchInvoicesByReference` found 2 of 2. Both drafts deleted (`DELETE /v2/invoicing/invoices/{id}`). |
 | Treasury webhook | P2's receiver at `quartermaster-staging.onrender.com/api/webhooks/paypal/treasury` is subscribed to `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED` and `PAYMENT.PAYOUTSBATCH.SUCCESS`. |
 
-**To verify in the sandbox** (Treasury app, current code):
-
-1. Create an invoice with `payment_term: { due_date }` only and a `detail.reference`. Expect it to be accepted.
-2. `POST /v2/invoicing/search-invoices` with `{ reference }`. Expect exactly that invoice back.
-3. Delete the draft (`DELETE /v2/invoicing/invoices/{id}`) so it does not linger.
-
-Record the invoice id and PayPal's answers here when done.
+**Verified in the sandbox on 2026-10-29** (Treasury app, the code merged in PRs #20 to #22): a `due_date`-only payment term and a `detail.reference` are accepted, search by reference returns the invoice, and drafts can be deleted. The run is in the evidence table above. The search returns every invoice with that reference, so a sponsor's earlier invoice is found as well; the send service relies on that.
 
 **Not confirmed:** whether PayPal's events reached the staging receiver and were answered with a 2xx. PayPal's event list shows they were generated, not delivered. Check the developer dashboard's webhook events or the Render logs. The subscription list above does not include `PAYMENT.CAPTURE.REFUNDED` / `REVERSED`.
 
