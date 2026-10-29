@@ -9,6 +9,7 @@ import {
   clearCookie,
   readCookie,
   readSession,
+  sessionSecret,
   setCookie,
   sign,
   verify,
@@ -22,20 +23,21 @@ export interface AuthRouterOptions {
 // Log in with PayPal for the treasurer (F1):
 //   GET  /paypal/login     sends the browser to PayPal
 //   GET  /paypal/callback  PayPal sends it back with ?code&state; only TREASURER_ALLOWLIST members get a session
-//   GET  /me               { email?, demo } or 401
+//   GET  /me               { email?, via: 'paypal' | 'demo' } or 401
 //   POST /logout
-//   POST /demo-login       only when DEMO_LOGIN=true: a session for the hosted demo, for judges without PayPal access
+//   POST /demo-login       only when demoLoginEnabled(): a session for the hosted demo, for judges without PayPal access
 // Every redirect target is fixed (APP_BASE_URL), never taken from the request.
 export function authRouter(options: AuthRouterOptions = {}) {
   const env = options.env ?? process.env;
   const router = Router();
+  const demoLogin = demoLoginEnabled(env);
 
   const handle =
     (fn: (req: Request, res: Response, c: { base: string; secret: string; secure: boolean }) => Promise<void> | void): RequestHandler =>
     async (req, res) => {
       const base = env.APP_BASE_URL?.replace(/\/$/, '');
-      const secret = env.SESSION_SECRET;
-      if (!base || !secret || secret.length < 32) {
+      const secret = sessionSecret(env);
+      if (!base || !secret) {
         res.status(503).json({ error: 'login is not configured' });
         return;
       }
@@ -79,14 +81,14 @@ export function authRouter(options: AuthRouterOptions = {}) {
         res.redirect(`${base}/?login=error`);
         return;
       }
-      const profile: PayPalProfile = await loginWithCode(code, `${base}/api/auth/paypal/callback`, { clientId, clientSecret, fetch: options.fetch });
+      const profile: PayPalProfile = await loginWithCode(code, { clientId, clientSecret, fetch: options.fetch });
       if (!isAllowed(profile, env.TREASURER_ALLOWLIST)) {
         console.warn('login refused: PayPal account is not on TREASURER_ALLOWLIST');
         res.redirect(`${base}/?login=denied`);
         return;
       }
       const sub = profile.user_id ?? profile.sub ?? profile.email ?? 'paypal';
-      setCookie(res, SESSION_COOKIE, sign('session', { sub, email: profile.email }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
+      setCookie(res, SESSION_COOKIE, sign('session', { sub, via: 'paypal', email: profile.email }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
       res.redirect(`${base}/?login=ok`);
     }),
   );
@@ -99,7 +101,7 @@ export function authRouter(options: AuthRouterOptions = {}) {
         res.status(401).json({ error: 'not logged in' });
         return;
       }
-      res.json({ email: session.email, demo: session.sub === 'demo' });
+      res.json({ email: session.email, via: session.via });
     }),
   );
 
@@ -114,14 +116,29 @@ export function authRouter(options: AuthRouterOptions = {}) {
   router.post(
     '/demo-login',
     handle((_req, res, { secret, secure }) => {
-      if (env.DEMO_LOGIN !== 'true') {
+      if (!demoLogin) {
         res.status(404).json({ error: 'not found' });
         return;
       }
-      setCookie(res, SESSION_COOKIE, sign('session', { sub: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
+      setCookie(res, SESSION_COOKIE, sign('session', { sub: 'demo', via: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
       res.json({ ok: true, demo: true });
     }),
   );
 
   return router;
+}
+
+// Demo login hands anyone a treasurer session, so production needs a second, deliberate opt-in
+// (DEMO_LOGIN_ALLOW_PRODUCTION=true, for the hosted judges' demo). Checked once, when the router is built at startup.
+export function demoLoginEnabled(env: NodeJS.ProcessEnv): boolean {
+  if (env.DEMO_LOGIN !== 'true') return false;
+  if (env.NODE_ENV !== 'production') return true;
+  if (env.DEMO_LOGIN_ALLOW_PRODUCTION !== 'true') {
+    console.error('DEMO_LOGIN=true is ignored in production: set DEMO_LOGIN_ALLOW_PRODUCTION=true as well to really enable it');
+    return false;
+  }
+  console.warn(
+    '!!! DEMO_LOGIN is ON in production: POST /api/auth/demo-login gives ANYONE a treasurer session. Hosted demo only; turn it off afterwards. !!!',
+  );
+  return true;
 }

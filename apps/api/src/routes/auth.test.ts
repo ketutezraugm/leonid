@@ -1,10 +1,10 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { isAllowed } from '../auth/paypalLogin.js';
 import { sign } from '../auth/session.js';
-import { authRouter } from './auth.js';
+import { authRouter, demoLoginEnabled } from './auth.js';
 
 const SECRET = 's'.repeat(40);
 const env = {
@@ -28,7 +28,9 @@ function build(e: NodeJS.ProcessEnv = env, profile: unknown = { user_id: 'USERID
   });
   const app = express();
   app.use('/api/auth', authRouter({ env: e, fetch }));
-  app.get('/api/secret', requireTreasurer(e), (_req, res) => void res.json({ ok: true }));
+  const guard = requireTreasurer(e);
+  app.get('/api/secret', guard, (_req, res) => void res.json({ actor: treasurerActor(res) }));
+  app.post('/api/secret', guard, (_req, res) => void res.json({ actor: treasurerActor(res) }));
   return { app, calls, fetch };
 }
 
@@ -64,8 +66,8 @@ describe('Log in with PayPal', () => {
     expect((cb.headers['set-cookie'] as unknown as string[]).join(';')).toMatch(/HttpOnly.*SameSite=Lax.*Secure/);
 
     expect((await request(app).get('/api/secret')).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('Cookie', session)).status).toBe(200);
-    expect((await request(app).get('/api/auth/me').set('Cookie', session)).body).toEqual({ email: 'treasurer@example.com', demo: false });
+    expect((await request(app).get('/api/secret').set('Cookie', session)).body).toEqual({ actor: 'treasurer:paypal:USERID999' });
+    expect((await request(app).get('/api/auth/me').set('Cookie', session)).body).toEqual({ email: 'treasurer@example.com', via: 'paypal' });
   });
 
   it('refuses a PayPal account that is not on the allowlist, without giving it a session', async () => {
@@ -96,12 +98,14 @@ describe('Log in with PayPal', () => {
 
   it('rejects a tampered, foreign-signed or expired session cookie; the ops token works only while it is set', async () => {
     const { app } = build({ ...env, TREASURER_TOKEN: 'letmein' });
-    const good = `qm_session=${sign('session', { sub: 'x' }, SECRET, 60)}`;
+    const good = `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, SECRET, 60)}`;
     expect((await request(app).get('/api/secret').set('Cookie', good)).status).toBe(200);
     expect((await request(app).get('/api/secret').set('Cookie', good.slice(0, -2) + 'xx')).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x' }, 'z'.repeat(40), 60)}`)).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x' }, SECRET, -1)}`)).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('x-treasurer-token', 'letmein')).status).toBe(200);
+    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, 'z'.repeat(40), 60)}`)).status).toBe(401);
+    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, SECRET, -1)}`)).status).toBe(401);
+    expect((await request(app).get('/api/secret').set('x-treasurer-token', 'letmein')).body).toEqual({ actor: 'treasurer:ops-token' });
+    // a session without a known `via` is not a session
+    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x' }, SECRET, 60)}`)).status).toBe(401);
     // with no TREASURER_TOKEN configured the header means nothing
     expect((await request(build().app).get('/api/secret').set('x-treasurer-token', 'letmein')).status).toBe(401);
   });
@@ -123,9 +127,44 @@ describe('Log in with PayPal', () => {
     const on = build({ ...env, DEMO_LOGIN: 'true' });
     const demo = await request(on.app).post('/api/auth/demo-login');
     expect(demo.status).toBe(200);
-    expect((await request(on.app).get('/api/secret').set('Cookie', cookieOf(demo, 'qm_session')!)).status).toBe(200);
+    const demoSession = cookieOf(demo, 'qm_session')!;
+    expect((await request(on.app).get('/api/secret').set('Cookie', demoSession)).body).toEqual({ actor: 'treasurer:demo' });
+    expect((await request(on.app).get('/api/auth/me').set('Cookie', demoSession)).body).toEqual({ via: 'demo' });
     expect((await request(build({ APP_BASE_URL: env.APP_BASE_URL, SESSION_SECRET: 'short' }).app).get('/api/auth/paypal/login')).status).toBe(503);
     expect((await request(build({}).app).get('/api/secret')).status).toBe(503);
+  });
+
+  it('refuses demo login in production unless DEMO_LOGIN_ALLOW_PRODUCTION=true, and warns loudly when it is on', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const prod = { ...env, NODE_ENV: 'production', DEMO_LOGIN: 'true' };
+      expect((await request(build(prod).app).post('/api/auth/demo-login')).status).toBe(404);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN_ALLOW_PRODUCTION'));
+      expect(warn).not.toHaveBeenCalled();
+
+      const optedIn = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true' });
+      expect((await request(optedIn.app).post('/api/auth/demo-login')).status).toBe(200);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN is ON in production'));
+
+      // the second opt-in alone enables nothing
+      expect(demoLoginEnabled({ NODE_ENV: 'production', DEMO_LOGIN_ALLOW_PRODUCTION: 'true' })).toBe(false);
+      expect(demoLoginEnabled({ DEMO_LOGIN: 'true' })).toBe(true);
+    } finally {
+      error.mockRestore();
+      warn.mockRestore();
+    }
+  });
+
+  it('treats a SESSION_SECRET shorter than 32 characters as unset', async () => {
+    const short = 's'.repeat(31);
+    const cookie = `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, short, 60)}`;
+    const app = build({ APP_BASE_URL: env.APP_BASE_URL, SESSION_SECRET: short }).app;
+    expect((await request(app).get('/api/secret').set('Cookie', cookie)).status).toBe(503);
+    expect((await request(app).get('/api/auth/me').set('Cookie', cookie)).status).toBe(503);
+    // with the ops token configured the guard still runs, but the short-secret cookie is not accepted
+    const withToken = build({ APP_BASE_URL: env.APP_BASE_URL, SESSION_SECRET: short, TREASURER_TOKEN: 'letmein' }).app;
+    expect((await request(withToken).get('/api/secret').set('Cookie', cookie)).status).toBe(401);
   });
 
   it('logs out by clearing the cookie', async () => {
@@ -142,5 +181,36 @@ describe('allowlist', () => {
     expect(isAllowed({ email: 'a@x.com', email_verified: false }, 'a@x.com')).toBe(false);
     expect(isAllowed({ user_id: 'abc', email: 'a@x.com' }, '')).toBe(false);
     expect(isAllowed({}, 'a@x.com')).toBe(false);
+  });
+});
+
+describe('CSRF on cookie sessions', () => {
+  const session = `qm_session=${sign('session', { sub: 'USERID123', via: 'paypal' }, SECRET, 60)}`;
+  const app = build({ ...env, TREASURER_TOKEN: 'letmein' }).app;
+
+  it('accepts a state-changing cookie request from our own origin (Origin, or Referer when Origin is absent)', async () => {
+    const ok = await request(app).post('/api/secret').set('Cookie', session).set('Origin', 'https://qm.example.com');
+    expect(ok.status).toBe(200);
+    expect(ok.body).toEqual({ actor: 'treasurer:paypal:USERID123' });
+    expect((await request(app).post('/api/secret').set('Cookie', session).set('Referer', 'https://qm.example.com/approvals')).status).toBe(200);
+  });
+
+  it('refuses a cookie POST from another origin, or with no Origin and no Referer', async () => {
+    expect((await request(app).post('/api/secret').set('Cookie', session).set('Origin', 'https://evil.example')).status).toBe(403);
+    expect((await request(app).post('/api/secret').set('Cookie', session).set('Origin', 'null')).status).toBe(403);
+    expect((await request(app).post('/api/secret').set('Cookie', session).set('Referer', 'https://evil.example/qm.example.com')).status).toBe(403);
+    expect((await request(app).post('/api/secret').set('Cookie', session)).status).toBe(403);
+  });
+
+  it('fails closed when APP_BASE_URL is not set', async () => {
+    const noBase = build({ SESSION_SECRET: SECRET }).app;
+    expect((await request(noBase).post('/api/secret').set('Cookie', session).set('Origin', 'https://qm.example.com')).status).toBe(403);
+  });
+
+  it('does not check Origin on GET, or on a request authenticated with the ops token header', async () => {
+    expect((await request(app).get('/api/secret').set('Cookie', session)).status).toBe(200);
+    const ops = await request(app).post('/api/secret').set('x-treasurer-token', 'letmein');
+    expect(ops.status).toBe(200);
+    expect(ops.body).toEqual({ actor: 'treasurer:ops-token' });
   });
 });

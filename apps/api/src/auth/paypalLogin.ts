@@ -51,13 +51,14 @@ async function json(res: Response): Promise<unknown> {
   }
 }
 
-export async function loginWithCode(code: string, redirectUri: string, deps: Deps): Promise<PayPalProfile> {
+export async function loginWithCode(code: string, deps: Deps): Promise<PayPalProfile> {
   const f = deps.fetch ?? fetch;
   const basic = Buffer.from(`${deps.clientId}:${deps.clientSecret}`).toString('base64');
   const tokenRes = await f(`${PAYPAL_SANDBOX_BASE_URL}/v1/oauth2/token`, {
     method: 'POST',
     headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    // redirect_uri is not in PayPal's documented request; sending only what the docs show.
+    // Exactly the documented request (Log in with PayPal > Integrate, "Get access token"): grant_type and code only,
+    // no redirect_uri. The redirect_uri is sent on the authorize URL, where PayPal checks it against the app settings.
     body: new URLSearchParams({ grant_type: 'authorization_code', code }).toString(),
   });
   const tokenBody = await json(tokenRes);

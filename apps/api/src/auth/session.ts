@@ -9,9 +9,18 @@ export const STATE_COOKIE = 'qm_oauth_state';
 export const SESSION_TTL_S = 8 * 60 * 60;
 export const STATE_TTL_S = 10 * 60;
 
+export const MIN_SECRET_LENGTH = 32;
+
 export interface Session {
   sub: string; // PayPal user_id, or 'demo'
+  via: 'paypal' | 'demo'; // how the session was obtained; goes into the audit actor
   email?: string;
+}
+
+// A secret shorter than MIN_SECRET_LENGTH is treated as unset, so a weak value fails closed (503) instead of signing.
+export function sessionSecret(env: NodeJS.ProcessEnv): string | undefined {
+  const secret = env.SESSION_SECRET;
+  return secret && secret.length >= MIN_SECRET_LENGTH ? secret : undefined;
 }
 
 const b64 = (s: string) => Buffer.from(s).toString('base64url');
@@ -51,7 +60,8 @@ export function readCookie(req: Request, name: string): string | undefined {
 
 export function readSession(req: Request, secret: string): Session | null {
   const session = verify<Session>('session', readCookie(req, SESSION_COOKIE), secret);
-  return session && typeof session.sub === 'string' && session.sub ? session : null;
+  if (!session || typeof session.sub !== 'string' || !session.sub) return null;
+  return session.via === 'paypal' || session.via === 'demo' ? session : null;
 }
 
 // Lax, not Strict: the browser comes back from PayPal on a cross-site redirect and must still send the state cookie.

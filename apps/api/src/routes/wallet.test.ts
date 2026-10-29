@@ -1,6 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
+import { sign } from '../auth/session.js';
 import { createExecutor } from '../payments/executor.js';
 import { createMemoryApprovals, createMemoryAudit, createMemoryReferences, createMemoryWalletStore } from '../payments/memory.js';
 import { stubCheck } from '../payments/stub-check.js';
@@ -27,17 +28,18 @@ function build(routes: Record<string, () => Response> = {}, envOverride: NodeJS.
   const client = createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch });
   const wallet = createMemoryWalletStore();
   const approvals = createMemoryApprovals();
+  const audit = createMemoryAudit();
   const executor = createExecutor({
     client,
     check: stubCheck,
-    audit: createMemoryAudit(),
+    audit,
     wallet,
     approvals,
     references: createMemoryReferences(),
   });
   const app = express();
   app.use('/api/wallet', walletRouter({ env: envOverride, payments: () => ({ client, wallet, executor, approvals }) }));
-  return { app, calls, fetch, wallet };
+  return { app, calls, fetch, wallet, audit };
 }
 
 const setupToken = () =>
@@ -162,6 +164,23 @@ describe('kill switch', () => {
     expect(calls).toContain('DELETE /v3/vault/payment-tokens/pt_1');
     expect((await request(app).get('/api/wallet').set(treasurer)).body).toEqual({ status: 'revoked' });
     expect((await request(app).post('/api/wallet/revoke').set(treasurer)).body).toEqual({ revoked: false });
+  });
+
+  it('works with a Log in with PayPal session from our own page, and audits that treasurer as the actor', async () => {
+    const SECRET = 's'.repeat(40);
+    const { app, audit, calls, wallet } = build(
+      { 'DELETE /v3/vault/payment-tokens/pt_1': () => new Response(null, { status: 204 }) },
+      { ...env, SESSION_SECRET: SECRET },
+    );
+    await wallet.activate({ paymentTokenId: 'pt_1' });
+    const cookie = `qm_session=${sign('session', { sub: 'USERID123', via: 'paypal' }, SECRET, 60)}`;
+    expect((await request(app).post('/api/wallet/revoke').set('Cookie', cookie).set('Origin', 'https://evil.example')).status).toBe(403);
+    expect(calls).toEqual([]); // refused before PayPal was asked anything
+
+    const res = await request(app).post('/api/wallet/revoke').set('Cookie', cookie).set('Origin', 'https://qm.example.com');
+    expect(res.body).toEqual({ revoked: true });
+    expect(calls).toEqual(['DELETE /v3/vault/payment-tokens/pt_1']);
+    expect(audit.rows.find((r) => r.action === 'wallet.revoke')).toMatchObject({ actor: 'treasurer:paypal:USERID123' });
   });
 
   it('answers 502 if PayPal fails, while the wallet stays revoked on our side', async () => {

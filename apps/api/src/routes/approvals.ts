@@ -1,6 +1,6 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { RejectApprovalRequest, type ApprovalItem, type ApprovalsResponse } from '@quartermaster/shared';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import type { ApprovalView } from '../payments/memory.js';
 
@@ -76,7 +76,7 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
     '/:id/capture',
     guard,
     withPayments(async (req, res, { executor }) => {
-      const outcome = await executor.captureApproved(String(req.params.id), 'treasurer');
+      const outcome = await executor.captureApproved(String(req.params.id), treasurerActor(res));
       if (outcome.status === 'paid') res.json(outcome);
       else res.status(outcome.status === 'refused' ? 409 : 502).json(outcome);
     }),
@@ -91,7 +91,7 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
         res.status(400).json({ error: 'reason must be text of at most 200 characters' });
         return;
       }
-      const result = await executor.rejectApproval(String(req.params.id), 'treasurer', parsed.data.reason);
+      const result = await executor.rejectApproval(String(req.params.id), treasurerActor(res), parsed.data.reason);
       res.status(result.rejected ? 200 : 409).json(result);
     }),
   );

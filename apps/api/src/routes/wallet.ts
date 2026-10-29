@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { createPaymentToken, createWalletSetup, deletePaymentToken } from '../paypal/vault.js';
@@ -122,7 +122,7 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     '/revoke',
     guard,
     safe(async (_req, res, { executor }) => {
-      res.json(await executor.revokeWallet('treasurer'));
+      res.json(await executor.revokeWallet(treasurerActor(res)));
     }),
   );
 
