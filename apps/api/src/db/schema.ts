@@ -1,4 +1,13 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 // Money is integer minor units (cents) plus an ISO currency code.
 
@@ -25,6 +34,43 @@ export const sponsors = pgTable('sponsors', {
     .notNull()
     .default('pledged'),
 }).enableRLS();
+
+// Same values as LedgerSource in @quartermaster/shared; a test keeps the two in step.
+export const LEDGER_SOURCES = [
+  'sponsor_invoice',
+  'subscription',
+  'ticket',
+  'donation',
+  'purchase',
+  'refund',
+  'claim_payout',
+  'speaker_payout',
+  'prize_payout',
+] as const;
+
+// Money PayPal has confirmed, written by webhook handlers only. Cleared income is read from here.
+// (source, paypal_id) is unique so a replayed webhook can never count the same money twice.
+export const ledgerEntries = pgTable(
+  'ledger_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    direction: text('direction', { enum: ['in', 'out'] }).notNull(),
+    amount: integer('amount').notNull(),
+    currency: text('currency').notNull(),
+    source: text('source', { enum: LEDGER_SOURCES }).notNull(),
+    paypalId: text('paypal_id'),
+    sponsorId: uuid('sponsor_id').references(() => sponsors.id),
+    category: text('category'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('ledger_entries_source_paypal_idx').on(t.source, t.paypalId),
+    index('ledger_entries_event_idx').on(t.eventId),
+  ],
+).enableRLS();
 
 export const tasks = pgTable(
   'tasks',
