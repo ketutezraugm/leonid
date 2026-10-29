@@ -184,7 +184,9 @@ describe('chat event scope', () => {
       { tool: 'delegate_to_planning', input: { task: 'Plan the venue' } },
       {
         tool: 'create_tasks',
-        input: { tasks: [{ name: 'Book Yogyakarta venue', start: '2027-01-04', end: '2027-01-10' }] },
+        input: {
+          tasks: [{ name: 'Book Yogyakarta venue', start: '2027-01-04', end: '2027-01-10' }],
+        },
       },
       { text: 'Added the venue task.' },
       { text: 'Your meetup is set up.' },
@@ -300,6 +302,33 @@ describe('chat sessions', () => {
     expect((await lookup(app, [id])).body.threads[0].title).toBe('Swag run');
   });
 
+  it('deletes a thread with its checklist for good', async () => {
+    await seedDemoEvent(db);
+    useScript([
+      {
+        tool: 'update_checklist',
+        input: { items: [{ title: 'Find lanyards', status: 'in_progress' }] },
+      },
+      { text: 'On it.' },
+    ]);
+    const app = createApp();
+    const body = userMessage('Find lanyards');
+    await request(app).post('/api/chat').send(body);
+    await vi.waitFor(async () => {
+      expect((await loadThread(app, body.threadId)).checklist).toHaveLength(1);
+    });
+
+    expect((await request(app).delete(`/api/chat/${body.threadId}`)).status).toBe(204);
+    expect(await getThread(db, body.threadId)).toBeUndefined();
+    expect((await lookup(app, [body.threadId])).body.threads).toEqual([]);
+    expect(await loadThread(app, body.threadId)).toEqual({
+      messages: [],
+      checklist: [],
+      event: null,
+    });
+    expect((await request(app).delete(`/api/chat/${body.threadId}`)).status).toBe(404);
+  });
+
   it('rejects bad requests and unknown threads', async () => {
     const app = createApp();
     expect((await lookup(app, [])).status).toBe(400);
@@ -308,5 +337,6 @@ describe('chat sessions', () => {
     const id = crypto.randomUUID();
     expect((await request(app).patch(`/api/chat/${id}`).send({})).status).toBe(400);
     expect((await request(app).patch(`/api/chat/${id}`).send({ title: 'x' })).status).toBe(404);
+    expect((await request(app).delete('/api/chat/nope')).status).toBe(400);
   });
 });

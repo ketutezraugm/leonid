@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { VenueCandidate } from '@quartermaster/shared';
+import type { UIMessage } from 'ai';
+import { venuePickText, type VenueCandidate } from '@quartermaster/shared';
 import type { Db } from '../db/client.js';
 import { createTestDb } from '../db/testing.js';
 import type { SearchClient } from '../search/client.js';
 import { createOrchestrator } from './orchestrator.js';
 import { scriptedModel, type ScriptStep } from './testing.js';
 import { createVenueScout, verifyCandidate } from './venueScout.js';
+import { venuePickOf } from './venuePick.js';
 
 const URL_A = 'https://hotel.test/meeting';
 const PAGE =
@@ -113,5 +115,95 @@ describe('orchestrator venue delegation', () => {
     expect(Object.keys(createOrchestrator({ ...ctx, search }).tools)).toContain(
       'delegate_to_venue_scout',
     );
+  });
+
+  const scoutSteps = (candidates: VenueCandidate[]): ScriptStep[] => [
+    { tool: 'delegate_to_venue_scout', input: { city: 'Jogja', headcount: 100 } },
+    // venue scout (shares the script)
+    { tool: 'web_search', input: { query: 'paket meeting jogja' } },
+    { tool: 'read_page', input: { url: URL_A } },
+    ...(candidates.length > 0 ? [{ tool: 'report_venues', input: { candidates } }] : []),
+    { text: 'Done.' },
+  ];
+
+  async function runOrchestrator(script: ScriptStep[]) {
+    const db = await createTestDb();
+    const search: SearchClient = {
+      search: vi.fn().mockResolvedValue([{ url: URL_A, title: 'Hotel', snippet: '' }]),
+      extract: vi.fn().mockResolvedValue(PAGE),
+    };
+    const model = scriptedModel(script);
+    const agent = createOrchestrator({ db, eventId: 'e', threadId: 't', goal: '', model, search });
+    return { model, result: await agent.generate({ prompt: 'Find venues' }) };
+  }
+
+  it('ends the turn when the scout finds venues, so the organizer picks one', async () => {
+    const { model, result } = await runOrchestrator([
+      ...scoutSteps([base]),
+      { text: 'never reached' },
+    ]);
+    // orchestrator call + 4 scout calls; no orchestrator call after the results.
+    expect(model.callCount()).toBe(5);
+    expect(result.text).not.toContain('never reached');
+  });
+
+  it('keeps going when the scout finds nothing', async () => {
+    const { result } = await runOrchestrator([...scoutSteps([]), { text: 'Nothing found.' }]);
+    expect(result.text).toBe('Nothing found.');
+  });
+
+  it('tells the orchestrator when a venue has been picked', async () => {
+    const model = scriptedModel([{ text: 'Next: food.' }]);
+    const db = await createTestDb();
+    const pick = { name: base.name, sourceUrl: URL_A };
+    await createOrchestrator({
+      db,
+      eventId: 'e',
+      threadId: 't',
+      goal: '',
+      model,
+      venuePick: pick,
+    }).generate({ prompt: venuePickText(pick) });
+    expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain(
+      'The organizer picked a venue from the scout results',
+    );
+  });
+});
+
+describe('venuePickOf', () => {
+  const scout: UIMessage = {
+    id: 'a1',
+    role: 'assistant',
+    parts: [
+      {
+        type: 'tool-delegate_to_venue_scout',
+        toolCallId: 's1',
+        state: 'output-available',
+        input: { city: 'Jogja', headcount: 100 },
+        output: { activity: [], candidates: [base], summary: '' },
+      },
+    ],
+  };
+  const say = (id: string, role: UIMessage['role'], text: string): UIMessage => ({
+    id,
+    role,
+    parts: [{ type: 'text', text }],
+  });
+
+  it('reads a pick of a venue the scout returned', () => {
+    const text = venuePickText({ name: 'Hotel Test', sourceUrl: URL_A });
+    expect(venuePickOf([scout, say('u1', 'user', text)])).toEqual({
+      name: 'Hotel Test',
+      sourceUrl: URL_A,
+    });
+  });
+
+  it('ignores a venue the scout never returned, and picks not made by the organizer', () => {
+    const made = venuePickText({ name: 'Hotel Evil', sourceUrl: 'https://evil.test/' });
+    const real = venuePickText({ name: 'Hotel Test', sourceUrl: URL_A });
+    expect(venuePickOf([scout, say('u1', 'user', made)])).toBeNull();
+    expect(venuePickOf([scout, say('a2', 'assistant', real)])).toBeNull();
+    // A pick sent before the search does not count either.
+    expect(venuePickOf([say('u0', 'user', real), scout])).toBeNull();
   });
 });
