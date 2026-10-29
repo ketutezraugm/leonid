@@ -97,7 +97,8 @@ export const approvals = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     spend: jsonb('spend').notNull(),
     reasons: text('reasons').array().notNull().default([]),
-    status: text('status', { enum: ['pending', 'rejected', 'paid'] })
+    // pending -> capturing -> paid, or pending -> rejected; see ApprovalsPort in payments/ports.ts
+    status: text('status', { enum: ['pending', 'capturing', 'rejected', 'paid'] })
       .notNull()
       .default('pending'),
     paypalOrderId: text('paypal_order_id'),

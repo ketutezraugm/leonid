@@ -2,7 +2,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { agentWallet, approvals as approvalsTable, auditLog, spendReferences, walletSetups } from '../db/schema.js';
 import type { ApprovalView, SavedWallet, WalletStore } from './memory.js';
-import type { ApprovalsPort, AuditPort, ReferencePort, Spend } from './ports.js';
+import type { ApprovalStatus, ApprovalsPort, AuditPort, ReferencePort, Spend } from './ports.js';
 
 // DB-backed versions of the adapters in memory.ts: wallet, approvals, audit and used reference ids survive a restart.
 
@@ -83,6 +83,22 @@ export function createDbReferences(db: Db): ReferencePort {
 
 export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<ApprovalView[]> } {
   const pick = (id: string) => eq(approvalsTable.id, id);
+  const view = (r: typeof approvalsTable.$inferSelect): ApprovalView => ({
+    id: r.id,
+    spend: r.spend as Spend,
+    status: r.status,
+    reasons: r.reasons,
+    paypalOrderId: r.paypalOrderId ?? undefined,
+  });
+  // One conditional UPDATE: of two callers racing on the same row, only one sees its WHERE match.
+  const move = async (id: string, from: ApprovalStatus, to: ApprovalStatus, extra: { rejectedBy?: string } = {}) => {
+    const moved = await db
+      .update(approvalsTable)
+      .set({ status: to, ...extra })
+      .where(and(pick(id), eq(approvalsTable.status, from)))
+      .returning({ id: approvalsTable.id });
+    return moved.length > 0;
+  };
   return {
     async create(spend, result, auditId) {
       const [row] = await db
@@ -100,21 +116,13 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
       const [row] = await db.select().from(approvalsTable).where(pick(id));
       return row ? { spend: row.spend as Spend, status: row.status, paypalOrderId: row.paypalOrderId ?? undefined } : null;
     },
-    async reject(id, by) {
-      await db.update(approvalsTable).set({ status: 'rejected', rejectedBy: by }).where(pick(id));
-    },
-    async markPaid(id) {
-      await db.update(approvalsTable).set({ status: 'paid' }).where(pick(id));
-    },
+    claimCapture: (id) => move(id, 'pending', 'capturing'),
+    releaseCapture: (id) => move(id, 'capturing', 'pending'),
+    markPaid: (id) => move(id, 'capturing', 'paid'),
+    reject: (id, by) => move(id, 'pending', 'rejected', { rejectedBy: by }),
     async list() {
       const rows = await db.select().from(approvalsTable).orderBy(desc(approvalsTable.createdAt));
-      return rows.map((r) => ({
-        id: r.id,
-        spend: r.spend as Spend,
-        status: r.status,
-        reasons: r.reasons,
-        paypalOrderId: r.paypalOrderId ?? undefined,
-      }));
+      return rows.map(view);
     },
   };
 }
