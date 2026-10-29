@@ -9,3 +9,6 @@ coverage
 
 # Playwright MCP screenshots and logs
 .playwright-mcp/
+
+# Impeccable critique snapshots
+.impeccable/
