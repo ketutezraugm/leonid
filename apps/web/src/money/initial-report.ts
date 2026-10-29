@@ -51,7 +51,6 @@ const overview: AgPageState = {
         cols: [
           { id: 'payouts.recipient' },
           { id: 'payouts.kind' },
-          { id: 'payouts.wallet' },
           { id: 'payouts.country' },
           sum('payouts.amount'),
           { id: 'payouts.status' },

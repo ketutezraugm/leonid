@@ -41,7 +41,6 @@ const item = {
   destination: {
     recipientType: 'EMAIL',
     receiver: 'ada@example.com',
-    wallet: 'PAYPAL',
     countryCode: 'GB',
   },
   amount: 50000,
@@ -158,36 +157,25 @@ describe('LedgerEntry', () => {
 
 describe('Payouts', () => {
   it('accepts a PayPal email item', () => {
-    expect(PayoutItem.parse(item).destination.wallet).toBe('PAYPAL');
+    expect(PayoutItem.parse(item).destination).toEqual({
+      recipientType: 'EMAIL',
+      receiver: 'ada@example.com',
+      countryCode: 'GB',
+    });
   });
 
-  it('accepts a Venmo handle on the Venmo wallet', () => {
-    const venmo = {
-      recipientType: 'USER_HANDLE',
-      receiver: '@ada-w',
-      wallet: 'VENMO',
-      countryCode: 'US',
-    };
-    expect(PayoutDestination.safeParse(venmo).success).toBe(true);
+  it('accepts a PayPal ID recipient', () => {
+    const byId = { recipientType: 'PAYPAL_ID', receiver: 'ABCDEFGHJKMNP', countryCode: 'US' };
+    expect(PayoutDestination.safeParse(byId).success).toBe(true);
   });
 
-  it('rejects a Venmo handle on the PayPal wallet', () => {
-    const bad = {
-      recipientType: 'USER_HANDLE',
-      receiver: '@ada-w',
-      wallet: 'PAYPAL',
-      countryCode: 'US',
-    };
-    expect(PayoutDestination.safeParse(bad).success).toBe(false);
+  it('rejects handle recipients, which payouts do not support', () => {
+    const handle = { recipientType: 'USER_HANDLE', receiver: '@ada-w', countryCode: 'US' };
+    expect(PayoutDestination.safeParse(handle).success).toBe(false);
   });
 
   it('rejects PHONE recipients, which the sandbox does not support', () => {
-    const phone = {
-      recipientType: 'PHONE',
-      receiver: '+14155550123',
-      wallet: 'PAYPAL',
-      countryCode: 'US',
-    };
+    const phone = { recipientType: 'PHONE', receiver: '+14155550123', countryCode: 'US' };
     expect(PayoutDestination.safeParse(phone).success).toBe(false);
   });
 
@@ -224,9 +212,8 @@ describe('Claim', () => {
     personId: 'vol_1',
     personName: 'Sam Volunteer',
     destination: {
-      recipientType: 'USER_HANDLE',
-      receiver: '@sam-v',
-      wallet: 'VENMO',
+      recipientType: 'EMAIL',
+      receiver: 'sam@example.com',
       countryCode: 'US',
     },
     receiptUrl: '/uploads/receipt-1.jpg',

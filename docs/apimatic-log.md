@@ -26,7 +26,7 @@ The day-1 scripts in `apps/api/scripts/day1/` and their payloads were written fr
 | 1 | `/onboard-context-matic` | Tools it lists, the API catalog |
 | 2 | `/integrate-context-matic` Which PayPal APIs can you give me for TypeScript? Do you cover Invoicing v2 and Payouts? | Whether `fetch_api` returns `paypal`, and what it covers |
 | 3 | Show the endpoint and request model for listing transactions (Transaction Search) in the PayPal Server SDK for TypeScript, and compare it with `apps/api/scripts/day1/search.ts` | Differences found (date format, paging, fields) |
-| 4 | If Invoicing or Payouts is covered: show `create`, `send` and `remind` invoice, and the batch payout request including Venmo, and compare with `invoicing.ts` and `payouts.ts` | Whether the plugin settles the `VENMO` vs `Venmo` casing |
+| 4 | If Invoicing or Payouts is covered: show `create`, `send` and `remind` invoice, and the batch payout request, and compare with `invoicing.ts` and `payouts.ts` | Whether the plugin's request shapes match ours |
 | 5 | How do I create a subscription plan and subscription with the PayPal Server SDK, and which webhook events fire? | Input for F7 |
 
 ## Log
