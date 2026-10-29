@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
+import type { SessionInfo } from '@quartermaster/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { isAllowed, authorizeUrl, loginWithCode, type PayPalProfile } from '../auth/paypalLogin.js';
 import {
@@ -101,7 +102,8 @@ export function authRouter(options: AuthRouterOptions = {}) {
         res.status(401).json({ error: 'not logged in' });
         return;
       }
-      res.json({ email: session.email, via: session.via });
+      const info: SessionInfo = { email: session.email, via: session.via };
+      res.json(info);
     }),
   );
 

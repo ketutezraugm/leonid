@@ -250,3 +250,5 @@ export * from './claim.js';
 export * from './widgets.js';
 export * from './approvals.js';
 export * from './treasury.js';
+export * from './session.js';
+export * from './wallet.js';
