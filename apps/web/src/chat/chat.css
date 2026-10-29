@@ -202,9 +202,51 @@
 }
 
 .chat-checklist h3 {
-  margin: 0 0 var(--space-1);
+  margin: 0;
   font-size: 0.8125rem;
+}
+
+.chat-checklist-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) 0;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
   color: var(--color-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.chat-checklist-toggle:hover {
+  color: var(--color-text);
+}
+
+.chat-checklist-chevron {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.chat-checklist-toggle[aria-expanded='true'] .chat-checklist-chevron {
+  transform: rotate(90deg);
+}
+
+.chat-checklist-progress {
+  overflow: hidden;
+  min-width: 0;
+  margin-left: auto;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-checklist-chevron {
+    transition: none;
+  }
 }
 
 .chat-checklist ul {
@@ -215,6 +257,11 @@
   padding: 0;
   list-style: none;
   font-size: 0.875rem;
+}
+
+/* The list sets display: flex, which would beat the hidden attribute. */
+.chat-checklist ul[hidden] {
+  display: none;
 }
 
 .chat-checklist-item {
@@ -363,6 +410,14 @@
   cursor: pointer;
 }
 
+.chat-thread-actions .chat-thread-danger {
+  color: var(--color-danger);
+}
+
+.chat-thread-actions .muted {
+  font-size: 0.8rem;
+}
+
 .chat-undo {
   margin: 0;
   font-size: 0.8rem;
@@ -414,4 +469,340 @@
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+.ask-user {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.ask-user-question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.ask-user-question legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.ask-user-header {
+  display: inline-block;
+  margin-right: var(--space-2);
+  padding: 0 var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+}
+
+.ask-user-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2);
+}
+
+.ask-user-options button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.ask-user-options button strong {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.ask-user-options button:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.ask-user-options button[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.ask-user-options button[aria-pressed='true'] strong {
+  color: var(--color-accent);
+}
+
+.ask-user-question:disabled button {
+  cursor: default;
+}
+
+.ask-user-question:disabled button:not([aria-pressed='true']) {
+  opacity: 0.5;
+}
+
+.ask-user-question input {
+  padding: var(--space-2);
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.ask-user-question input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
+.ask-user-submit {
+  align-self: flex-end;
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.ask-user-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Workspace rail: the chat fills a narrow full-height column, so the thread list works like the
+   phone layout (toggled with "Chats") instead of taking a second column. */
+.chat--rail {
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.chat--rail .chat-toggle {
+  display: inline-block;
+}
+
+.chat--rail .chat-sidebar {
+  display: none;
+  width: 100%;
+  border-right: 0;
+}
+
+.chat--rail .chat-body--list .chat-sidebar {
+  display: flex;
+}
+
+.chat--rail .chat-body--list .chat-main {
+  display: none;
+}
+
+.chat--rail .chat-message {
+  max-width: 90%;
+  font-size: 0.9375rem;
+}
+
+.chat--rail .chat-suggestions {
+  grid-template-columns: 1fr;
+}
+
+.chat--rail .chat-empty {
+  text-align: left;
+}
+
+.chat--rail .chat-empty .muted {
+  margin-left: 0;
+}
+
+/* A venue search in the chat; its results open on the canvas. */
+.chat-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-self: stretch;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.chat-search.is-viewing {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.chat-search-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+.chat-search-text .muted {
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.chat-search--failed .chat-search-text .muted {
+  color: var(--color-danger);
+}
+
+.chat-search button {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.chat-search button:hover {
+  background: var(--color-accent-soft);
+}
+
+.chat-search-badge {
+  flex-shrink: 0;
+  padding: 2px var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border-radius: 999px;
+}
+
+/* What to book: a fixed checklist the agent shows before planning. */
+.bookings {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.bookings fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.bookings legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.bookings legend .muted {
+  font-size: 0.8125rem;
+}
+
+.bookings-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bookings-list label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.bookings-list label:has(input:checked) {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.bookings-list label > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bookings-list strong {
+  font-size: 0.875rem;
+}
+
+.bookings-list input {
+  margin: 2px 0 0;
+  accent-color: var(--color-accent);
+}
+
+.bookings-suggested {
+  padding: 0 var(--space-1);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border-radius: var(--radius);
+}
+
+.bookings fieldset:disabled label {
+  cursor: default;
+}
+
+.bookings fieldset:disabled label:not(:has(input:checked)) {
+  opacity: 0.5;
+}
+
+.bookings-extra {
+  padding: var(--space-2);
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.bookings-extra:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
 }

@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { createEventForThread, getEvent, listSponsors } from '../../db/events.js';
 import { listTasks } from '../../db/tasks.js';
-import { auditedExecute, type AgentContext } from '../context.js';
+import { auditedExecute, todayIso, type AgentContext } from '../context.js';
 
 const Input = z.object({
   reason: z.string().max(300).optional().describe('One sentence: why you need this'),
@@ -81,10 +81,16 @@ export function createEventTool(ctx: AgentContext) {
   return tool({
     description:
       'Create the event this chat is about, when read_event shows the chat has none and the ' +
-      'organizer described a new event. Use only details the organizer gave; ask for a missing ' +
-      'date, headcount or budget instead of guessing. Fails if the chat already has an event.',
+      'organizer described a new event. Use only details the organizer gave; use ask_user for a ' +
+      'missing date, headcount or budget instead of guessing. Fails if the chat already has an event.',
     inputSchema: CreateEventInput,
     execute: auditedExecute(ctx, 'orchestrator', 'create_event', async (input) => {
+      // A past date is a misread ("7 November" taken as last year), so fail loudly for the model.
+      if (input.date < todayIso(ctx)) {
+        throw new Error(
+          `${input.date} is in the past (today is ${todayIso(ctx)}). Use the next such date.`,
+        );
+      }
       const event = await createEventForThread(ctx.db, ctx.threadId, {
         name: input.name,
         date: new Date(input.date),

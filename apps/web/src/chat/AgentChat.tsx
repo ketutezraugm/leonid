@@ -17,8 +17,21 @@ import {
   type ChatThreadSummary,
   type ChecklistItem,
 } from '@quartermaster/shared';
+import { AskUserCard } from './AskUserCard';
+import { BookingsCard } from './BookingsCard';
 import { Checklist } from './Checklist';
-import { createdEvent, isToolPart, latestChecklist, readableError, stepOf } from './parts';
+import {
+  askUserInput,
+  chooseBookingsInput,
+  createdEvent,
+  isToolPart,
+  latestChecklist,
+  latestVenuePick,
+  readableError,
+  stepOf,
+  venueSearchOf,
+  type VenueSearch,
+} from './parts';
 import { loadActiveId, loadIds, newThreadId, saveActiveId, saveIds, withId } from './sessions';
 import { ThreadList } from './ThreadList';
 import './chat.css';
@@ -29,14 +42,15 @@ const suggestions = [
   {
     title: 'Plan a new event',
     prompt:
-      'I want to run a tech meetup in Jakarta for 30 people on a Saturday afternoon. ' +
-      'My budget is about $2,000. What do I need to prepare, and in what order?',
+      'I want to run a tech meetup in Jakarta for 30 people on Saturday, 21 November 2026, ' +
+      'from 1 pm to 5 pm. My budget is $2,000. What do I need to prepare, and in what order?',
   },
   {
     title: 'Find a venue',
     prompt:
-      'Find 3 venues in Jakarta that fit 30 people for a half-day workshop. ' +
-      'Show the price, the capacity and where you found each one.',
+      'Find 3 venues in Jakarta that fit 30 people for a half-day workshop on Saturday, ' +
+      '21 November 2026, under $500 for the room. Show the price, the capacity and where you ' +
+      'found each one.',
   },
   {
     title: 'Check my event',
@@ -51,7 +65,23 @@ const suggestions = [
   },
 ];
 
-export function AgentChat() {
+interface CanvasLink {
+  // The canvas this chat drives, when it is the workspace rail: it receives the messages and
+  // opens a venue search when the user picks one in the chat.
+  onMessagesChange?: (messages: UIMessage[]) => void;
+  viewingSearchId?: string | null;
+  onViewSearch?: (id: string) => void;
+  // Lets the canvas send a message (a venue pick) through this chat. Null while a run is going.
+  onSendChange?: (send: ((text: string) => void) | null) => void;
+}
+
+export function AgentChat({
+  variant = 'panel',
+  onMessagesChange,
+  viewingSearchId = null,
+  onViewSearch,
+  onSendChange,
+}: { variant?: 'panel' | 'rail' } & CanvasLink = {}) {
   const [threadId, setThreadId] = useState(loadActiveId);
   const [ids, setIds] = useState(() => withId(loadIds(), threadId));
   const [threads, setThreads] = useState<ChatThreadSummary[] | null>(null);
@@ -92,6 +122,11 @@ export function AgentChat() {
   }, [threadId]);
 
   const ready = loaded?.threadId === threadId ? loaded : null;
+
+  // A different chat is loading: clear the canvas instead of showing the last chat's results.
+  useEffect(() => {
+    onMessagesChange?.([]);
+  }, [threadId, onMessagesChange]);
 
   // Ask the server which of this browser's chats exist; ones it does not return (archived, never
   // messaged, gone) drop out of the local list, except the one being viewed.
@@ -169,6 +204,25 @@ export function AgentChat() {
     }
   }
 
+  // Gone for good on the server, so it also leaves this browser's list and any pending undo.
+  async function remove(id: string) {
+    const res = await fetch(`/api/chat/${id}`, { method: 'DELETE' });
+    if (!res.ok && res.status !== 404) return;
+    if (undo?.id === id) setUndo(null);
+    const rest = ids.filter((existing) => existing !== id);
+    if (id === threadId) {
+      const next = threads?.find((t) => t.id !== id)?.id ?? newThreadId();
+      setThreadId(next);
+      saveActiveId(next);
+      setIds(withId(rest, next));
+      saveIds(withId(rest, next));
+      setShowList(false);
+    } else {
+      setIds(rest);
+      saveIds(rest);
+    }
+  }
+
   async function restore() {
     if (!undo) return;
     const restored = undo;
@@ -182,7 +236,7 @@ export function AgentChat() {
   }
 
   return (
-    <section className="chat" aria-label="Agent chat">
+    <section className={`chat chat--${variant}`} aria-label="Agent chat">
       <header className="chat-header">
         <h2>Ask Quartermaster</h2>
         <button
@@ -204,6 +258,7 @@ export function AgentChat() {
             onNew={startNew}
             onRename={rename}
             onArchive={archive}
+            onDelete={remove}
           />
           {undo && (
             <p className="chat-undo" role="status">
@@ -226,6 +281,10 @@ export function AgentChat() {
               loadError={ready.error}
               onBusyChange={setBusy}
               onSettled={refreshThreads}
+              onMessagesChange={onMessagesChange}
+              viewingSearchId={viewingSearchId}
+              onViewSearch={onViewSearch}
+              onSendChange={onSendChange}
             />
           ) : (
             <p className="muted chat-loading">Loading conversation…</p>
@@ -245,7 +304,11 @@ function ChatPanel({
   loadError,
   onBusyChange,
   onSettled,
-}: {
+  onMessagesChange,
+  viewingSearchId,
+  onViewSearch,
+  onSendChange,
+}: CanvasLink & {
   threadId: string;
   initialMessages: UIMessage[];
   initialChecklist: ChecklistItem[];
@@ -279,6 +342,7 @@ function ChatPanel({
   const checklist = latestChecklist(messages) ?? initialChecklist;
   const started = messages.length > 0;
   const event = initialEvent ?? createdEvent(messages) ?? (started ? linked : null);
+  const venuePick = latestVenuePick(messages);
 
   // Tell the list when a run starts (lock switching) and ends (refresh title and order).
   const wasBusy = useRef(false);
@@ -288,6 +352,10 @@ function ChatPanel({
     wasBusy.current = busy;
   }, [busy, onBusyChange, onSettled]);
   useEffect(() => () => onBusyChange(false), [onBusyChange]);
+
+  useEffect(() => {
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   useEffect(() => {
     const log = logRef.current;
@@ -309,6 +377,16 @@ function ChatPanel({
     setDraft('');
     void sendMessage({ text: content }, linked ? { body: { eventId: linked.id } } : undefined);
   }
+
+  // Hand the canvas the current send, or null while a run is going so it cannot pick mid-run.
+  const sendRef = useRef(send);
+  useEffect(() => {
+    sendRef.current = send;
+  });
+  useEffect(() => {
+    onSendChange?.(busy ? null : (text) => sendRef.current(text));
+  }, [busy, onSendChange]);
+  useEffect(() => () => onSendChange?.(null), [onSendChange]);
 
   // Fill the box instead of sending, so the organizer can change the city, headcount or budget first.
   function pickSuggestion(prompt: string) {
@@ -384,7 +462,18 @@ function ChatPanel({
             </div>
           </div>
         ) : (
-          messages.map((message) => <Message key={message.id} message={message} />)
+          messages.map((message, index) => (
+            <Message
+              key={message.id}
+              message={message}
+              // Only the newest message's questions can still be answered.
+              answerable={!busy && index === messages.length - 1}
+              onAnswer={send}
+              viewingSearchId={viewingSearchId}
+              onViewSearch={onViewSearch}
+              pickedVenue={venuePick?.name ?? null}
+            />
+          ))
         )}
         {waitingForText && (
           <div className="chat-message chat-message--assistant chat-message--pending">
@@ -418,7 +507,19 @@ function ChatPanel({
   );
 }
 
-function Message({ message }: { message: UIMessage }) {
+function Message({
+  message,
+  answerable,
+  onAnswer,
+  viewingSearchId,
+  onViewSearch,
+  pickedVenue,
+}: Pick<CanvasLink, 'viewingSearchId' | 'onViewSearch'> & {
+  message: UIMessage;
+  pickedVenue: string | null;
+  answerable: boolean;
+  onAnswer: (text: string) => void;
+}) {
   const speaker = message.role === 'user' ? 'You: ' : 'Quartermaster: ';
   return (
     <>
@@ -433,6 +534,40 @@ function Message({ message }: { message: UIMessage }) {
           );
         }
         if (isToolPart(part)) {
+          const questions = askUserInput(part);
+          if (questions) {
+            return (
+              <AskUserCard
+                key={part.toolCallId}
+                input={questions}
+                active={answerable}
+                onAnswer={onAnswer}
+              />
+            );
+          }
+          const bookings = chooseBookingsInput(part);
+          if (bookings) {
+            return (
+              <BookingsCard
+                key={part.toolCallId}
+                input={bookings}
+                active={answerable}
+                onAnswer={onAnswer}
+              />
+            );
+          }
+          const search = onViewSearch ? venueSearchOf(part) : null;
+          if (search && onViewSearch) {
+            return (
+              <VenueSearchCard
+                key={search.id}
+                search={search}
+                viewing={search.id === viewingSearchId}
+                picked={search.candidates.find((c) => c.name === pickedVenue)?.name ?? null}
+                onView={() => onViewSearch(search.id)}
+              />
+            );
+          }
           const step = stepOf(part);
           if (!step) return null;
           return (
@@ -457,5 +592,49 @@ function Message({ message }: { message: UIMessage }) {
         return null;
       })}
     </>
+  );
+}
+
+// A venue search in the rail: the results themselves are on the canvas, this card opens them.
+function VenueSearchCard({
+  search,
+  viewing,
+  picked,
+  onView,
+}: {
+  search: VenueSearch;
+  viewing: boolean;
+  picked: string | null;
+  onView: () => void;
+}) {
+  const latest = search.activity.at(-1);
+  const found = search.candidates.length;
+  const detail =
+    search.status === 'running'
+      ? (latest?.label ?? 'Starting the venue scout') + '…'
+      : search.status === 'failed'
+        ? 'The search failed'
+        : picked
+          ? `Chosen: ${picked}`
+          : found > 0
+            ? `${found} ${found === 1 ? 'venue' : 'venues'} found · pick one to continue`
+            : 'No venues found';
+  return (
+    <div className={`chat-search chat-search--${search.status}${viewing ? ' is-viewing' : ''}`}>
+      <div className="chat-search-text">
+        <strong>Venues{search.city ? ` in ${search.city}` : ''}</strong>
+        <span className="muted">
+          {search.headcount !== null && `${search.headcount} people · `}
+          {detail}
+        </span>
+      </div>
+      {viewing ? (
+        <span className="chat-search-badge">Viewing</span>
+      ) : (
+        <button type="button" onClick={onView}>
+          View results
+        </button>
+      )}
+    </div>
   );
 }

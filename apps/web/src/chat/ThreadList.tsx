@@ -10,6 +10,7 @@ export function ThreadList({
   onNew,
   onRename,
   onArchive,
+  onDelete,
 }: {
   threads: ChatThreadSummary[];
   activeId: string;
@@ -18,8 +19,11 @@ export function ThreadList({
   onNew: () => void;
   onRename: (id: string, title: string) => void;
   onArchive: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
+  // Delete has no undo, so it asks once inline before it goes.
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
 
   function commit(thread: ChatThreadSummary) {
@@ -63,26 +67,55 @@ export function ThreadList({
                 <small className="muted">{timeAgo(thread.updatedAt)}</small>
               </button>
             )}
-            <span className="chat-thread-actions">
-              <button
-                type="button"
-                aria-label={`Rename ${thread.title}`}
-                onClick={() => {
-                  setDraft(thread.title);
-                  setEditing(thread.id);
-                }}
-              >
-                Rename
-              </button>
-              <button
-                type="button"
-                aria-label={`Archive ${thread.title}`}
-                disabled={disabled}
-                onClick={() => onArchive(thread.id)}
-              >
-                Archive
-              </button>
-            </span>
+            {confirming === thread.id ? (
+              <span className="chat-thread-actions" role="group" aria-label="Confirm delete">
+                <span className="muted">Delete for good?</span>
+                <button
+                  type="button"
+                  className="chat-thread-danger"
+                  aria-label={`Confirm delete ${thread.title}`}
+                  disabled={disabled}
+                  onClick={() => {
+                    setConfirming(null);
+                    onDelete(thread.id);
+                  }}
+                >
+                  Delete
+                </button>
+                <button type="button" onClick={() => setConfirming(null)}>
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <span className="chat-thread-actions">
+                <button
+                  type="button"
+                  aria-label={`Rename ${thread.title}`}
+                  onClick={() => {
+                    setDraft(thread.title);
+                    setEditing(thread.id);
+                  }}
+                >
+                  Rename
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Archive ${thread.title}`}
+                  disabled={disabled}
+                  onClick={() => onArchive(thread.id)}
+                >
+                  Archive
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete ${thread.title}`}
+                  disabled={disabled}
+                  onClick={() => setConfirming(thread.id)}
+                >
+                  Delete
+                </button>
+              </span>
+            )}
           </li>
         ))}
       </ul>

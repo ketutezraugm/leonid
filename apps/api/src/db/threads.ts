@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { CHAT_TITLE_MAX_LENGTH, type ChatThreadPatchRequest } from '@quartermaster/shared';
 import type { Db } from './client.js';
-import { chatThreads, events } from './schema.js';
+import { chatThreads, events, mandateItems, mandates } from './schema.js';
 
 const AUTO_TITLE_MAX = 60;
 
@@ -60,4 +60,22 @@ export async function updateThread(db: Db, threadId: string, patch: ChatThreadPa
     .where(eq(chatThreads.id, threadId))
     .returning({ id: chatThreads.id });
   return updated.length > 0;
+}
+
+// Removes the thread with its checklist for good. Events it created and audit rows stay: they are
+// event and money history, not chat. Returns false when the thread does not exist.
+export async function deleteThread(db: Db, threadId: string) {
+  return db.transaction(async (tx) => {
+    const owned = tx
+      .select({ id: mandates.id })
+      .from(mandates)
+      .where(eq(mandates.threadId, threadId));
+    await tx.delete(mandateItems).where(inArray(mandateItems.mandateId, owned));
+    await tx.delete(mandates).where(eq(mandates.threadId, threadId));
+    const deleted = await tx
+      .delete(chatThreads)
+      .where(eq(chatThreads.id, threadId))
+      .returning({ id: chatThreads.id });
+    return deleted.length > 0;
+  });
 }

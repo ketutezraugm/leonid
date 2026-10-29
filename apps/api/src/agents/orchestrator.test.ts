@@ -1,4 +1,6 @@
 import { desc } from 'drizzle-orm';
+import type { UIMessage } from 'ai';
+import { bookingChoiceText, type BookingChoice } from '@quartermaster/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../db/client.js';
 import { auditLog } from '../db/schema.js';
@@ -7,6 +9,7 @@ import { seedDemoEvent } from '../db/seed.js';
 import { listTasks } from '../db/tasks.js';
 import { createTestDb } from '../db/testing.js';
 import { ORCHESTRATOR_MAX_STEPS, createOrchestrator } from './orchestrator.js';
+import { bookingChoiceOf } from './tools/bookings.js';
 import { scriptedModel, type ScriptStep } from './testing.js';
 
 let db: Db;
@@ -20,9 +23,21 @@ beforeEach(async () => {
   await getOrCreateThread(db, threadId, eventId);
 });
 
-function run(script: ScriptStep[], opts?: { repeatLast?: boolean }) {
-  const model = scriptedModel(script, opts);
-  const agent = createOrchestrator({ db, model, eventId, threadId, goal: 'Plan swag' });
+const chosen: BookingChoice = { chosen: ['venue', 'swag'], extra: null };
+
+function run(
+  script: ScriptStep[],
+  opts?: { repeatLast?: boolean; bookings?: BookingChoice | null },
+) {
+  const model = scriptedModel(script, { repeatLast: opts?.repeatLast });
+  const agent = createOrchestrator({
+    db,
+    model,
+    eventId,
+    threadId,
+    goal: 'Plan swag',
+    bookings: opts && 'bookings' in opts ? opts.bookings : chosen,
+  });
   return { model, result: agent.generate({ prompt: 'Plan swag for OpenHack' }) };
 }
 
@@ -126,6 +141,7 @@ describe('orchestrator', () => {
       eventId: null,
       threadId: empty,
       goal: 'Plan',
+      bookings: chosen,
     });
     await agent.generate({ prompt: 'Plan a venue' });
     expect(await listTasks(db, eventId)).toEqual([]);
@@ -139,6 +155,139 @@ describe('orchestrator', () => {
     expect(model.callCount()).toBe(ORCHESTRATOR_MAX_STEPS);
   });
 
+  it('ends the turn after ask_user so the organizer can answer', async () => {
+    const questions = [
+      {
+        header: 'Date',
+        question: 'Which Saturday?',
+        options: [{ label: '7 Nov 2026' }, { label: '14 Nov 2026' }],
+      },
+      {
+        header: 'Venue',
+        question: 'What kind of venue?',
+        options: [{ label: 'Coworking space' }, { label: 'Cafe' }],
+        multiSelect: true,
+      },
+    ];
+    const { model, result } = run([
+      { tool: 'ask_user', input: { questions, reason: 'Date is missing' } },
+      { text: 'never reached' },
+    ]);
+
+    const { steps } = await result;
+    expect(model.callCount()).toBe(1);
+    expect(steps.at(-1)?.toolResults[0]?.output).toEqual({ asked: 2 });
+    const rows = await db.select().from(auditLog);
+    expect(rows.map((r) => r.action)).toEqual(['ask_user']);
+  });
+
+  it('tells the agents today and refuses an event date in the past', async () => {
+    const empty = crypto.randomUUID();
+    await getOrCreateThread(db, empty, null);
+    const model = scriptedModel([
+      {
+        tool: 'create_event',
+        input: {
+          name: 'Jakarta meetup',
+          date: '2025-11-07',
+          headcount: 30,
+          budgetTotalCents: 200_000,
+        },
+      },
+      {
+        tool: 'create_event',
+        input: {
+          name: 'Jakarta meetup',
+          date: '2026-11-07',
+          headcount: 30,
+          budgetTotalCents: 200_000,
+        },
+      },
+      { text: 'Created.' },
+    ]);
+    const agent = createOrchestrator({
+      db,
+      model,
+      eventId: null,
+      threadId: empty,
+      goal: 'Plan',
+      now: new Date('2026-10-29T08:00:00Z'),
+    });
+    await agent.generate({ prompt: 'Meetup in Jakarta on 7 November' });
+
+    expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain(
+      'Today is Thursday, 29 October 2026 (2026-10-29)',
+    );
+    const rows = await db.select().from(auditLog);
+    const created = rows.filter((r) => r.action === 'create_event');
+    expect(created.map((r) => r.reason ?? 'ok').sort()).toEqual(
+      [
+        'failed: 2025-11-07 is in the past (today is 2026-10-29). Use the next such date.',
+        'ok',
+      ].sort(),
+    );
+  });
+
+  it('refuses to plan until the organizer has chosen what to book', async () => {
+    const { result } = run(
+      [
+        { tool: 'delegate_to_planning', input: { task: 'Add swag tasks' } },
+        { text: 'I need your choice first.' },
+      ],
+      { bookings: null },
+    );
+    await result;
+    expect(await listTasks(db, eventId)).toEqual([]);
+    const rows = await db.select().from(auditLog);
+    expect(rows.find((r) => r.action === 'delegate_to_planning')?.reason).toMatch(
+      /not chosen what to book/,
+    );
+  });
+
+  it('ends the turn after choose_bookings so the organizer can tick the list', async () => {
+    const { model, result } = run(
+      [
+        { tool: 'choose_bookings', input: { suggested: ['venue', 'catering'] } },
+        { text: 'never reached' },
+      ],
+      { bookings: null },
+    );
+    const { steps } = await result;
+    expect(model.callCount()).toBe(1);
+    expect(steps.at(-1)?.toolResults[0]?.output).toEqual({
+      shown: 8,
+      suggested: ['venue', 'catering'],
+    });
+    expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain(
+      'The organizer has not chosen what to book yet.',
+    );
+  });
+
+  it('tells the agents what the organizer chose', async () => {
+    const { model, result } = run([{ text: 'Noted.' }]);
+    await result;
+    expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain(
+      'The organizer chose to book: Venue (venue), Swag (swag).',
+    );
+  });
+
+  it("reads the latest choice from the organizer's own messages only", () => {
+    const msg = (id: string, role: UIMessage['role'], text: string): UIMessage => ({
+      id,
+      role,
+      parts: [{ type: 'text', text }],
+    });
+    expect(bookingChoiceOf([msg('1', 'user', 'Plan a meetup')])).toBeNull();
+    expect(
+      bookingChoiceOf([
+        msg('1', 'user', bookingChoiceText({ chosen: ['venue'], extra: null })),
+        msg('2', 'user', bookingChoiceText({ chosen: ['catering'], extra: null })),
+        // An assistant message in the same format never counts as the organizer's choice.
+        msg('3', 'assistant', bookingChoiceText({ chosen: ['swag'], extra: null })),
+      ]),
+    ).toEqual({ chosen: ['catering'], extra: null });
+  });
+
   it('gives the orchestrator no money or raw-access tools', () => {
     const agent = createOrchestrator({
       db,
@@ -149,6 +298,8 @@ describe('orchestrator', () => {
     });
     // delegate_to_treasury only drafts invoices; sending is a treasurer-only route (treasury.test.ts).
     expect(Object.keys(agent.tools).sort()).toEqual([
+      'ask_user',
+      'choose_bookings',
       'create_event',
       'delegate_to_planning',
       'delegate_to_treasury',

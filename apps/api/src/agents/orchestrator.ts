@@ -1,9 +1,19 @@
-import { ToolLoopAgent, isStepCount, tool } from 'ai';
+import {
+  ToolLoopAgent,
+  hasToolCall,
+  isStepCount,
+  tool,
+  type StopCondition,
+  type ToolSet,
+} from 'ai';
 import { z } from 'zod';
-import { auditedExecute, auditedStream, type AgentContext } from './context.js';
+import { auditedExecute, auditedStream, todayLine, type AgentContext } from './context.js';
 import { createPlanningAgent } from './planning.js';
 import { createTreasuryAgent } from './treasury.js';
 import { createVenueScout } from './venueScout.js';
+import { VENUE_SCOUT_TOOL, scoutCandidates, venuePickLine } from './venuePick.js';
+import { ASK_USER_TOOL, askUserTool } from './tools/askUser.js';
+import { CHOOSE_BOOKINGS_TOOL, bookingChoiceLine, chooseBookingsTool } from './tools/bookings.js';
 import { updateChecklistTool } from './tools/checklist.js';
 import { createEventTool, readEventTool } from './tools/event.js';
 
@@ -17,10 +27,15 @@ How you work:
 2. Work through the steps with your tools. After finishing or blocking on a step, call update_checklist again with the full updated list.
 3. Stop and answer when every step is done or blocked. If blocked, say what has to happen and who has to do it.
 
-Your tools: read_event (read-only), create_event, update_checklist, delegate_to_planning (builds plan tasks), and delegate_to_treasury (drafts sponsor invoices).
+Your tools: read_event (read-only), create_event, update_checklist, ask_user, choose_bookings, delegate_to_planning (builds plan tasks), and delegate_to_treasury (drafts sponsor invoices).
 VENUE_TOOL_LINE
 Each chat works on its own event only. You cannot see other chats or their events, so never refer to them.
-If read_event returns no event and the organizer describes a new one, call create_event before planning, with only the details they gave. Ask for a missing date, headcount or budget instead of guessing.
+If read_event returns no event and the organizer describes a new one, call create_event before planning, with only the details they gave.
+When something you need is missing or unclear (date, headcount, budget, city, format), do not guess and do not ask in plain text: call ask_user once with every open question together, each with 2-4 likely options, your recommended one first. Then stop and wait for the answers.
+Before any planning or venue search, the organizer chooses what to book. If they have not chosen yet, call choose_bookings once the event exists (right after create_event is fine), pre-ticking what usually fits this kind of event, then stop and wait. delegate_to_planning refuses until they have chosen.
+Once they have chosen, plan and search only for the chosen items. Call choose_bookings again only if they ask to change the list.
+Work through the chosen items one at a time, venue first. When the venue scout returns venues, your turn ends so the organizer can pick one in the results; do not pick for them.
+After they pick a venue, call delegate_to_planning to add the tasks for booking that venue (name it in the task), then move straight on to the next chosen item, such as food & drinks: say whether the picked venue's page mentions catering, and plan the item or call ask_user for what you need. Keep going item by item.
 If there is no event and they ask about "my event", say this chat has no event yet: they can describe one, or start a new chat linked to an existing event.
 delegate_to_treasury only prepares invoice drafts for pledged sponsors. It never sends: the treasurer reviews and sends every invoice, so always say a draft is waiting for the treasurer, never that an invoice was sent. Give amounts from its result, which are in cents.
 You have no tools for purchases or payouts yet. You cannot send, buy or pay anything.
@@ -40,10 +55,10 @@ const venueToolLine =
 export function createOrchestrator(ctx: AgentContext) {
   const planning = createPlanningAgent(ctx);
   const search = ctx.search;
-  const instructions = baseInstructions.replace(
+  const instructions = `${todayLine(ctx)}\n${bookingChoiceLine(ctx.bookings)}\n${venuePickLine(ctx.venuePick)}\n\n${baseInstructions.replace(
     'VENUE_TOOL_LINE\n',
     search ? `${venueToolLine}\n` : '',
-  );
+  )}`;
 
   return new ToolLoopAgent({
     model: ctx.model,
@@ -52,6 +67,8 @@ export function createOrchestrator(ctx: AgentContext) {
       read_event: readEventTool(ctx, 'orchestrator'),
       create_event: createEventTool(ctx),
       update_checklist: updateChecklistTool(ctx),
+      ask_user: askUserTool(ctx),
+      choose_bookings: chooseBookingsTool(ctx),
       delegate_to_planning: tool({
         description:
           'Ask the planning agent to add tasks to the event plan (venue, swag, AV, catering, travel, ' +
@@ -61,6 +78,12 @@ export function createOrchestrator(ctx: AgentContext) {
           reason: z.string().max(300).optional().describe('One sentence: why delegate'),
         }),
         execute: auditedExecute(ctx, 'orchestrator', 'delegate_to_planning', async ({ task }) => {
+          // Enforced here, not only in the prompt: a first-time organizer picks the items first.
+          if (!ctx.bookings) {
+            throw new Error(
+              'The organizer has not chosen what to book yet. Call choose_bookings first.',
+            );
+          }
           const result = await planning.generate({ prompt: task });
           return {
             summary: result.text.trim() || 'The planning agent finished without a summary.',
@@ -87,7 +110,7 @@ export function createOrchestrator(ctx: AgentContext) {
         }),
       }),
       ...(search && {
-        delegate_to_venue_scout: tool({
+        [VENUE_SCOUT_TOOL]: tool({
           description:
             'Ask the venue scout to search the web for venues that fit the headcount. Returns up to 3 ' +
             'candidates with capacity, price and catering, each backed by a quote from a page it read, ' +
@@ -104,6 +127,9 @@ export function createOrchestrator(ctx: AgentContext) {
             'orchestrator',
             'delegate_to_venue_scout',
             async function* ({ city, headcount, notes }) {
+              if (ctx.bookings && !ctx.bookings.chosen.includes('venue')) {
+                throw new Error('The organizer marked the venue as not needed. Do not search.');
+              }
               const scout = createVenueScout(ctx, search);
               const activity: ScoutActivity[] = [];
               const result = await scout.agent.stream({
@@ -128,16 +154,32 @@ export function createOrchestrator(ctx: AgentContext) {
               yield {
                 activity,
                 candidates: scout.reported(),
-                summary: (await result.text).trim() || 'The venue scout finished without a summary.',
+                summary:
+                  (await result.text).trim() || 'The venue scout finished without a summary.',
               };
             },
           ),
         }),
       }),
     },
-    stopWhen: isStepCount(ORCHESTRATOR_MAX_STEPS),
+    // ask_user, choose_bookings and a venue search with results end the turn: the organizer's
+    // answer or venue pick comes back as the next message.
+    stopWhen: [
+      isStepCount(ORCHESTRATOR_MAX_STEPS),
+      hasToolCall(ASK_USER_TOOL),
+      hasToolCall(CHOOSE_BOOKINGS_TOOL),
+      foundVenues,
+    ],
   });
 }
+
+// A search that found nothing does not end the turn, so the agent can say so or try again.
+const foundVenues: StopCondition<ToolSet> = ({ steps }) =>
+  steps
+    .at(-1)
+    ?.toolResults.some(
+      (r) => r.toolName === VENUE_SCOUT_TOOL && scoutCandidates(r.output).length > 0,
+    ) ?? false;
 
 interface ScoutActivity {
   id: string;

@@ -24,6 +24,105 @@ export const ChecklistItem = z.object({
 });
 export type ChecklistItem = z.infer<typeof ChecklistItem>;
 
+// The agent's clarifying questions (ask_user tool). The chat shows them as choices; the user picks
+// options or writes their own, and the answers come back as the next user message.
+export const AskUserOption = z.object({
+  label: z.string().trim().min(1).max(80),
+  description: z.string().trim().max(200).optional(),
+});
+export type AskUserOption = z.infer<typeof AskUserOption>;
+
+export const AskUserQuestion = z.object({
+  header: z.string().trim().min(1).max(24).describe('Short label, e.g. "Date" or "Venue"'),
+  question: z.string().trim().min(1).max(300),
+  options: z.array(AskUserOption).min(2).max(4),
+  multiSelect: z.boolean().default(false),
+});
+export type AskUserQuestion = z.infer<typeof AskUserQuestion>;
+
+export const AskUserInput = z.object({
+  questions: z.array(AskUserQuestion).min(1).max(4),
+});
+export type AskUserInput = z.infer<typeof AskUserInput>;
+
+// What the organizer wants to book for the event (choose_bookings tool). The list is fixed here,
+// not written by the agent, so a first-time organizer sees every usual cost and nothing invented.
+export const BookingItemId = z.enum([
+  'venue',
+  'catering',
+  'av',
+  'swag',
+  'prizes',
+  'speakers',
+  'printing',
+  'photography',
+]);
+export type BookingItemId = z.infer<typeof BookingItemId>;
+
+export const BOOKING_ITEMS: readonly { id: BookingItemId; label: string; description: string }[] = [
+  { id: 'venue', label: 'Venue', description: 'The space; often needs a deposit' },
+  { id: 'catering', label: 'Food & drinks', description: 'Usually priced per person' },
+  { id: 'av', label: 'AV & Wi-Fi', description: 'Projector, mics, a faster connection' },
+  { id: 'swag', label: 'Swag', description: 'Lanyards, stickers, shirts; weeks to ship' },
+  { id: 'prizes', label: 'Prizes', description: 'For winners, if there is a competition' },
+  { id: 'speakers', label: 'Speakers & volunteers', description: 'Travel, thank-you payments' },
+  { id: 'printing', label: 'Printing & signage', description: 'Badges, banners, directions' },
+  { id: 'photography', label: 'Photo & video', description: 'Someone to capture the day' },
+];
+
+export const ChooseBookingsInput = z.object({
+  suggested: z
+    .array(BookingItemId)
+    .max(BOOKING_ITEMS.length)
+    .default([])
+    .describe('Items to pre-tick for this kind of event; the organizer decides'),
+});
+export type ChooseBookingsInput = z.infer<typeof ChooseBookingsInput>;
+
+export interface BookingChoice {
+  chosen: BookingItemId[];
+  // The organizer's own words for anything not on the list.
+  extra: string | null;
+}
+
+const BOOK_PREFIX = 'Book for this event:';
+const SKIP_PREFIX = 'Not needed:';
+const EXTRA_PREFIX = 'Also:';
+
+// The organizer's answer travels as a normal chat message, so it reads well in the thread and the
+// server can read the choice back from history with parseBookingChoice.
+export function bookingChoiceText({ chosen, extra }: BookingChoice): string {
+  const labels = (ids: readonly BookingItemId[]) =>
+    BOOKING_ITEMS.filter((item) => ids.includes(item.id))
+      .map((item) => item.label)
+      .join(', ') || 'nothing from the list';
+  const skipped = BOOKING_ITEMS.filter((item) => !chosen.includes(item.id)).map((i) => i.id);
+  return [
+    `${BOOK_PREFIX} ${labels(chosen)}`,
+    skipped.length > 0 && `${SKIP_PREFIX} ${labels(skipped)}`,
+    extra?.trim() && `${EXTRA_PREFIX} ${extra.trim()}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+export function parseBookingChoice(text: string): BookingChoice | null {
+  const lines = text.split('\n').map((line) => line.trim());
+  const book = lines.find((line) => line.startsWith(BOOK_PREFIX));
+  if (book === undefined) return null;
+  const named = book
+    .slice(BOOK_PREFIX.length)
+    .split(',')
+    .map((label) => label.trim().toLowerCase());
+  const extra = lines.find((line) => line.startsWith(EXTRA_PREFIX));
+  return {
+    chosen: BOOKING_ITEMS.filter((item) => named.includes(item.label.toLowerCase())).map(
+      (item) => item.id,
+    ),
+    extra: extra ? extra.slice(EXTRA_PREFIX.length).trim() || null : null,
+  };
+}
+
 // The event a chat works on. Each chat sees only its own event, never another chat's plan.
 export const ChatEventRef = z.object({ id: z.uuid(), name: z.string() });
 export type ChatEventRef = z.infer<typeof ChatEventRef>;
@@ -118,6 +217,30 @@ export const VenueCandidate = z.object({
   notes: z.string().max(500).optional(),
 });
 export type VenueCandidate = z.infer<typeof VenueCandidate>;
+
+// The venue the organizer picked from the scout's results. Like the booking choice, it travels as a
+// normal chat message so the server can read it back from history with parseVenuePick.
+export interface VenuePick {
+  name: string;
+  sourceUrl: string;
+}
+
+const VENUE_PREFIX = 'Venue chosen:';
+const SOURCE_PREFIX = 'Source:';
+
+export function venuePickText({ name, sourceUrl }: VenuePick): string {
+  return `${VENUE_PREFIX} ${name}\n${SOURCE_PREFIX} ${sourceUrl}`;
+}
+
+export function parseVenuePick(text: string): VenuePick | null {
+  const lines = text.split('\n').map((line) => line.trim());
+  const venue = lines.find((line) => line.startsWith(VENUE_PREFIX));
+  const source = lines.find((line) => line.startsWith(SOURCE_PREFIX));
+  if (venue === undefined || source === undefined) return null;
+  const name = venue.slice(VENUE_PREFIX.length).trim();
+  const sourceUrl = source.slice(SOURCE_PREFIX.length).trim();
+  return name && sourceUrl ? { name, sourceUrl } : null;
+}
 export * from './common.js';
 export * from './sponsor.js';
 export * from './invoice.js';

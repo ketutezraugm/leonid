@@ -17,6 +17,9 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText('Quartermaster')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Event home' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'What the agent finds shows up here' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Agent chat' })).toBeInTheDocument();
   });
 });

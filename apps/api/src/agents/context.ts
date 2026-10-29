@@ -1,6 +1,7 @@
 import type { LanguageModel } from 'ai';
 import { writeAudit } from '../db/audit.js';
 import type { Db } from '../db/client.js';
+import type { BookingChoice, VenuePick } from '@quartermaster/shared';
 import type { SearchClient } from '../search/client.js';
 
 // Everything a tool may touch, scoped to one thread and its event by the route. Tools get this by
@@ -16,10 +17,38 @@ export interface AgentContext {
   model: LanguageModel;
   // Web research backend. Absent means the venue scout is not offered at all.
   search?: SearchClient | null;
+  // What the organizer chose to book, read by the route from their own messages. Null until they
+  // choose; planning refuses to start before then.
+  bookings?: BookingChoice | null;
+  // The venue the organizer picked from the scout's results, read from their own messages.
+  venuePick?: VenuePick | null;
+  // The run's clock, so tests can pin "today". Defaults to the real time.
+  now?: Date;
+}
+
+// Today's date in UTC as YYYY-MM-DD, the format every agent date uses.
+export function todayIso(ctx: AgentContext): string {
+  return (ctx.now ?? new Date()).toISOString().slice(0, 10);
+}
+
+// Agents do not know today's date unless told; without it they ask for the year or plan in the past.
+export function todayLine(ctx: AgentContext): string {
+  const today = (ctx.now ?? new Date()).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return (
+    `Today is ${today} (${todayIso(ctx)}). Resolve partial and relative dates ("7 November", ` +
+    '"next Saturday") to the first matching day on or after today, and never ask for the year.'
+  );
 }
 
 export function requireEvent(ctx: AgentContext): string {
-  if (!ctx.eventId) throw new Error('This chat has no event yet. Create it with create_event first.');
+  if (!ctx.eventId)
+    throw new Error('This chat has no event yet. Create it with create_event first.');
   return ctx.eventId;
 }
 

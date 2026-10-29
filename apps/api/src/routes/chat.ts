@@ -12,10 +12,17 @@ import {
 } from '@quartermaster/shared';
 import { createOrchestrator } from '../agents/orchestrator.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
+import { bookingChoiceOf } from '../agents/tools/bookings.js';
+import { venuePickOf } from '../agents/venuePick.js';
 import { DbNotConfiguredError, getDb } from '../db/client.js';
 import { getDemoEvent, getEvent } from '../db/events.js';
 import { getChecklist, getOrCreateThread, getThread, saveMessages } from '../db/mandates.js';
-import { listThreadSummaries, setTitleIfMissing, updateThread } from '../db/threads.js';
+import {
+  deleteThread,
+  listThreadSummaries,
+  setTitleIfMissing,
+  updateThread,
+} from '../db/threads.js';
 import { searchClientFromEnv } from '../search/client.js';
 import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
@@ -84,6 +91,20 @@ export function createChatRouter({
     }
   });
 
+  router.delete('/:threadId', async (req, res) => {
+    const threadId = z.uuid().safeParse(req.params.threadId);
+    if (!threadId.success) return fail(res, 400, 'Invalid thread id');
+    try {
+      const found = await deleteThread(getDb(), threadId.data);
+      if (!found) return fail(res, 404, 'Conversation not found');
+      res.status(204).end();
+    } catch (err) {
+      if (sendNotConfigured(res, err)) return;
+      console.error('Deleting chat thread failed', err);
+      fail(res, 500, 'Could not delete the conversation.');
+    }
+  });
+
   router.get('/:threadId', async (req, res) => {
     const threadId = z.uuid().safeParse(req.params.threadId);
     if (!threadId.success) return fail(res, 400, 'Invalid thread id');
@@ -142,6 +163,9 @@ export function createChatRouter({
         eventId: thread.eventId,
         threadId,
         goal: message.parts[0]?.text ?? '',
+        // Read from the whole thread, not the model window, so an early choice is not forgotten.
+        bookings: bookingChoiceOf(all),
+        venuePick: venuePickOf(all),
       });
 
       // Stop the run if the browser goes away mid-stream.
