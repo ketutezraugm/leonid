@@ -69,6 +69,8 @@ describe('audit and approvals', () => {
     expect(await approvals.markPaid(id)).toBe(true);
     expect((await createDbApprovals(db).list())[0]).toMatchObject({ id, status: 'paid', reasons: ['over $200'], paypalOrderId: 'ORDER-1' });
     expect(await approvals.get('not-a-uuid')).toBeNull();
+    expect(await approvals.findByOrder('ORDER-1')).toBe(id);
+    expect(await approvals.findByOrder('ORDER-2')).toBeNull();
   });
 });
 

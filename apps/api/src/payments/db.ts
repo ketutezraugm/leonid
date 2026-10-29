@@ -111,6 +111,10 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
     async attachOrder(id, paypalOrderId) {
       await db.update(approvalsTable).set({ paypalOrderId }).where(pick(id));
     },
+    async findByOrder(paypalOrderId) {
+      const [row] = await db.select({ id: approvalsTable.id }).from(approvalsTable).where(eq(approvalsTable.paypalOrderId, paypalOrderId));
+      return row?.id ?? null;
+    },
     async get(id) {
       // A malformed id is just "not found", not a 500.
       if (!/^[0-9a-f-]{36}$/i.test(id)) return null;

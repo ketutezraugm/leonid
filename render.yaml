@@ -27,6 +27,8 @@ services:
         sync: false
       - key: PAYPAL_PROCUREMENT_WEBHOOK_ID
         sync: false
+      - key: TREASURY_PAYPAL_PAYER_ID
+        sync: false
       - key: PAYPAL_WEBHOOK_VERIFY
         value: 'true'
       - key: PAYPAL_ACCEPT_SIMULATOR_EVENTS

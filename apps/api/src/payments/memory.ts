@@ -120,6 +120,9 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
       const row = rows.get(id);
       if (row) row.paypalOrderId = paypalOrderId;
     },
+    async findByOrder(paypalOrderId) {
+      return [...rows].find(([, r]) => r.paypalOrderId === paypalOrderId)?.[0] ?? null;
+    },
     async get(id) {
       return rows.get(id) ?? null;
     },

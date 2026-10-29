@@ -61,6 +61,7 @@ export interface ApprovalRecord {
 export interface ApprovalsPort {
   create(spend: Spend, result: CheckResult, auditId: string): Promise<string>;
   attachOrder(id: string, paypalOrderId: string): Promise<void>; // one approval per PayPal order: throws if another has it
+  findByOrder(paypalOrderId: string): Promise<string | null>; // the approval id for a PayPal order, if it is ours
   get(id: string): Promise<{ spend: Spend; status: ApprovalStatus; paypalOrderId?: string } | null>;
   findByReference(referenceId: string): Promise<ApprovalRecord | null>; // the approval already made for this spend, if any
   claimCapture(id: string): Promise<boolean>;
