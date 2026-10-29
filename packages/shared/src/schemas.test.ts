@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ApprovalItem,
   BudgetBurnData,
   Claim,
   DeliveryRiskData,
@@ -333,5 +334,24 @@ describe('Widget data', () => {
   it('accepts an empty filter and rejects an empty sponsor id', () => {
     expect(WidgetFilter.parse({})).toEqual({});
     expect(WidgetFilter.safeParse({ sponsorId: '' }).success).toBe(false);
+  });
+});
+
+describe('ApprovalItem', () => {
+  const item = {
+    id: 'approval-1',
+    status: 'pending',
+    createdAt: NOW,
+    referenceId: 'prizes-1',
+    amountMinor: 42_000,
+    currency: 'USD',
+    actor: 'procurement-agent',
+    agentReason: 'prize cart',
+    reasons: ['over the $200 approval threshold'],
+  };
+
+  it('accepts every approval status, including a capture in flight', () => {
+    for (const status of ['pending', 'capturing', 'rejected', 'paid']) expect(ApprovalItem.parse({ ...item, status }).status).toBe(status);
+    expect(ApprovalItem.safeParse({ ...item, status: 'approved' }).success).toBe(false);
   });
 });
