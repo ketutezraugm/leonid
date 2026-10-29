@@ -114,7 +114,7 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
   };
 
   const executor = createExecutor({ client, check: stubCheck, audit, wallet, approvals, references });
-  return { executor, events, fetch, auditRows, approvalRows };
+  return { executor, events, fetch, auditRows, approvalRows, wallet };
 }
 
 const spend = (amountMinor: number, referenceId = 'cart-1'): Spend => ({
@@ -397,6 +397,23 @@ describe('captureApproved (the treasurer approved in the PayPal popup)', () => {
     expect(fetch.mock.calls.filter(([u]) => !String(u).includes('oauth2'))).toHaveLength(0);
     expect(approvalRows.get('AP1')?.status).toBe('pending');
     expect(auditRows[0]!.patch).toMatchObject({ outcome: 'refused', paypalId: 'ORD-1' });
+  });
+
+  it('refuses the capture if the kill switch fires between the claim and the capture, and puts the approval back', async () => {
+    const ctx = setup({
+      routes: {
+        ...approvedAtPayPal,
+        'GET /v2/checkout/orders/ORD-1': () => {
+          void ctx.wallet.markRevoked(); // the treasurer hits the kill switch while we ask PayPal about the order
+          return orderState('APPROVED', '420.00');
+        },
+      },
+      approvals: { AP1: pending },
+    });
+    expect(await ctx.executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'no_wallet' });
+    expect(captures(ctx.fetch)).toHaveLength(0);
+    expect(ctx.approvalRows.get('AP1')?.status).toBe('pending');
+    expect(ctx.auditRows[0]!.patch).toMatchObject({ outcome: 'refused', paypalId: 'ORD-1', detail: 'no active agent wallet' });
   });
 
   it('releases the claim when PayPal says the order is not approved yet, so it can be captured later', async () => {

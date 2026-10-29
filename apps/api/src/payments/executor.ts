@@ -197,6 +197,14 @@ export function createExecutor(deps: ExecutorDeps) {
         await audit.update(auditId, { outcome: 'mismatch', paypalId: paypalOrderId, detail: 'approved order amount differs from the spend' });
         return { status: 'failed', detail: 'approved order amount does not match the spend; needs a human to review' };
       }
+      // Checked again right before the capture: the kill switch may have fired while we talked to PayPal. Deleting the
+      // vault token (invariant 3) only stops vault charges; a popup-approved order is not tied to that token, so this
+      // re-check is what stops it.
+      if (!(await wallet.getActive())) {
+        await approvals.releaseCapture(approvalId);
+        await audit.update(auditId, { outcome: 'refused', paypalId: paypalOrderId, detail: 'no active agent wallet' });
+        return { status: 'refused', reason: 'no_wallet' };
+      }
       captureSent = true;
       const outcome = await settle(spend, auditId, await captureApprovedOrder(client, { referenceId: spend.referenceId, orderId: paypalOrderId }));
       if (outcome.status === 'paid') await approvals.markPaid(approvalId);
