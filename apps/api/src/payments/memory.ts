@@ -114,11 +114,18 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
       return id;
     },
     async attachOrder(id, paypalOrderId) {
+      if ([...rows].some(([other, r]) => other !== id && r.paypalOrderId === paypalOrderId)) {
+        throw new Error(`PayPal order ${paypalOrderId} already belongs to another approval`);
+      }
       const row = rows.get(id);
       if (row) row.paypalOrderId = paypalOrderId;
     },
     async get(id) {
       return rows.get(id) ?? null;
+    },
+    async findByReference(referenceId) {
+      const found = [...rows].find(([, r]) => r.spend.referenceId === referenceId);
+      return found ? view(found) : null;
     },
     claimCapture: async (id) => move(id, 'pending', 'capturing'),
     releaseCapture: async (id) => move(id, 'capturing', 'pending'),

@@ -88,6 +88,10 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
     async get(id) {
       return approvalRows.get(id) ?? null;
     },
+    async findByReference(referenceId) {
+      const found = [...approvalRows].find(([, r]) => r.spend.referenceId === referenceId);
+      return found ? { id: found[0], ...found[1], reasons: found[1].reasons ?? [] } : null;
+    },
     claimCapture: async (id) => move(id, 'pending', 'capturing'),
     releaseCapture: async (id) => move(id, 'capturing', 'pending'),
     markPaid: async (id) => move(id, 'capturing', 'paid'),
@@ -165,6 +169,7 @@ describe('requestSpend', () => {
         create: async () => 'x',
         attachOrder: async () => {},
         get: async () => null,
+        findByReference: async () => null,
         claimCapture: async () => false,
         releaseCapture: async () => false,
         markPaid: async () => false,
@@ -225,6 +230,38 @@ describe('requestSpend', () => {
     // PayPal's idempotency key (charge-cart-8) makes both calls resolve to the same order
     const keys = orderPosts(fetch).map(([, init]) => (init?.headers as Record<string, string>)['PayPal-Request-Id']);
     expect(keys).toEqual(['charge-cart-8', 'charge-cart-8']);
+  });
+
+  it('answers a retried approval spend with the existing approval instead of making a second one for the same order', async () => {
+    const { executor, fetch, approvalRows, auditRows } = setup({ routes: { 'POST /v2/checkout/orders': orderCreated } });
+    const first = await executor.requestSpend(spend(42000, 'prizes-3'));
+    expect(await executor.requestSpend(spend(42000, 'prizes-3'))).toEqual(first);
+    expect(approvalRows.size).toBe(1);
+    expect(orderPosts(fetch)).toHaveLength(1);
+    expect(auditRows.at(-1)).toMatchObject({ entry: { action: 'spend.retry' }, patch: { outcome: 'needs_approval', paypalId: 'ORD-1' } });
+  });
+
+  it.each([
+    ['paid', { status: 'paid', orderId: 'ORD-1' }],
+    ['rejected', { status: 'refused', reason: 'not_approved' }],
+    ['capturing', { status: 'refused', reason: 'in_progress' }],
+  ] as const)('answers a retry of a spend whose approval is %s from that approval, without calling PayPal', async (status, expected) => {
+    const { executor, fetch, approvalRows } = setup({ routes: { 'POST /v2/checkout/orders': orderCreated } });
+    await executor.requestSpend(spend(42000, 'prizes-4'));
+    approvalRows.get('AP1')!.status = status;
+    expect(await executor.requestSpend(spend(42000, 'prizes-4'))).toEqual(expected);
+    expect(orderPosts(fetch)).toHaveLength(1);
+    expect(approvalRows.size).toBe(1);
+  });
+
+  it('reuses the approval row when a retry follows a failed order create', async () => {
+    let attempts = 0;
+    const { executor, approvalRows } = setup({
+      routes: { 'POST /v2/checkout/orders': () => (++attempts === 1 ? json(500, { name: 'INTERNAL_SERVER_ERROR' }) : orderCreated()) },
+    });
+    expect((await executor.requestSpend(spend(42000, 'prizes-5'))).status).toBe('failed');
+    expect(await executor.requestSpend(spend(42000, 'prizes-5'))).toMatchObject({ status: 'needs_approval', approvalId: 'AP1', paypalOrderId: 'ORD-1' });
+    expect(approvalRows.size).toBe(1);
   });
 
   it('never records paid when PayPal captured a different amount than was asked', async () => {

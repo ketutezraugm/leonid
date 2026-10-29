@@ -60,8 +60,9 @@ export interface ApprovalRecord {
 }
 export interface ApprovalsPort {
   create(spend: Spend, result: CheckResult, auditId: string): Promise<string>;
-  attachOrder(id: string, paypalOrderId: string): Promise<void>;
+  attachOrder(id: string, paypalOrderId: string): Promise<void>; // one approval per PayPal order: throws if another has it
   get(id: string): Promise<{ spend: Spend; status: ApprovalStatus; paypalOrderId?: string } | null>;
+  findByReference(referenceId: string): Promise<ApprovalRecord | null>; // the approval already made for this spend, if any
   claimCapture(id: string): Promise<boolean>;
   releaseCapture(id: string): Promise<boolean>;
   markPaid(id: string): Promise<boolean>;

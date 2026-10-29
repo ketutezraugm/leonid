@@ -106,7 +106,11 @@ export const approvals = pgTable(
     rejectedBy: text('rejected_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('approvals_created_idx').on(t.createdAt)],
+  (t) => [
+    index('approvals_created_idx').on(t.createdAt),
+    // One approval per PayPal order, so an order id always resolves to a single row to capture.
+    uniqueIndex('approvals_paypal_order_unique').on(t.paypalOrderId),
+  ],
 ).enableRLS();
 
 export const chatThreads = pgTable(

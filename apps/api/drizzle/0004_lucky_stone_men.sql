@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "approvals_paypal_order_unique" ON "approvals" USING btree ("paypal_order_id");

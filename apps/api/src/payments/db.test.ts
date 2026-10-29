@@ -112,4 +112,18 @@ describe.each([
     expect(await approvals.releaseCapture(id)).toBe(true);
     expect(await approvals.reject(id, 'treasurer')).toBe(true);
   });
+
+  it('finds the approval for a reference id, and refuses a second approval for the same PayPal order', async () => {
+    const { approvals, id, auditId } = await pendingApproval('cart-9', 'ORDER-9');
+    expect(await approvals.findByReference('cart-9')).toEqual({
+      id,
+      spend: { ...spend, referenceId: 'cart-9' },
+      status: 'pending',
+      reasons: ['over $200'],
+      paypalOrderId: 'ORDER-9',
+    });
+    expect(await approvals.findByReference('cart-unknown')).toBeNull();
+    const second = await approvals.create({ ...spend, referenceId: 'cart-10' }, result, auditId);
+    await expect(approvals.attachOrder(second, 'ORDER-9')).rejects.toThrow();
+  });
 });

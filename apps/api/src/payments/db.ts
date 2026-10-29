@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { agentWallet, approvals as approvalsTable, auditLog, spendReferences, walletSetups } from '../db/schema.js';
 import type { ApprovalView, SavedWallet, WalletStore } from './memory.js';
@@ -107,6 +107,7 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
         .returning({ id: approvalsTable.id });
       return row!.id;
     },
+    // approvals_paypal_order_unique makes this throw if another approval already has the order.
     async attachOrder(id, paypalOrderId) {
       await db.update(approvalsTable).set({ paypalOrderId }).where(pick(id));
     },
@@ -115,6 +116,15 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
       if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
       const [row] = await db.select().from(approvalsTable).where(pick(id));
       return row ? { spend: row.spend as Spend, status: row.status, paypalOrderId: row.paypalOrderId ?? undefined } : null;
+    },
+    async findByReference(referenceId) {
+      const [row] = await db
+        .select()
+        .from(approvalsTable)
+        .where(sql`${approvalsTable.spend}->>'referenceId' = ${referenceId}`)
+        .orderBy(approvalsTable.createdAt)
+        .limit(1);
+      return row ? view(row) : null;
     },
     claimCapture: (id) => move(id, 'pending', 'capturing'),
     releaseCapture: (id) => move(id, 'capturing', 'pending'),

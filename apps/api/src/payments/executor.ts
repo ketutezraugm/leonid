@@ -4,7 +4,7 @@ import { fromPayPalMoney } from '../paypal/money.js';
 import { createOrder, getOrder } from '../paypal/orders.js';
 import { captureApprovedOrder, chargeVaultedWallet, type Charge } from '../paypal/spend.js';
 import { deletePaymentToken } from '../paypal/vault.js';
-import type { ApprovalStatus, ApprovalsPort, AuditPort, CheckSpend, ReferencePort, Spend, WalletPort } from './ports.js';
+import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, CheckSpend, ReferencePort, Spend, WalletPort } from './ports.js';
 
 // The only path to PayPal's money-moving calls. Every spend goes: rules check -> audit row -> pay.
 //   allow          -> charge the saved wallet (automatic payment, F13)
@@ -33,8 +33,7 @@ export interface ExecutorDeps {
 }
 
 // Every field that gives a spend its meaning or changes its rules outcome. Free-text `reason` is left out on purpose,
-// so a retry may reword it. ponytail: once references live in the DB, also store the PayPal order id per reference and
-// check that a 'same' retry resolves to that same order.
+// so a retry may reword it.
 const fingerprintOf = (s: Spend) =>
   JSON.stringify([s.amountMinor, s.currency, s.vendor ?? null, s.category ?? null, s.actor]);
 
@@ -92,12 +91,33 @@ export function createExecutor(deps: ExecutorDeps) {
     }
   }
 
+  // What an approval already made for this spend means for a retry of it. null: the approval is pending but its PayPal
+  // order was never created (PayPal failed), so the retry carries on and reuses the row.
+  function retryOutcome(existing: ApprovalRecord): SpendOutcome | null {
+    const orderId = existing.paypalOrderId;
+    if (existing.status === 'pending') {
+      return orderId ? { status: 'needs_approval', approvalId: existing.id, paypalOrderId: orderId, reasons: existing.reasons } : null;
+    }
+    if (existing.status === 'paid' && orderId) return { status: 'paid', orderId };
+    return lostClaim(existing.status);
+  }
+
   async function requestSpend(spend: Spend): Promise<SpendOutcome> {
     // One reference id = one spend. Reusing it for something else is refused before any rules check or PayPal call.
-    if ((await references.claim(spend.referenceId, fingerprintOf(spend))) === 'conflict') {
+    const claim = await references.claim(spend.referenceId, fingerprintOf(spend));
+    if (claim === 'conflict') {
       const rejectedId = await audit.record({ actor: spend.actor, action: 'spend.rejected', input: spend, reason: spend.reason });
       await audit.update(rejectedId, { outcome: 'refused', detail: `referenceId ${spend.referenceId} is already used for a different spend` });
       return { status: 'refused', reason: 'reference_reused' };
+    }
+    // A retry of a spend that already reached the treasurer answers with that approval instead of making a second one
+    // for the same PayPal order.
+    const existing = claim === 'same' ? await approvals.findByReference(spend.referenceId) : null;
+    const replay = existing && retryOutcome(existing);
+    if (existing && replay) {
+      const retryId = await audit.record({ actor: spend.actor, action: 'spend.retry', input: spend, reason: spend.reason });
+      await audit.update(retryId, { outcome: replay.status, paypalId: existing.paypalOrderId, detail: `same spend as approval ${existing.id} (${existing.status})` });
+      return replay;
     }
     const result = await check(spend);
     const auditId = await audit.record({
@@ -118,7 +138,7 @@ export function createExecutor(deps: ExecutorDeps) {
       return { status: 'refused', reason: 'no_wallet' };
     }
     if (result.decision === 'needs_approval') {
-      const approvalId = await approvals.create(spend, result, auditId);
+      const approvalId = existing?.id ?? (await approvals.create(spend, result, auditId));
       try {
         // Creating the order moves no money. The treasurer approves it in the PayPal popup; capture is a separate step.
         const order = await createOrder(client, {
