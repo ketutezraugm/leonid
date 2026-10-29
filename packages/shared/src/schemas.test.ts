@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ApprovalItem,
   BudgetBurnData,
+  ChooseBookingsInput,
   Claim,
   DeliveryRiskData,
   FundingThermometerData,
@@ -16,6 +17,8 @@ import {
   RulesHealthData,
   Sponsor,
   WidgetFilter,
+  bookingChoiceText,
+  parseBookingChoice,
 } from './index.js';
 
 const NOW = '2026-10-27T10:00:00Z';
@@ -151,7 +154,13 @@ describe('LedgerEntry', () => {
   });
 
   it('accepts an income reversal tied to the original capture', () => {
-    const reversal = { ...entry, direction: 'out', source: 'income_reversal', paypalId: 'REF-1', captureId: 'CAP-1' };
+    const reversal = {
+      ...entry,
+      direction: 'out',
+      source: 'income_reversal',
+      paypalId: 'REF-1',
+      captureId: 'CAP-1',
+    };
     expect(LedgerEntry.parse(reversal).source).toBe('income_reversal');
   });
 });
@@ -362,7 +371,31 @@ describe('ApprovalItem', () => {
   };
 
   it('accepts every approval status, including a capture in flight', () => {
-    for (const status of ['pending', 'capturing', 'rejected', 'paid']) expect(ApprovalItem.parse({ ...item, status }).status).toBe(status);
+    for (const status of ['pending', 'capturing', 'rejected', 'paid'])
+      expect(ApprovalItem.parse({ ...item, status }).status).toBe(status);
     expect(ApprovalItem.safeParse({ ...item, status: 'approved' }).success).toBe(false);
+  });
+});
+
+describe('Booking choice', () => {
+  it("round-trips the organizer's choice through the chat message", () => {
+    const text = bookingChoiceText({ chosen: ['catering', 'venue'], extra: ' A DJ ' });
+    expect(text).toBe(
+      'Book for this event: Venue, Food & drinks\n' +
+        'Not needed: AV & Wi-Fi, Swag, Prizes, Speakers & volunteers, Printing & signage, Photo & video\n' +
+        'Also: A DJ',
+    );
+    expect(parseBookingChoice(text)).toEqual({ chosen: ['venue', 'catering'], extra: 'A DJ' });
+  });
+
+  it('reads an empty list and ignores ordinary messages', () => {
+    const none = bookingChoiceText({ chosen: [], extra: 'Just pizza' });
+    expect(parseBookingChoice(none)).toEqual({ chosen: [], extra: 'Just pizza' });
+    expect(parseBookingChoice('Plan a meetup in Jakarta')).toBeNull();
+  });
+
+  it('only lets the agent suggest items from the fixed list', () => {
+    expect(ChooseBookingsInput.parse({}).suggested).toEqual([]);
+    expect(ChooseBookingsInput.safeParse({ suggested: ['yacht'] }).success).toBe(false);
   });
 });
