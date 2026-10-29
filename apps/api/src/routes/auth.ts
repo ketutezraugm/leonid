@@ -83,7 +83,10 @@ export function authRouter(options: AuthRouterOptions = {}) {
       }
       const profile: PayPalProfile = await loginWithCode(code, { clientId, clientSecret, fetch: options.fetch });
       if (!isAllowed(profile, env.TREASURER_ALLOWLIST)) {
-        console.warn('login refused: PayPal account is not on TREASURER_ALLOWLIST');
+        // Sandbox only: the PayPal id is what to copy into TREASURER_ALLOWLIST (an id always matches; an email needs PayPal's verified flag).
+        console.warn(
+          `login refused: not on TREASURER_ALLOWLIST (user_id=${profile.user_id ?? '-'} sub=${profile.sub ?? '-'} email_present=${Boolean(profile.email)} email_verified=${profile.email_verified ?? 'not stated'})`,
+        );
         res.redirect(`${base}/?login=denied`);
         return;
       }
