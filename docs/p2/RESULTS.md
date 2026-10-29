@@ -16,3 +16,9 @@
 - [ ] Webhooks (needs Render URL)
 - [ ] Log in with PayPal userinfo paths, multiple Return URLs
 - [ ] Payouts to PayPal and Venmo (Jose)
+
+## Gate 1 and Gate 2 progress (2026-10-28 and 2026-10-29)
+- Vault, automatic payment, supervised approval and kill switch re-run through our own code (executor and routes): 9 of 9 checks passed on the sandbox (Oct 28).
+- Webhook: a simulator event `PAYMENT.CAPTURE.COMPLETED` v2.0 to the Treasury URL was verified and answered 200 on staging (Oct 29). Real events signed with the actual webhook id are not seen yet.
+- `GET /v1/reporting/balances` on the Treasury app: 200, USD 5,211.57; `as_of_time` is the end of the previous reporting window; a currency with no balance returns no `balances` key.
+- Log in with PayPal: the APIMatic plugin does not cover Identity. Not yet tried against a real login.
