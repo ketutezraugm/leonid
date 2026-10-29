@@ -1,6 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
+import { ApprovalsResponse } from '@quartermaster/shared';
 import { createExecutor } from '../payments/executor.js';
 import { createMemoryApprovals, createMemoryAudit, createMemoryReferences, createMemoryWalletStore } from '../payments/memory.js';
 import { stubCheck } from '../payments/stub-check.js';
@@ -15,9 +16,12 @@ const treasurer = { 'x-treasurer-token': 'letmein' };
 
 async function build(orderStatus: () => Response) {
   const calls: string[] = [];
+  let orders = 0; // each spend gets its own PayPal order (ORD-1, ORD-2, ...): one approval per order
   const routes: Record<string, () => Response> = {
-    'POST /v2/checkout/orders': () =>
-      json(201, { id: 'ORD-1', status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: 'https://www.sandbox.paypal.com/checkoutnow?token=ORD-1' }] }),
+    'POST /v2/checkout/orders': () => {
+      const id = `ORD-${++orders}`;
+      return json(201, { id, status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: `https://www.sandbox.paypal.com/checkoutnow?token=${id}` }] });
+    },
     'GET /v2/checkout/orders/ORD-1': orderStatus,
     'POST /v2/checkout/orders/ORD-1/capture': () =>
       json(201, {
@@ -39,17 +43,19 @@ async function build(orderStatus: () => Response) {
   const wallet = createMemoryWalletStore();
   await wallet.activate({ paymentTokenId: 'pt_1' }); // the executor refuses every spend while no wallet is active (kill switch)
   const approvals = createMemoryApprovals();
+  const audit = createMemoryAudit();
   const executor = createExecutor({
     client,
     check: stubCheck,
-    audit: createMemoryAudit(),
+    audit,
     wallet,
     approvals,
     references: createMemoryReferences(),
   });
   const app = express();
+  app.use(express.json()); // as in the real app
   app.use('/api/approvals', approvalsRouter({ env, payments: () => ({ client, wallet, executor, approvals }) }));
-  return { app, calls, executor, approvals };
+  return { app, calls, executor, audit, approvals };
 }
 
 const approved = () => json(200, { id: 'ORD-1', status: 'APPROVED', purchase_units: [{ amount: { currency_code: 'USD', value: '420.00' } }], links: [] });
@@ -80,6 +86,22 @@ describe('approvals routes', () => {
     expect(res.body.approvals).toEqual([
       expect.objectContaining({ id: 'approval-1', status: 'pending', paypalOrderId: 'ORD-1', reasons: ['over the $200 approval threshold'] }),
     ]);
+    // the shape the web builds on: shared contract, flat amount, the agent's own reasoning, a created time
+    expect(ApprovalsResponse.parse(res.body).approvals[0]).toMatchObject({
+      amountMinor: 42000,
+      currency: 'USD',
+      agentReason: 'prize cart',
+      referenceId: 'prizes-1',
+      actor: 'procurement-agent',
+    });
+  });
+
+  it('lists the oldest approval first', async () => {
+    const { app, executor } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await executor.requestSpend({ ...prizeSpend, referenceId: 'prizes-2' });
+    const ids = (await request(app).get('/api/approvals').set(treasurer)).body.approvals.map((a: { referenceId: string }) => a.referenceId);
+    expect(ids).toEqual(['prizes-1', 'prizes-2']);
   });
 
   it('captures once PayPal says the order is approved', async () => {
@@ -108,6 +130,39 @@ describe('approvals routes', () => {
     const res = await request(app).post('/api/approvals/approval-1/capture').set(treasurer);
     expect(res.status).toBe(409);
     expect(calls).not.toContain('POST /v2/checkout/orders/ORD-1/capture');
+  });
+
+  it('records the decline reason in the audit log, and refuses an over-long or non-text reason', async () => {
+    const { app, executor, audit } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason: 'x'.repeat(201) })).status).toBe(400);
+    expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason: 42 })).status).toBe(400);
+    const ok = await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason: ' wrong supplier ' });
+    expect(ok.body).toEqual({ rejected: true });
+    expect(audit.rows.at(-1)).toMatchObject({ action: 'spend.rejected_by_treasurer', reason: 'treasurer rejected: wrong supplier' });
+  });
+
+  it('flattens newlines and control characters in the decline reason before it reaches the audit log', async () => {
+    const { app, executor, audit } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    const reason = 'wrong supplier\r\n[audit] approved by treasurer\u0000\u202e\u2028done';
+    expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason })).body).toEqual({ rejected: true });
+    expect(audit.rows.at(-1)?.reason).toBe('treasurer rejected: wrong supplier [audit] approved by treasurer done');
+  });
+
+  it('records a reason made only of control characters as a plain rejection', async () => {
+    const { app, executor, audit } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason: '\u0007\u0000' });
+    expect(audit.rows.at(-1)?.reason).toBe('treasurer rejected');
+  });
+
+  it('lists an approval whose capture is in flight as capturing, and it fits the shared ApprovalItem', async () => {
+    const { app, executor, approvals } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await approvals.claimCapture('approval-1');
+    const body = (await request(app).get('/api/approvals').set(treasurer)).body;
+    expect(ApprovalsResponse.parse(body).approvals[0]?.status).toBe('capturing');
   });
 
   it('rejects an approval, and a rejected one can no longer be captured', async () => {

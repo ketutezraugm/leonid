@@ -1,6 +1,8 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
+import { RejectApprovalRequest, type ApprovalItem, type ApprovalsResponse } from '@quartermaster/shared';
 import { requireTreasurer } from '../auth/treasurer.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
+import type { ApprovalView } from '../payments/memory.js';
 
 export interface ApprovalsRouterOptions {
   env?: NodeJS.ProcessEnv;
@@ -9,10 +11,25 @@ export interface ApprovalsRouterOptions {
 
 // Spends the rules sent to the treasurer. Each one has a PayPal order that only the treasurer can approve:
 //   GET  /config        public: the PayPal client id the browser SDK needs (a client id is public by design)
-//   GET  /              (treasurer) pending and past approvals with the agent's reasoning
+//   GET  /              (treasurer) ApprovalsResponse (shared): pending and past approvals, oldest first, with the agent's reasoning
 //   POST /:id/capture   (treasurer) after the PayPal popup: PayPal is asked whether the order is approved, then it is captured.
 //                       409 for every refusal, including already_paid / in_progress when the webhook got there first.
-//   POST /:id/reject    (treasurer)
+//   POST /:id/reject    (treasurer) body { reason? } (shared RejectApprovalRequest); the reason goes to the audit log
+const toItem = (v: ApprovalView): ApprovalItem => ({
+  id: v.id,
+  status: v.status,
+  createdAt: v.createdAt,
+  referenceId: v.spend.referenceId,
+  amountMinor: v.spend.amountMinor,
+  currency: v.spend.currency,
+  actor: v.spend.actor,
+  agentReason: v.spend.reason,
+  reasons: v.reasons,
+  category: v.spend.category,
+  vendor: v.spend.vendor,
+  paypalOrderId: v.paypalOrderId,
+});
+
 export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
   const env = options.env ?? process.env;
   const payments = options.payments ?? getPayments;
@@ -50,7 +67,8 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
     '/',
     guard,
     withPayments(async (_req, res, { approvals }) => {
-      res.json({ approvals: await approvals.list() });
+      const body: ApprovalsResponse = { approvals: (await approvals.list()).map(toItem) };
+      res.json(body);
     }),
   );
 
@@ -68,7 +86,12 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
     '/:id/reject',
     guard,
     withPayments(async (req, res, { executor }) => {
-      const result = await executor.rejectApproval(String(req.params.id), 'treasurer');
+      const parsed = RejectApprovalRequest.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        res.status(400).json({ error: 'reason must be text of at most 200 characters' });
+        return;
+      }
+      const result = await executor.rejectApproval(String(req.params.id), 'treasurer', parsed.data.reason);
       res.status(result.rejected ? 200 : 409).json(result);
     }),
   );

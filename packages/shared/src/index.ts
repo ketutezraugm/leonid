@@ -125,4 +125,5 @@ export * from './ledger.js';
 export * from './payout.js';
 export * from './claim.js';
 export * from './widgets.js';
+export * from './approvals.js';
 export * from './treasury.js';

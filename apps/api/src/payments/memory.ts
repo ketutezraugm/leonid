@@ -94,7 +94,7 @@ export function createMemoryReferences(): ReferencePort {
   };
 }
 
-export type ApprovalView = ApprovalRecord;
+export type ApprovalView = ApprovalRecord & { createdAt: string }; // ISO; the list is oldest first
 
 export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<ApprovalView[]> } {
   const rows = new Map<string, Omit<ApprovalView, 'id'> & { rejectedBy?: string }>();
@@ -105,12 +105,13 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
     Object.assign(row, { status: to, ...extra });
     return true;
   };
-  const view = ([id, r]: [string, Omit<ApprovalView, 'id'>]): ApprovalView =>
+  const record = ([id, r]: [string, Omit<ApprovalView, 'id'>]): ApprovalRecord =>
     ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId });
+  const view = (entry: [string, Omit<ApprovalView, 'id'>]): ApprovalView => ({ ...record(entry), createdAt: entry[1].createdAt });
   return {
     async create(spend, result) {
       const id = `approval-${rows.size + 1}`;
-      rows.set(id, { spend, status: 'pending', reasons: result.reasons });
+      rows.set(id, { spend, status: 'pending', reasons: result.reasons, createdAt: new Date().toISOString() });
       return id;
     },
     async attachOrder(id, paypalOrderId) {
@@ -128,12 +129,12 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
     },
     async findByReference(referenceId) {
       const found = [...rows].find(([, r]) => r.spend.referenceId === referenceId);
-      return found ? view(found) : null;
+      return found ? record(found) : null;
     },
     claimCapture: async (id) => move(id, 'pending', 'capturing'),
     releaseCapture: async (id) => move(id, 'capturing', 'pending'),
     markPaid: async (id) => move(id, 'capturing', 'paid'),
     reject: async (id, by) => move(id, 'pending', 'rejected', { rejectedBy: by }),
-    list: async () => [...rows].map(view),
+    list: async () => [...rows].map(view), // insertion order, so oldest first
   };
 }

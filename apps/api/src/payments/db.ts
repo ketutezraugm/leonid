@@ -1,8 +1,8 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { agentWallet, approvals as approvalsTable, auditLog, spendReferences, walletSetups } from '../db/schema.js';
 import type { ApprovalView, SavedWallet, WalletStore } from './memory.js';
-import type { ApprovalStatus, ApprovalsPort, AuditPort, ReferencePort, Spend } from './ports.js';
+import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, ReferencePort, Spend } from './ports.js';
 
 // DB-backed versions of the adapters in memory.ts: wallet, approvals, audit and used reference ids survive a restart.
 
@@ -83,13 +83,14 @@ export function createDbReferences(db: Db): ReferencePort {
 
 export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<ApprovalView[]> } {
   const pick = (id: string) => eq(approvalsTable.id, id);
-  const view = (r: typeof approvalsTable.$inferSelect): ApprovalView => ({
+  const record = (r: typeof approvalsTable.$inferSelect): ApprovalRecord => ({
     id: r.id,
     spend: r.spend as Spend,
     status: r.status,
     reasons: r.reasons,
     paypalOrderId: r.paypalOrderId ?? undefined,
   });
+  const view = (r: typeof approvalsTable.$inferSelect): ApprovalView => ({ ...record(r), createdAt: r.createdAt.toISOString() });
   // One conditional UPDATE: of two callers racing on the same row, only one sees its WHERE match.
   const move = async (id: string, from: ApprovalStatus, to: ApprovalStatus, extra: { rejectedBy?: string } = {}) => {
     const moved = await db
@@ -128,14 +129,15 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
         .where(sql`${approvalsTable.spend}->>'referenceId' = ${referenceId}`)
         .orderBy(approvalsTable.createdAt)
         .limit(1);
-      return row ? view(row) : null;
+      return row ? record(row) : null;
     },
     claimCapture: (id) => move(id, 'pending', 'capturing'),
     releaseCapture: (id) => move(id, 'capturing', 'pending'),
     markPaid: (id) => move(id, 'capturing', 'paid'),
     reject: (id, by) => move(id, 'pending', 'rejected', { rejectedBy: by }),
     async list() {
-      const rows = await db.select().from(approvalsTable).orderBy(desc(approvalsTable.createdAt));
+      // Oldest first; id breaks ties between rows created in the same instant, so the order is stable.
+      const rows = await db.select().from(approvalsTable).orderBy(asc(approvalsTable.createdAt), asc(approvalsTable.id));
       return rows.map(view);
     },
   };
