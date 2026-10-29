@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   BOOKING_ITEMS,
   ChooseBookingsInput,
+  isBookingAvailable,
   parseBookingChoice,
   type BookingChoice,
 } from '@quartermaster/shared';
@@ -19,14 +20,18 @@ const Input = ChooseBookingsInput.extend({
 export function chooseBookingsTool(ctx: AgentContext) {
   return tool({
     description:
-      'Show the organizer a checklist of what to book for this event (' +
-      BOOKING_ITEMS.map((item) => item.id).join(', ') +
-      ') so they choose before any planning. Pre-tick the items that usually fit this kind of ' +
-      'event in suggested. Your turn ends after this call; their choice is the next message.',
+      'Show the organizer a checklist of what to book for this event so they choose before any ' +
+      'planning. Only these can be booked today: ' +
+      BOOKING_ITEMS.filter((item) => item.available)
+        .map((item) => item.id)
+        .join(', ') +
+      '; the rest are shown as in development. Pre-tick what fits in suggested. Your turn ends ' +
+      'after this call; their choice is the next message.',
     inputSchema: Input,
     execute: auditedExecute(ctx, 'orchestrator', CHOOSE_BOOKINGS_TOOL, async ({ suggested }) => ({
       shown: BOOKING_ITEMS.length,
-      suggested,
+      // An in-development item cannot be pre-ticked.
+      suggested: suggested.filter(isBookingAvailable),
     })),
   });
 }
@@ -55,10 +60,14 @@ export function bookingChoiceLine(choice: BookingChoice | null | undefined): str
     BOOKING_ITEMS.filter((item) => ids.includes(item.id))
       .map((item) => `${item.label} (${item.id})`)
       .join(', ') || 'none';
-  const skipped = BOOKING_ITEMS.filter((item) => !choice.chosen.includes(item.id)).map((i) => i.id);
+  const skipped = BOOKING_ITEMS.filter(
+    (item) => item.available && !choice.chosen.includes(item.id),
+  ).map((i) => i.id);
+  const inDevelopment = BOOKING_ITEMS.filter((item) => !item.available).map((i) => i.id);
   // Free text stays in the chat message the model already sees; it is never put into instructions.
   return (
-    `The organizer chose to book: ${label(choice.chosen)}. Not needed: ${label(skipped)}.` +
+    `The organizer chose to book: ${label(choice.chosen)}. Not needed: ${label(skipped)}. ` +
+    `Still in development, so not offered yet: ${label(inDevelopment)}.` +
     (choice.extra ? ' They also named other items in their own words; see their message.' : '')
   );
 }

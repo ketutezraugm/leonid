@@ -1,0 +1,2672 @@
+[
+  {
+    "id": "id-west-jakarta-auditorium",
+    "name": "Aula Bhinneka Jakarta Barat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "West Jakarta",
+    "type": "auditorium",
+    "capacity": 460,
+    "price": {
+      "amountMinor": 23115000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 25000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Sound system",
+      "Stage",
+      "Green room"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-west-jakarta-hotel-ballroom",
+    "name": "Grand Melati Ballroom Jakarta Barat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "West Jakarta",
+    "type": "hotel_ballroom",
+    "capacity": 540,
+    "price": null,
+    "deposit": {
+      "amountMinor": 25000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Stage",
+      "Prayer room",
+      "Wi-Fi",
+      "Sound system"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-west-jakarta-restaurant",
+    "name": "Rumah Makan Lestari Jakarta Barat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "West Jakarta",
+    "type": "restaurant",
+    "capacity": 30,
+    "price": {
+      "amountMinor": 270000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Set menu",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-south-jakarta-auditorium",
+    "name": "Aula Bhinneka Jakarta Selatan",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "South Jakarta",
+    "type": "auditorium",
+    "capacity": 400,
+    "price": {
+      "amountMinor": 20045000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 27000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Sound system",
+      "Stage",
+      "Tiered seating"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-south-jakarta-coworking",
+    "name": "Kerja Bareng Hub Jakarta Selatan",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "South Jakarta",
+    "type": "coworking",
+    "capacity": 120,
+    "price": {
+      "amountMinor": 2180000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 14000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Breakout rooms",
+      "Power at every seat",
+      "Fast Wi-Fi",
+      "Projector"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-south-jakarta-meeting-room",
+    "name": "Meeting Point Jakarta Selatan",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "South Jakarta",
+    "type": "meeting_room",
+    "capacity": 40,
+    "price": {
+      "amountMinor": 320000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Video conferencing",
+      "Projector",
+      "Parking",
+      "Whiteboard"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-central-jakarta-auditorium",
+    "name": "Aula Nusantara Jakarta Pusat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "Central Jakarta",
+    "type": "auditorium",
+    "capacity": 210,
+    "price": {
+      "amountMinor": 14630000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 32000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Green room",
+      "Dual projectors",
+      "Sound system",
+      "Stage"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-central-jakarta-coworking",
+    "name": "Kerja Bareng Hub Jakarta Pusat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "Central Jakarta",
+    "type": "coworking",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 2095000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Power at every seat",
+      "Pantry",
+      "Fast Wi-Fi",
+      "Projector"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-central-jakarta-meeting-room",
+    "name": "Meeting Point Jakarta Pusat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "Central Jakarta",
+    "type": "meeting_room",
+    "capacity": 40,
+    "price": null,
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Whiteboard",
+      "Wi-Fi",
+      "Video conferencing"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-north-jakarta-restaurant",
+    "name": "Dapur Kayu Jakarta Utara",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "North Jakarta",
+    "type": "restaurant",
+    "capacity": 70,
+    "price": null,
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-north-jakarta-coworking",
+    "name": "Titik Temu Coworking Jakarta Utara",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "North Jakarta",
+    "type": "coworking",
+    "capacity": 200,
+    "price": {
+      "amountMinor": 1635000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Projector",
+      "Breakout rooms",
+      "Power at every seat"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-north-jakarta-convention-hall",
+    "name": "Convention Hall Jakarta Utara",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "North Jakarta",
+    "type": "convention_hall",
+    "capacity": 1390,
+    "price": null,
+    "deposit": {
+      "amountMinor": 79000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Generator",
+      "Parking",
+      "Sound system",
+      "Stage"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-east-jakarta-hotel-ballroom",
+    "name": "Grand Melati Ballroom Jakarta Timur",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "East Jakarta",
+    "type": "hotel_ballroom",
+    "capacity": 490,
+    "price": {
+      "amountMinor": 370000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 18000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Stage",
+      "Sound system",
+      "Prayer room",
+      "Wi-Fi"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-east-jakarta-meeting-room",
+    "name": "Meeting Point Jakarta Timur",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "East Jakarta",
+    "type": "meeting_room",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 285000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Video conferencing",
+      "Projector",
+      "Wi-Fi",
+      "Parking"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-east-jakarta-restaurant",
+    "name": "Dapur Kayu Jakarta Timur",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "East Jakarta",
+    "type": "restaurant",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 230000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "Private room",
+      "TV screen"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-dago-convention-hall",
+    "name": "Balai Pertemuan Dago",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Dago",
+    "type": "convention_hall",
+    "capacity": null,
+    "price": {
+      "amountMinor": 59355000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 67000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Generator",
+      "Loading dock",
+      "Sound system",
+      "Booth space"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-dago-hotel-ballroom",
+    "name": "Hotel Kenanga Dago",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Dago",
+    "type": "hotel_ballroom",
+    "capacity": 320,
+    "price": null,
+    "deposit": {
+      "amountMinor": 30000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Sound system",
+      "Parking",
+      "Stage",
+      "Projector"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-dago-auditorium",
+    "name": "Auditorium Cipta Dago",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Dago",
+    "type": "auditorium",
+    "capacity": 170,
+    "price": {
+      "amountMinor": 11235000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 36000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Green room",
+      "Stage",
+      "Tiered seating"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-braga-hotel-ballroom",
+    "name": "Grand Melati Ballroom Braga",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Braga",
+    "type": "hotel_ballroom",
+    "capacity": 190,
+    "price": {
+      "amountMinor": 315000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 23000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Sound system",
+      "Prayer room",
+      "Wi-Fi"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-braga-meeting-room",
+    "name": "Paket Meeting Lentera Braga",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Braga",
+    "type": "meeting_room",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 335000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Whiteboard",
+      "Video conferencing",
+      "Parking"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-braga-coworking",
+    "name": "Titik Temu Coworking Braga",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Braga",
+    "type": "coworking",
+    "capacity": null,
+    "price": null,
+    "deposit": {
+      "amountMinor": 15000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Projector",
+      "Breakout rooms",
+      "Pantry"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-pasteur-convention-hall",
+    "name": "Convention Hall Pasteur",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Pasteur",
+    "type": "convention_hall",
+    "capacity": 1380,
+    "price": null,
+    "deposit": {
+      "amountMinor": 79000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Sound system",
+      "Booth space",
+      "Stage",
+      "Generator"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-pasteur-meeting-room",
+    "name": "Paket Meeting Lentera Pasteur",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Pasteur",
+    "type": "meeting_room",
+    "capacity": 120,
+    "price": null,
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Wi-Fi",
+      "Whiteboard",
+      "Projector",
+      "Video conferencing"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-pasteur-coworking",
+    "name": "Ruang Kolaborasi Pasteur",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Pasteur",
+    "type": "coworking",
+    "capacity": 130,
+    "price": {
+      "amountMinor": 2040000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 12000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Pantry",
+      "Projector",
+      "Breakout rooms"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-gubeng-hotel-ballroom",
+    "name": "Grand Melati Ballroom Gubeng",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Gubeng",
+    "type": "hotel_ballroom",
+    "capacity": 220,
+    "price": null,
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Projector",
+      "Wi-Fi",
+      "Stage"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-gubeng-meeting-room",
+    "name": "Meeting Point Gubeng",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Gubeng",
+    "type": "meeting_room",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 220000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 5000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Whiteboard",
+      "Video conferencing",
+      "Parking"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-gubeng-auditorium",
+    "name": "Aula Bhinneka Gubeng",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Gubeng",
+    "type": "auditorium",
+    "capacity": 500,
+    "price": {
+      "amountMinor": 11115000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 49000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Dual projectors",
+      "Tiered seating",
+      "Green room",
+      "Stage"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-tegalsari-restaurant",
+    "name": "Dapur Kayu Tegalsari",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Tegalsari",
+    "type": "restaurant",
+    "capacity": null,
+    "price": {
+      "amountMinor": 130000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-tegalsari-hotel-ballroom",
+    "name": "Hotel Cendana Tegalsari",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Tegalsari",
+    "type": "hotel_ballroom",
+    "capacity": null,
+    "price": {
+      "amountMinor": 285000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 20000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Stage",
+      "Wi-Fi",
+      "Sound system"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-tegalsari-rooftop",
+    "name": "Teras Langit Tegalsari",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Tegalsari",
+    "type": "rooftop",
+    "capacity": 50,
+    "price": null,
+    "deposit": {
+      "amountMinor": 57000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Rain cover",
+      "Bar",
+      "Outdoor lighting",
+      "Sound system"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-wiyung-coworking",
+    "name": "Ruang Kolaborasi Wiyung",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Wiyung",
+    "type": "coworking",
+    "capacity": null,
+    "price": {
+      "amountMinor": 1140000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 19000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Power at every seat",
+      "Breakout rooms",
+      "Pantry",
+      "Projector"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-wiyung-hotel-ballroom",
+    "name": "Hotel Cendana Wiyung",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Wiyung",
+    "type": "hotel_ballroom",
+    "capacity": 520,
+    "price": {
+      "amountMinor": 355000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 43000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Prayer room",
+      "Parking",
+      "Stage",
+      "Sound system"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-wiyung-rooftop",
+    "name": "Teras Langit Wiyung",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Wiyung",
+    "type": "rooftop",
+    "capacity": 160,
+    "price": {
+      "amountMinor": 36775000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "deposit": {
+      "amountMinor": 37000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "City view",
+      "Bar",
+      "Rain cover",
+      "Sound system"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-malioboro-hotel-ballroom",
+    "name": "Hotel Cendana Malioboro",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Malioboro",
+    "type": "hotel_ballroom",
+    "capacity": 370,
+    "price": {
+      "amountMinor": 545000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 39000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Parking",
+      "Stage",
+      "Sound system",
+      "Wi-Fi"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-malioboro-meeting-room",
+    "name": "Paket Meeting Lentera Malioboro",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Malioboro",
+    "type": "meeting_room",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 240000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Parking",
+      "Video conferencing",
+      "Whiteboard"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-malioboro-coworking",
+    "name": "Titik Temu Coworking Malioboro",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Malioboro",
+    "type": "coworking",
+    "capacity": 180,
+    "price": {
+      "amountMinor": 2160000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 16000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Projector",
+      "Breakout rooms",
+      "Power at every seat"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-sleman-convention-hall",
+    "name": "Convention Hall Sleman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Sleman",
+    "type": "convention_hall",
+    "capacity": 860,
+    "price": {
+      "amountMinor": 66650000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 69000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Loading dock",
+      "Booth space",
+      "Stage",
+      "Sound system"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-sleman-meeting-room",
+    "name": "Ruang Rapat Sinergi Sleman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Sleman",
+    "type": "meeting_room",
+    "capacity": 100,
+    "price": null,
+    "deposit": {
+      "amountMinor": 12000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Video conferencing",
+      "Parking",
+      "Whiteboard"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-sleman-hotel-ballroom",
+    "name": "Hotel Cendana Sleman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Sleman",
+    "type": "hotel_ballroom",
+    "capacity": 280,
+    "price": null,
+    "deposit": {
+      "amountMinor": 46000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Stage",
+      "Sound system",
+      "Projector"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-prawirotaman-hotel-ballroom",
+    "name": "Grand Melati Ballroom Prawirotaman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Prawirotaman",
+    "type": "hotel_ballroom",
+    "capacity": 560,
+    "price": {
+      "amountMinor": 510000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 18000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Parking",
+      "Stage",
+      "Sound system"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-prawirotaman-auditorium",
+    "name": "Auditorium Cipta Prawirotaman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Prawirotaman",
+    "type": "auditorium",
+    "capacity": 390,
+    "price": {
+      "amountMinor": 15365000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Tiered seating",
+      "Stage",
+      "Sound system",
+      "Dual projectors"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-prawirotaman-meeting-room",
+    "name": "Ruang Rapat Sinergi Prawirotaman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Prawirotaman",
+    "type": "meeting_room",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 215000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 14000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Video conferencing",
+      "Wi-Fi",
+      "Whiteboard"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-denpasar-auditorium",
+    "name": "Aula Bhinneka Denpasar",
+    "country": "id",
+    "city": "Bali",
+    "area": "Denpasar",
+    "type": "auditorium",
+    "capacity": 380,
+    "price": {
+      "amountMinor": 11495000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 31000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Sound system",
+      "Green room",
+      "Dual projectors",
+      "Stage"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-denpasar-hotel-ballroom",
+    "name": "Hotel Kenanga Denpasar",
+    "country": "id",
+    "city": "Bali",
+    "area": "Denpasar",
+    "type": "hotel_ballroom",
+    "capacity": 420,
+    "price": null,
+    "deposit": {
+      "amountMinor": 48000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Prayer room",
+      "Projector",
+      "Sound system",
+      "Parking"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-denpasar-meeting-room",
+    "name": "Meeting Point Denpasar",
+    "country": "id",
+    "city": "Bali",
+    "area": "Denpasar",
+    "type": "meeting_room",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 175000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Video conferencing",
+      "Whiteboard",
+      "Projector",
+      "Parking"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-canggu-hotel-ballroom",
+    "name": "Grand Melati Ballroom Canggu",
+    "country": "id",
+    "city": "Bali",
+    "area": "Canggu",
+    "type": "hotel_ballroom",
+    "capacity": 470,
+    "price": {
+      "amountMinor": 425000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 34000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Prayer room",
+      "Wi-Fi",
+      "Parking",
+      "Projector"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-canggu-meeting-room",
+    "name": "Paket Meeting Lentera Canggu",
+    "country": "id",
+    "city": "Bali",
+    "area": "Canggu",
+    "type": "meeting_room",
+    "capacity": null,
+    "price": {
+      "amountMinor": 195000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Video conferencing",
+      "Parking",
+      "Whiteboard"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-canggu-restaurant",
+    "name": "Restoran Rempah Canggu",
+    "country": "id",
+    "city": "Bali",
+    "area": "Canggu",
+    "type": "restaurant",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 185000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Wi-Fi",
+      "TV screen",
+      "Set menu",
+      "Private room"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-ubud-hotel-ballroom",
+    "name": "Grand Melati Ballroom Ubud",
+    "country": "id",
+    "city": "Bali",
+    "area": "Ubud",
+    "type": "hotel_ballroom",
+    "capacity": 290,
+    "price": {
+      "amountMinor": 455000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 17000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Stage",
+      "Parking",
+      "Prayer room",
+      "Wi-Fi"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-ubud-meeting-room",
+    "name": "Meeting Point Ubud",
+    "country": "id",
+    "city": "Bali",
+    "area": "Ubud",
+    "type": "meeting_room",
+    "capacity": 50,
+    "price": {
+      "amountMinor": 240000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 14000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Whiteboard",
+      "Video conferencing",
+      "Parking",
+      "Projector"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-ubud-coworking",
+    "name": "Kerja Bareng Hub Ubud",
+    "country": "id",
+    "city": "Bali",
+    "area": "Ubud",
+    "type": "coworking",
+    "capacity": 180,
+    "price": null,
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Pantry",
+      "Breakout rooms",
+      "Projector",
+      "Power at every seat"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "my-bukit-bintang-hotel-ballroom",
+    "name": "Cinnamon Grand Ballroom Bukit Bintang",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bukit Bintang",
+    "type": "hotel_ballroom",
+    "capacity": 570,
+    "price": {
+      "amountMinor": 9600,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 15000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Projector",
+      "Sound system",
+      "Parking",
+      "Wi-Fi"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-bukit-bintang-meeting-room",
+    "name": "Boardroom Collective Bukit Bintang",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bukit Bintang",
+    "type": "meeting_room",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 11900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Parking",
+      "Video conferencing",
+      "Wi-Fi",
+      "Whiteboard"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-bukit-bintang-coworking",
+    "name": "Basecamp Coworking Bukit Bintang",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bukit Bintang",
+    "type": "coworking",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 36800,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 17000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Power at every seat",
+      "Fast Wi-Fi",
+      "Projector",
+      "Breakout rooms"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-bangsar-auditorium",
+    "name": "Keynote Hall Bangsar",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bangsar",
+    "type": "auditorium",
+    "capacity": 120,
+    "price": {
+      "amountMinor": 821700,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 42000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Tiered seating",
+      "Stage",
+      "Sound system",
+      "Dual projectors"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-bangsar-convention-hall",
+    "name": "The Assembly Hall Bangsar",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bangsar",
+    "type": "convention_hall",
+    "capacity": 910,
+    "price": {
+      "amountMinor": 2549500,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 56000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Sound system",
+      "Generator",
+      "Stage"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-bangsar-hotel-ballroom",
+    "name": "Harbourline Hotel Bangsar",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bangsar",
+    "type": "hotel_ballroom",
+    "capacity": 520,
+    "price": {
+      "amountMinor": 18500,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 44000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Parking",
+      "Stage",
+      "Wi-Fi",
+      "Prayer room"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-klcc-auditorium",
+    "name": "Keynote Hall KLCC",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "KLCC",
+    "type": "auditorium",
+    "capacity": null,
+    "price": {
+      "amountMinor": 713900,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 31000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Tiered seating",
+      "Dual projectors",
+      "Green room",
+      "Stage"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-klcc-coworking",
+    "name": "Basecamp Coworking KLCC",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "KLCC",
+    "type": "coworking",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 51400,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 16000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Pantry",
+      "Breakout rooms",
+      "Projector",
+      "Power at every seat"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-klcc-convention-hall",
+    "name": "Convention Centre KLCC",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "KLCC",
+    "type": "convention_hall",
+    "capacity": 1260,
+    "price": null,
+    "deposit": {
+      "amountMinor": 66000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Loading dock",
+      "Booth space",
+      "Sound system",
+      "Generator"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-mont-kiara-restaurant",
+    "name": "Copper Pot Dining Mont Kiara",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Mont Kiara",
+    "type": "restaurant",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 11900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Wi-Fi",
+      "TV screen",
+      "Set menu",
+      "Private room"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-mont-kiara-hotel-ballroom",
+    "name": "Cinnamon Grand Ballroom Mont Kiara",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Mont Kiara",
+    "type": "hotel_ballroom",
+    "capacity": 490,
+    "price": {
+      "amountMinor": 10100,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 15000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Stage",
+      "Sound system",
+      "Projector",
+      "Parking"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-mont-kiara-convention-hall",
+    "name": "Exhibition Hall Mont Kiara",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Mont Kiara",
+    "type": "convention_hall",
+    "capacity": 470,
+    "price": {
+      "amountMinor": 2596500,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 71000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Parking",
+      "Booth space",
+      "Sound system",
+      "Generator"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-damansara-restaurant",
+    "name": "Lantern Kitchen Damansara",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Damansara",
+    "type": "restaurant",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 6400,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "TV screen",
+      "Private room",
+      "Set menu",
+      "Wi-Fi"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-damansara-meeting-room",
+    "name": "Boardroom Collective Damansara",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Damansara",
+    "type": "meeting_room",
+    "capacity": null,
+    "price": {
+      "amountMinor": 8900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Video conferencing",
+      "Projector",
+      "Parking",
+      "Whiteboard"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-damansara-hotel-ballroom",
+    "name": "The Meridian Ballroom Damansara",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Damansara",
+    "type": "hotel_ballroom",
+    "capacity": 180,
+    "price": {
+      "amountMinor": 16600,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 15000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Projector",
+      "Stage",
+      "Wi-Fi"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-ss2-convention-hall",
+    "name": "Exhibition Hall SS2",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "SS2",
+    "type": "convention_hall",
+    "capacity": 1250,
+    "price": {
+      "amountMinor": 1553100,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 49000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Sound system",
+      "Stage",
+      "Generator",
+      "Parking"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-ss2-rooftop",
+    "name": "Skyline Deck SS2",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "SS2",
+    "type": "rooftop",
+    "capacity": 120,
+    "price": null,
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Outdoor lighting",
+      "Sound system",
+      "Rain cover",
+      "Bar"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "my-ss2-meeting-room",
+    "name": "Quorum Meeting Suites SS2",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "SS2",
+    "type": "meeting_room",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 10800,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Wi-Fi",
+      "Whiteboard",
+      "Parking",
+      "Projector"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-section-13-restaurant",
+    "name": "Copper Pot Dining Section 13",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Section 13",
+    "type": "restaurant",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 11400,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-section-13-meeting-room",
+    "name": "Quorum Meeting Suites Section 13",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Section 13",
+    "type": "meeting_room",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 9000,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Wi-Fi",
+      "Projector",
+      "Video conferencing",
+      "Parking"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-section-13-convention-hall",
+    "name": "The Assembly Hall Section 13",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Section 13",
+    "type": "convention_hall",
+    "capacity": 1080,
+    "price": {
+      "amountMinor": 1703300,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 46000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Loading dock",
+      "Parking",
+      "Booth space",
+      "Sound system"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-george-town-auditorium",
+    "name": "Keynote Hall George Town",
+    "country": "my",
+    "city": "Penang",
+    "area": "George Town",
+    "type": "auditorium",
+    "capacity": 230,
+    "price": {
+      "amountMinor": 589500,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 34000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Green room",
+      "Tiered seating",
+      "Stage",
+      "Sound system"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-george-town-coworking",
+    "name": "The Workbench George Town",
+    "country": "my",
+    "city": "Penang",
+    "area": "George Town",
+    "type": "coworking",
+    "capacity": 130,
+    "price": {
+      "amountMinor": 29100,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 18000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Power at every seat",
+      "Breakout rooms",
+      "Projector",
+      "Pantry"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-george-town-convention-hall",
+    "name": "Exhibition Hall George Town",
+    "country": "my",
+    "city": "Penang",
+    "area": "George Town",
+    "type": "convention_hall",
+    "capacity": 1380,
+    "price": {
+      "amountMinor": 1147200,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 75000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Booth space",
+      "Sound system",
+      "Loading dock",
+      "Stage"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-bayan-lepas-auditorium",
+    "name": "Keynote Hall Bayan Lepas",
+    "country": "my",
+    "city": "Penang",
+    "area": "Bayan Lepas",
+    "type": "auditorium",
+    "capacity": 230,
+    "price": null,
+    "deposit": {
+      "amountMinor": 32000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Stage",
+      "Sound system",
+      "Tiered seating",
+      "Dual projectors"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-bayan-lepas-coworking",
+    "name": "Basecamp Coworking Bayan Lepas",
+    "country": "my",
+    "city": "Penang",
+    "area": "Bayan Lepas",
+    "type": "coworking",
+    "capacity": 190,
+    "price": {
+      "amountMinor": 80700,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Projector",
+      "Breakout rooms",
+      "Power at every seat"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-bayan-lepas-meeting-room",
+    "name": "Quorum Meeting Suites Bayan Lepas",
+    "country": "my",
+    "city": "Penang",
+    "area": "Bayan Lepas",
+    "type": "meeting_room",
+    "capacity": 40,
+    "price": {
+      "amountMinor": 10200,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Parking",
+      "Wi-Fi",
+      "Video conferencing",
+      "Whiteboard"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-iskandar-puteri-hotel-ballroom",
+    "name": "Cinnamon Grand Ballroom Iskandar Puteri",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Iskandar Puteri",
+    "type": "hotel_ballroom",
+    "capacity": 170,
+    "price": null,
+    "deposit": {
+      "amountMinor": 26000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Sound system",
+      "Prayer room",
+      "Parking"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-iskandar-puteri-restaurant",
+    "name": "The Long Table Iskandar Puteri",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Iskandar Puteri",
+    "type": "restaurant",
+    "capacity": 30,
+    "price": {
+      "amountMinor": 11900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Wi-Fi",
+      "TV screen",
+      "Private room",
+      "Set menu"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-iskandar-puteri-meeting-room",
+    "name": "The Briefing Rooms Iskandar Puteri",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Iskandar Puteri",
+    "type": "meeting_room",
+    "capacity": 120,
+    "price": {
+      "amountMinor": 13200,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Parking",
+      "Video conferencing",
+      "Wi-Fi",
+      "Whiteboard"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-taman-molek-coworking",
+    "name": "Common Ground Studio Taman Molek",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Taman Molek",
+    "type": "coworking",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 62100,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Projector",
+      "Breakout rooms",
+      "Pantry",
+      "Power at every seat"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-taman-molek-restaurant",
+    "name": "The Long Table Taman Molek",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Taman Molek",
+    "type": "restaurant",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 9900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Private room",
+      "TV screen",
+      "Wi-Fi",
+      "Set menu"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-taman-molek-meeting-room",
+    "name": "Boardroom Collective Taman Molek",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Taman Molek",
+    "type": "meeting_room",
+    "capacity": 40,
+    "price": {
+      "amountMinor": 8300,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Whiteboard",
+      "Wi-Fi",
+      "Video conferencing"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "sg-raffles-place-auditorium",
+    "name": "Lecture Theatre Raffles Place",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Raffles Place",
+    "type": "auditorium",
+    "capacity": 430,
+    "price": {
+      "amountMinor": 615700,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 34000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Tiered seating",
+      "Stage",
+      "Sound system",
+      "Green room"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "sg-raffles-place-coworking",
+    "name": "Basecamp Coworking Raffles Place",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Raffles Place",
+    "type": "coworking",
+    "capacity": 140,
+    "price": {
+      "amountMinor": 103500,
+      "currency": "SGD",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 13000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Power at every seat",
+      "Projector",
+      "Breakout rooms"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "sg-raffles-place-restaurant",
+    "name": "Copper Pot Dining Raffles Place",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Raffles Place",
+    "type": "restaurant",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 5400,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 5000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "sg-orchard-rooftop",
+    "name": "Skyline Deck Orchard",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Orchard",
+    "type": "rooftop",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 650900,
+      "currency": "SGD",
+      "per": "package"
+    },
+    "deposit": {
+      "amountMinor": 55000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Bar",
+      "Sound system",
+      "City view",
+      "Outdoor lighting"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "sg-orchard-hotel-ballroom",
+    "name": "Harbourline Hotel Orchard",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Orchard",
+    "type": "hotel_ballroom",
+    "capacity": 200,
+    "price": {
+      "amountMinor": 11900,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 37000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Sound system",
+      "Projector",
+      "Prayer room",
+      "Wi-Fi"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "sg-orchard-convention-hall",
+    "name": "The Assembly Hall Orchard",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Orchard",
+    "type": "convention_hall",
+    "capacity": 640,
+    "price": null,
+    "deposit": {
+      "amountMinor": 77000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Sound system",
+      "Booth space",
+      "Stage",
+      "Loading dock"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-one-north-coworking",
+    "name": "Basecamp Coworking one-north",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "one-north",
+    "type": "coworking",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 111000,
+      "currency": "SGD",
+      "per": "hour"
+    },
+    "deposit": {
+      "amountMinor": 17000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Power at every seat",
+      "Fast Wi-Fi",
+      "Pantry",
+      "Projector"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "sg-one-north-convention-hall",
+    "name": "Exhibition Hall one-north",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "one-north",
+    "type": "convention_hall",
+    "capacity": 950,
+    "price": null,
+    "deposit": {
+      "amountMinor": 70000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Sound system",
+      "Stage",
+      "Loading dock",
+      "Booth space"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-one-north-meeting-room",
+    "name": "Quorum Meeting Suites one-north",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "one-north",
+    "type": "meeting_room",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 10500,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Parking",
+      "Projector",
+      "Whiteboard",
+      "Wi-Fi"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "sg-bugis-hotel-ballroom",
+    "name": "Cinnamon Grand Ballroom Bugis",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Bugis",
+    "type": "hotel_ballroom",
+    "capacity": 200,
+    "price": {
+      "amountMinor": 13200,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 28000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Prayer room",
+      "Wi-Fi",
+      "Parking",
+      "Stage"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "sg-bugis-meeting-room",
+    "name": "Boardroom Collective Bugis",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Bugis",
+    "type": "meeting_room",
+    "capacity": 40,
+    "price": {
+      "amountMinor": 8000,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Projector",
+      "Video conferencing",
+      "Whiteboard",
+      "Parking"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "sg-bugis-convention-hall",
+    "name": "Convention Centre Bugis",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Bugis",
+    "type": "convention_hall",
+    "capacity": 460,
+    "price": {
+      "amountMinor": 3111400,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 73000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Generator",
+      "Parking",
+      "Sound system",
+      "Stage"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-jurong-east-restaurant",
+    "name": "Copper Pot Dining Jurong East",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Jurong East",
+    "type": "restaurant",
+    "capacity": null,
+    "price": {
+      "amountMinor": 6900,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Wi-Fi",
+      "TV screen",
+      "Private room",
+      "Set menu"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "sg-jurong-east-hotel-ballroom",
+    "name": "Harbourline Hotel Jurong East",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Jurong East",
+    "type": "hotel_ballroom",
+    "capacity": 220,
+    "price": null,
+    "deposit": {
+      "amountMinor": 31000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Prayer room",
+      "Stage",
+      "Sound system",
+      "Projector"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "sg-jurong-east-convention-hall",
+    "name": "Exhibition Hall Jurong East",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Jurong East",
+    "type": "convention_hall",
+    "capacity": 380,
+    "price": {
+      "amountMinor": 3257700,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "deposit": {
+      "amountMinor": 41000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Stage",
+      "Booth space",
+      "Parking",
+      "Generator"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-tanjong-pagar-hotel-ballroom",
+    "name": "The Meridian Ballroom Tanjong Pagar",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Tanjong Pagar",
+    "type": "hotel_ballroom",
+    "capacity": 310,
+    "price": {
+      "amountMinor": 14400,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 48000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Wi-Fi",
+      "Sound system",
+      "Prayer room",
+      "Projector"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "sg-tanjong-pagar-rooftop",
+    "name": "Twelfth Floor Rooftop Tanjong Pagar",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Tanjong Pagar",
+    "type": "rooftop",
+    "capacity": null,
+    "price": {
+      "amountMinor": 1523800,
+      "currency": "SGD",
+      "per": "package"
+    },
+    "deposit": {
+      "amountMinor": 51000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Rain cover",
+      "Outdoor lighting",
+      "Sound system",
+      "Bar"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "sg-tanjong-pagar-restaurant",
+    "name": "The Long Table Tanjong Pagar",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Tanjong Pagar",
+    "type": "restaurant",
+    "capacity": 30,
+    "price": {
+      "amountMinor": 8000,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  }
+]

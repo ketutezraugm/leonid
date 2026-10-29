@@ -48,7 +48,9 @@ const DraftInput = z.object({
     .trim()
     .min(1)
     .max(120)
-    .describe('Exact sponsor name from list_sponsors_to_invoice: the text inside the tag, without the tag'),
+    .describe(
+      'Exact sponsor name from list_sponsors_to_invoice: the text inside the tag, without the tag',
+    ),
   dueInDays: z
     .number()
     .int()
@@ -63,7 +65,10 @@ const DraftInput = z.object({
 // days. The amount is the pledge, the wording is ours and the recipient is typed by the treasurer, so
 // nothing the agent (or text it read) says can change what a sponsor is asked to pay. Sending is a
 // separate, treasurer-only step (routes/invoices.ts) that this tool cannot reach.
-export function draftSponsorInvoiceTool(ctx: AgentContext, onDraft?: (drafted: DraftedInvoice) => void) {
+export function draftSponsorInvoiceTool(
+  ctx: AgentContext,
+  onDraft?: (drafted: DraftedInvoice) => void,
+) {
   return tool({
     description:
       'Prepare an invoice draft for one pledged sponsor of this event. This only drafts: it does not ' +
@@ -88,9 +93,14 @@ export function draftSponsorInvoiceTool(ctx: AgentContext, onDraft?: (drafted: D
           const known = sponsors.map((s) => sponsorName(s.name)).join(', ') || 'none';
           throw new Error(`Unknown sponsor "${wantedName}". Sponsors of this event: ${known}`);
         }
-        if (matches.length > 1) throw new Error(`Several sponsors are named "${wantedName}"; ask the organizer which one`);
+        if (matches.length > 1)
+          throw new Error(
+            `Several sponsors are named "${wantedName}"; ask the organizer which one`,
+          );
         if (sponsor.status !== 'pledged') {
-          throw new Error(`${sponsorName(sponsor.name)} is already ${sponsor.status}; only pledged sponsors can be invoiced`);
+          throw new Error(
+            `${sponsorName(sponsor.name)} is already ${sponsor.status}; only pledged sponsors can be invoiced`,
+          );
         }
         const event = await getEvent(ctx.db, eventId);
         if (!event) throw new Error('Event not found');
