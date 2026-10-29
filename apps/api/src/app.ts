@@ -6,7 +6,6 @@ import type { HealthResponse } from '@quartermaster/shared';
 import { approvalsRouter } from './routes/approvals.js';
 import { chatRouter } from './routes/chat.js';
 import { walletRouter } from './routes/wallet.js';
-import './webhooks/handlers/index.js';
 import { webhookRouter } from './webhooks/router.js';
 
 export function createApp() {

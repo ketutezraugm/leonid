@@ -19,7 +19,13 @@ const InvoicePaidResource = z.object({
       .looseObject({
         paid_amount: PayPalMoney.optional(),
         transactions: z
-          .array(z.looseObject({ transaction_status: z.string().optional() }))
+          .array(
+            z.looseObject({
+              transaction_status: z.string().optional(),
+              // "The ID for a PayPal payment transaction" (Invoicing v2 payment_detail).
+              payment_id: z.string().min(1).optional(),
+            }),
+          )
           .default([]),
       })
       .optional(),
@@ -28,7 +34,7 @@ const InvoicePaidResource = z.object({
 type Invoice = z.infer<typeof InvoicePaidResource>['invoice'];
 
 type PaidCheck =
-  | { kind: 'paid'; amount: number; currency: string }
+  | { kind: 'paid'; amount: number; currency: string; captureId: string | null }
   | { kind: 'not_fully_paid' }
   | { kind: 'malformed'; reason: string };
 
@@ -45,9 +51,9 @@ function checkFullyPaid(invoice: Invoice): PaidCheck {
     if (!paid) return { kind: 'malformed', reason: 'PAID invoice has no payments.paid_amount' };
     const { amountMinor, currency } = fromPayPalMoney(paid);
     if (amountMinor <= 0) return { kind: 'not_fully_paid' };
-    const settled = invoice.payments?.transactions.some((t) => t.transaction_status === 'SUCCESS');
+    const settled = invoice.payments?.transactions.find((t) => t.transaction_status === 'SUCCESS');
     if (!settled) return { kind: 'not_fully_paid' };
-    return { kind: 'paid', amount: amountMinor, currency };
+    return { kind: 'paid', amount: amountMinor, currency, captureId: settled.payment_id ?? null };
   } catch (err) {
     return { kind: 'malformed', reason: err instanceof Error ? err.message : 'unreadable amount' };
   }
@@ -104,6 +110,8 @@ export function createInvoicePaidHandler(getDb: () => Db): WebhookHandler {
     }
 
     await db.transaction(async (tx) => {
+      // Gross paid amount: the invoice event carries no fee breakdown. PayPal's fee on sponsor
+      // invoices is reconciled later from Transaction Search (reports), not here.
       const recorded = await recordLedgerEntry(tx, {
         eventId: sponsor.eventId,
         direction: 'in',
@@ -111,6 +119,8 @@ export function createInvoicePaidHandler(getDb: () => Db): WebhookHandler {
         currency: check.currency,
         source: 'sponsor_invoice',
         paypalId: invoice.id,
+        // The PayPal transaction behind the payment, so a later capture refund/reversal can find this row.
+        captureId: check.captureId,
         sponsorId: sponsor.id,
       });
       await tx.update(sponsors).set({ status: 'paid' }).where(eq(sponsors.id, sponsor.id));

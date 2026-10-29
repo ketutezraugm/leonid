@@ -9,12 +9,16 @@ import type { WebhookHandler } from '../registry.js';
 
 const ACTOR = 'webhook:paypal-treasury';
 
-// Fields from the documented capture object (PayPal Payments v2).
+// Fields from the documented capture object (PayPal Payments v2, components.schemas.capture in
+// paypal/paypal-rest-api-specifications openapi/payments_payment_v2.json).
 const CaptureResource = z.looseObject({
   id: z.string().min(1),
   status: z.string(),
   amount: PayPalMoney,
   custom_id: z.string().optional(),
+  // net_amount = gross_amount - paypal_fee - platform_fees: what actually lands in the Treasury.
+  // PayPal omits the breakdown while a capture is pending, so it is optional.
+  seller_receivable_breakdown: z.looseObject({ net_amount: PayPalMoney.optional() }).optional(),
 });
 
 // A Treasury capture is income only when we can tell which event it belongs to. Whoever creates the
@@ -58,9 +62,12 @@ export function createCaptureCompletedHandler(getDb: () => Db): WebhookHandler {
     const capture = parsed.data;
     if (capture.status !== 'COMPLETED') return;
 
+    // Spendable income is what the Treasury received after PayPal's fees, not the gross the buyer paid.
+    const net = capture.seller_receivable_breakdown?.net_amount;
+    const basis: 'net' | 'gross' = net ? 'net' : 'gross';
     let money: { amountMinor: number; currency: string };
     try {
-      money = fromPayPalMoney(capture.amount);
+      money = fromPayPalMoney(net ?? capture.amount);
     } catch (err) {
       await writeAudit(db, {
         actor: ACTOR,
@@ -110,6 +117,7 @@ export function createCaptureCompletedHandler(getDb: () => Db): WebhookHandler {
         currency: money.currency,
         source: tag.source,
         paypalId: capture.id,
+        captureId: capture.id,
         sponsorId: tag.sponsorId ?? null,
       });
       if (recorded) {
@@ -122,8 +130,12 @@ export function createCaptureCompletedHandler(getDb: () => Db): WebhookHandler {
             sponsorId: tag.sponsorId ?? null,
             amount: money.amountMinor,
             currency: money.currency,
+            amountBasis: basis,
           },
-          reason: 'PAYMENT.CAPTURE.COMPLETED on the Treasury app',
+          reason:
+            basis === 'net'
+              ? 'PAYMENT.CAPTURE.COMPLETED on the Treasury app, net of PayPal fees'
+              : 'PAYMENT.CAPTURE.COMPLETED on the Treasury app; no seller_receivable_breakdown.net_amount, so the gross amount was recorded (fees reconciled via Transaction Search)',
           paypalId: capture.id,
         });
       }

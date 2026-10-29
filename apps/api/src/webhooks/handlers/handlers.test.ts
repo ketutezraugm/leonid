@@ -17,6 +17,8 @@ import {
 } from '../registry.js';
 import { webhookRouter } from '../router.js';
 import { buildCaptureTag, createCaptureCompletedHandler } from './capture-completed.js';
+import { createCaptureReversalHandler } from './capture-reversed.js';
+import { registerLedgerHandlers } from './index.js';
 import { createInvoicePaidHandler } from './invoice-paid.js';
 
 interface Money {
@@ -50,6 +52,7 @@ let eventId: string;
 let sponsorId: string;
 const invoicePaid = createInvoicePaidHandler(() => db);
 const captureCompleted = createCaptureCompletedHandler(() => db);
+const captureReversal = createCaptureReversalHandler(() => db);
 
 // One in-memory Postgres for the whole file: every createTestDb runs all migrations, which is slow
 // enough to starve other test files when it happens once per test. Tables are emptied between tests.
@@ -90,6 +93,7 @@ describe('INVOICING.INVOICE.PAID', () => {
       currency: 'USD',
       source: 'sponsor_invoice',
       paypalId: INVOICE_ID,
+      captureId: '42951149HG7323227',
     });
     expect(await sponsorStatus()).toBe('paid');
     expect(await clearedIncome(db, eventId, 'USD')).toBe(100);
@@ -193,8 +197,35 @@ describe('PAYMENT.CAPTURE.COMPLETED', () => {
       currency: 'USD',
       source: 'donation',
       paypalId: 'CAP-1',
+      captureId: 'CAP-1',
     });
     expect(await clearedIncome(db, eventId, 'USD')).toBe(14_000);
+  });
+
+  it('records the net amount after PayPal fees when the breakdown is present', async () => {
+    await run(
+      captureCompleted,
+      capture({
+        seller_receivable_breakdown: {
+          gross_amount: { currency_code: 'USD', value: '140.00' },
+          paypal_fee: { currency_code: 'USD', value: '4.55' },
+          net_amount: { currency_code: 'USD', value: '135.45' },
+        },
+      }),
+    );
+
+    expect((await listLedger(db, eventId))[0]).toMatchObject({ amount: 13_545 });
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(13_545);
+    const [row] = await db.select().from(auditLog);
+    expect(row?.input).toMatchObject({ amountBasis: 'net', amount: 13_545 });
+  });
+
+  it('falls back to the gross amount, and says so in the audit log, without a breakdown', async () => {
+    await run(captureCompleted, capture());
+
+    const [row] = await db.select().from(auditLog);
+    expect(row?.input).toMatchObject({ amountBasis: 'gross', amount: 14_000 });
+    expect(row?.reason).toMatch(/gross/);
   });
 
   it('attaches the sponsor when the tag names one of the event sponsors', async () => {
@@ -240,6 +271,196 @@ describe('PAYMENT.CAPTURE.COMPLETED', () => {
   });
 });
 
+// A completed, tagged Treasury donation of $140 with capture id CAP-1.
+const donationCapture = (): WebhookEvent => ({
+  id: 'WH-CAP-1',
+  event_type: 'PAYMENT.CAPTURE.COMPLETED',
+  resource: {
+    id: 'CAP-1',
+    status: 'COMPLETED',
+    amount: { currency_code: 'USD', value: '140.00' },
+    custom_id: buildCaptureTag(eventId, 'donation'),
+  },
+});
+
+// Shape of a Payments v2 refund ("Show refund details" sample): links rel=up -> the refunded capture.
+const refund = (
+  resource: Record<string, unknown> = {},
+  eventType = 'PAYMENT.CAPTURE.REFUNDED',
+  id = 'WH-REF-1',
+): WebhookEvent => ({
+  id,
+  event_type: eventType,
+  resource: {
+    id: 'REF-1',
+    status: 'COMPLETED',
+    amount: { currency_code: 'USD', value: '40.00' },
+    seller_payable_breakdown: {
+      gross_amount: { currency_code: 'USD', value: '40.00' },
+      paypal_fee: { currency_code: 'USD', value: '0.00' },
+      net_amount: { currency_code: 'USD', value: '40.00' },
+      total_refunded_amount: { currency_code: 'USD', value: '40.00' },
+    },
+    links: [
+      { rel: 'self', method: 'GET', href: 'https://api-m.sandbox.paypal.com/v2/payments/refunds/REF-1' },
+      { rel: 'up', method: 'GET', href: 'https://api-m.sandbox.paypal.com/v2/payments/captures/CAP-1' },
+    ],
+    ...resource,
+  },
+});
+
+describe('PAYMENT.CAPTURE.REFUNDED / PAYMENT.CAPTURE.REVERSED', () => {
+  const recordDonation = () => run(captureCompleted, donationCapture());
+
+  it('lowers cleared income by a refund of income we recorded', async () => {
+    await recordDonation();
+    await run(captureReversal, refund());
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(10_000);
+    const reversal = (await listLedger(db, eventId)).find((r) => r.source === 'income_reversal');
+    expect(reversal).toMatchObject({
+      direction: 'out',
+      amount: 4_000,
+      paypalId: 'REF-1',
+      captureId: 'CAP-1',
+      sponsorId: null,
+    });
+    expect(await auditActions()).toEqual(['ledger.income_recorded', 'ledger.income_reversed']);
+  });
+
+  it('counts a refund once across replays and when REVERSED arrives for the same refund', async () => {
+    await recordDonation();
+    await run(captureReversal, refund());
+    await run(captureReversal, refund({}, 'PAYMENT.CAPTURE.REFUNDED', 'WH-REF-2'));
+    await run(captureReversal, refund({}, 'PAYMENT.CAPTURE.REVERSED', 'WH-REV-1'));
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(10_000);
+    expect((await listLedger(db, eventId)).filter((r) => r.source === 'income_reversal')).toHaveLength(1);
+  });
+
+  it('subtracts every partial refund, each keyed by its own refund id', async () => {
+    await recordDonation();
+    await run(captureReversal, refund());
+    await run(captureReversal, refund({ id: 'REF-2' }, 'PAYMENT.CAPTURE.REFUNDED', 'WH-REF-2'));
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(6_000);
+  });
+
+  it('lowers income for a PayPal reversal, even with a signed amount and no breakdown', async () => {
+    await recordDonation();
+    await run(
+      captureReversal,
+      refund(
+        { id: 'REV-1', amount: { currency_code: 'USD', value: '-140.00' }, seller_payable_breakdown: undefined },
+        'PAYMENT.CAPTURE.REVERSED',
+      ),
+    );
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(0);
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, 'ledger.income_reversed'));
+    expect(rows[0]?.input).toMatchObject({ amountBasis: 'gross', eventType: 'PAYMENT.CAPTURE.REVERSED' });
+  });
+
+  it('uses the net amount that left the Treasury when PayPal returns part of the fee', async () => {
+    await recordDonation();
+    await run(
+      captureReversal,
+      refund({
+        seller_payable_breakdown: {
+          gross_amount: { currency_code: 'USD', value: '40.00' },
+          paypal_fee: { currency_code: 'USD', value: '1.10' },
+          net_amount: { currency_code: 'USD', value: '38.90' },
+        },
+      }),
+    );
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(14_000 - 3_890);
+  });
+
+  it('reverses sponsor invoice income through the invoice PayPal transaction id', async () => {
+    await run(invoicePaid, invoiceEvent());
+    await run(
+      captureReversal,
+      refund({
+        amount: { currency_code: 'USD', value: '1.00' },
+        seller_payable_breakdown: undefined,
+        links: [{ rel: 'up', href: 'https://api-m.sandbox.paypal.com/v2/payments/captures/42951149HG7323227' }],
+      }),
+    );
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(0);
+    const reversal = (await listLedger(db, eventId)).find((r) => r.source === 'income_reversal');
+    expect(reversal).toMatchObject({ sponsorId, amount: 100 });
+  });
+
+  it('leaves income alone, with an audit trace, when the capture is not income we recorded', async () => {
+    await recordDonation();
+    await run(
+      captureReversal,
+      refund({ links: [{ rel: 'up', href: 'https://api-m.sandbox.paypal.com/v2/payments/captures/SPEND-9' }] }),
+    );
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(14_000);
+    expect(await auditActions()).toEqual(['ledger.income_recorded', 'ledger.reversal_unmatched']);
+  });
+
+  it('audits a refund without an up link instead of guessing the capture', async () => {
+    await recordDonation();
+    await run(captureReversal, refund({ links: [] }));
+
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(14_000);
+    expect(await auditActions()).toEqual(['ledger.income_recorded', 'ledger.reversal_unmatched']);
+  });
+
+  it.each([['FAILED'], ['CANCELLED']])('ignores a %s refund, which moved no money', async (status) => {
+    await recordDonation();
+    await run(captureReversal, refund({ status }));
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(14_000);
+  });
+
+  it('ignores the Procurement webhook, whose refunds are P4 late-delivery cases', async () => {
+    await recordDonation();
+    await run(captureReversal, refund(), 'procurement');
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(14_000);
+    expect(await auditActions()).toEqual(['ledger.income_recorded']);
+  });
+
+  it('audits and skips a resource that is not a refund', async () => {
+    await run(captureReversal, { id: 'WH-X', event_type: 'PAYMENT.CAPTURE.REFUNDED', resource: { nope: 1 } });
+    expect(await auditActions()).toEqual(['ledger.reversal_ignored']);
+  });
+});
+
+describe('registerLedgerHandlers', () => {
+  it('registers the ledger handlers for income and income reversals', () => {
+    const registered: string[] = [];
+    registerLedgerHandlers((eventType) => registered.push(eventType), () => db);
+    expect(registered.sort()).toEqual([
+      'INVOICING.INVOICE.PAID',
+      'PAYMENT.CAPTURE.COMPLETED',
+      'PAYMENT.CAPTURE.REFUNDED',
+      'PAYMENT.CAPTURE.REVERSED',
+    ]);
+  });
+
+  it('leaves Procurement refunds to another handler registered on the same event type', async () => {
+    const registry = createHandlerRegistry();
+    registerLedgerHandlers(registry.register, () => db);
+    const lateDelivery: WebhookApp[] = [];
+    registry.register('PAYMENT.CAPTURE.REFUNDED', async (_event, { app }) => {
+      if (app === 'procurement') lateDelivery.push(app);
+    });
+
+    await registry.dispatch('treasury', donationCapture());
+    await registry.dispatch('procurement', refund());
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(14_000);
+    await registry.dispatch('treasury', refund());
+
+    expect(lateDelivery).toEqual(['procurement']);
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(10_000);
+  });
+});
+
 describe('ledger', () => {
   it('counts only income sources in one currency toward cleared income', async () => {
     const base = { eventId, direction: 'in' as const, currency: 'USD' };
@@ -248,8 +469,10 @@ describe('ledger', () => {
     await recordLedgerEntry(db, { ...base, amount: 300, source: 'refund', paypalId: 'REF-A' });
     await recordLedgerEntry(db, { ...base, amount: 200, source: 'claim_payout', paypalId: 'PAY-A', direction: 'out' });
     await recordLedgerEntry(db, { ...base, amount: 9_999, currency: 'EUR', source: 'donation', paypalId: 'CAP-EUR' });
+    await recordLedgerEntry(db, { ...base, amount: 250, source: 'income_reversal', paypalId: 'REF-B', direction: 'out' });
+    await recordLedgerEntry(db, { ...base, amount: 400, source: 'purchase', paypalId: 'CAP-B', direction: 'out' });
 
-    expect(await clearedIncome(db, eventId, 'USD')).toBe(1_500);
+    expect(await clearedIncome(db, eventId, 'USD')).toBe(1_250);
     expect(await clearedIncome(db, eventId, 'EUR')).toBe(9_999);
     expect(await clearedIncome(db, eventId, 'GBP')).toBe(0);
   });
@@ -257,6 +480,12 @@ describe('ledger', () => {
   it.each([[0], [-5], [1.5]])('refuses an amount of %s', async (amount) => {
     await expect(
       recordLedgerEntry(db, { eventId, direction: 'in', amount, currency: 'USD', source: 'donation', paypalId: 'X' }),
+    ).rejects.toThrow(RangeError);
+  });
+
+  it('refuses an income reversal recorded as money coming in', async () => {
+    await expect(
+      recordLedgerEntry(db, { eventId, direction: 'in', amount: 1, currency: 'USD', source: 'income_reversal', paypalId: 'R' }),
     ).rejects.toThrow(RangeError);
   });
 
