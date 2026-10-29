@@ -1,4 +1,4 @@
-import type { ApprovalStatus, ApprovalsPort, AuditPort, CheckResult, ReferencePort, Spend, WalletPort } from './ports.js';
+import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, CheckResult, ReferencePort, WalletPort } from './ports.js';
 
 // In-memory adapters for tests and for local runs without DATABASE_URL: a restart forgets everything.
 // The server uses the DB-backed versions in db.ts.
@@ -94,17 +94,20 @@ export function createMemoryReferences(): ReferencePort {
   };
 }
 
-export interface ApprovalView {
-  id: string;
-  spend: Spend;
-  status: ApprovalStatus;
-  reasons: string[];
-  paypalOrderId?: string;
-  createdAt: string; // ISO; the list is oldest first
-}
+export type ApprovalView = ApprovalRecord & { createdAt: string }; // ISO; the list is oldest first
 
 export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<ApprovalView[]> } {
   const rows = new Map<string, Omit<ApprovalView, 'id'> & { rejectedBy?: string }>();
+  // Same contract as the DB version: a transition applies only from the expected status, and says whether it did.
+  const move = (id: string, from: ApprovalStatus, to: ApprovalStatus, extra: { rejectedBy?: string } = {}) => {
+    const row = rows.get(id);
+    if (row?.status !== from) return false;
+    Object.assign(row, { status: to, ...extra });
+    return true;
+  };
+  const record = ([id, r]: [string, Omit<ApprovalView, 'id'>]): ApprovalRecord =>
+    ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId });
+  const view = (entry: [string, Omit<ApprovalView, 'id'>]): ApprovalView => ({ ...record(entry), createdAt: entry[1].createdAt });
   return {
     async create(spend, result) {
       const id = `approval-${rows.size + 1}`;
@@ -112,6 +115,9 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
       return id;
     },
     async attachOrder(id, paypalOrderId) {
+      if ([...rows].some(([other, r]) => other !== id && r.paypalOrderId === paypalOrderId)) {
+        throw new Error(`PayPal order ${paypalOrderId} already belongs to another approval`);
+      }
       const row = rows.get(id);
       if (row) row.paypalOrderId = paypalOrderId;
     },
@@ -121,14 +127,14 @@ export function createMemoryApprovals(): ApprovalsPort & { list(): Promise<Appro
     async get(id) {
       return rows.get(id) ?? null;
     },
-    async reject(id, by) {
-      const row = rows.get(id);
-      if (row) Object.assign(row, { status: 'rejected', rejectedBy: by });
+    async findByReference(referenceId) {
+      const found = [...rows].find(([, r]) => r.spend.referenceId === referenceId);
+      return found ? record(found) : null;
     },
-    async markPaid(id) {
-      const row = rows.get(id);
-      if (row) row.status = 'paid';
-    },
-    list: async () => [...rows].map(([id, r]) => ({ id, spend: r.spend, status: r.status, reasons: r.reasons, paypalOrderId: r.paypalOrderId, createdAt: r.createdAt })),
+    claimCapture: async (id) => move(id, 'pending', 'capturing'),
+    releaseCapture: async (id) => move(id, 'capturing', 'pending'),
+    markPaid: async (id) => move(id, 'capturing', 'paid'),
+    reject: async (id, by) => move(id, 'pending', 'rejected', { rejectedBy: by }),
+    list: async () => [...rows].map(view), // insertion order, so oldest first
   };
 }

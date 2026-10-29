@@ -97,7 +97,8 @@ export const approvals = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     spend: jsonb('spend').notNull(),
     reasons: text('reasons').array().notNull().default([]),
-    status: text('status', { enum: ['pending', 'rejected', 'paid'] })
+    // pending -> capturing -> paid, or pending -> rejected; see ApprovalsPort in payments/ports.ts
+    status: text('status', { enum: ['pending', 'capturing', 'rejected', 'paid'] })
       .notNull()
       .default('pending'),
     paypalOrderId: text('paypal_order_id'),
@@ -105,7 +106,11 @@ export const approvals = pgTable(
     rejectedBy: text('rejected_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('approvals_created_idx').on(t.createdAt)],
+  (t) => [
+    index('approvals_created_idx').on(t.createdAt),
+    // One approval per PayPal order, so an order id always resolves to a single row to capture.
+    uniqueIndex('approvals_paypal_order_unique').on(t.paypalOrderId),
+  ],
 ).enableRLS();
 
 export const chatThreads = pgTable(

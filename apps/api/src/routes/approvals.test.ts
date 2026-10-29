@@ -16,9 +16,12 @@ const treasurer = { 'x-treasurer-token': 'letmein' };
 
 async function build(orderStatus: () => Response) {
   const calls: string[] = [];
+  let orders = 0; // each spend gets its own PayPal order (ORD-1, ORD-2, ...): one approval per order
   const routes: Record<string, () => Response> = {
-    'POST /v2/checkout/orders': () =>
-      json(201, { id: 'ORD-1', status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: 'https://www.sandbox.paypal.com/checkoutnow?token=ORD-1' }] }),
+    'POST /v2/checkout/orders': () => {
+      const id = `ORD-${++orders}`;
+      return json(201, { id, status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: `https://www.sandbox.paypal.com/checkoutnow?token=${id}` }] });
+    },
     'GET /v2/checkout/orders/ORD-1': orderStatus,
     'POST /v2/checkout/orders/ORD-1/capture': () =>
       json(201, {
@@ -52,7 +55,7 @@ async function build(orderStatus: () => Response) {
   const app = express();
   app.use(express.json()); // as in the real app
   app.use('/api/approvals', approvalsRouter({ env, payments: () => ({ client, wallet, executor, approvals }) }));
-  return { app, calls, executor, audit };
+  return { app, calls, executor, audit, approvals };
 }
 
 const approved = () => json(200, { id: 'ORD-1', status: 'APPROVED', purchase_units: [{ amount: { currency_code: 'USD', value: '420.00' } }], links: [] });
@@ -108,6 +111,17 @@ describe('approvals routes', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ status: 'paid', captureId: 'CAP1' });
     expect((await request(app).post('/api/approvals/approval-1/capture').set(treasurer)).status).toBe(409); // not twice
+  });
+
+  it('answers 409 with already_paid or in_progress when another capture got there first', async () => {
+    const { app, executor, approvals } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await approvals.claimCapture('approval-1'); // e.g. the webhook is capturing right now
+    const busy = await request(app).post('/api/approvals/approval-1/capture').set(treasurer);
+    expect([busy.status, busy.body]).toEqual([409, { status: 'refused', reason: 'in_progress' }]);
+    await approvals.markPaid('approval-1');
+    const done = await request(app).post('/api/approvals/approval-1/capture').set(treasurer);
+    expect([done.status, done.body]).toEqual([409, { status: 'refused', reason: 'already_paid' }]);
   });
 
   it('answers 409 and captures nothing when the order is not approved at PayPal yet', async () => {

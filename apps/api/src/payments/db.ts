@@ -1,8 +1,8 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { agentWallet, approvals as approvalsTable, auditLog, spendReferences, walletSetups } from '../db/schema.js';
 import type { ApprovalView, SavedWallet, WalletStore } from './memory.js';
-import type { ApprovalsPort, AuditPort, ReferencePort, Spend } from './ports.js';
+import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, ReferencePort, Spend } from './ports.js';
 
 // DB-backed versions of the adapters in memory.ts: wallet, approvals, audit and used reference ids survive a restart.
 
@@ -83,6 +83,23 @@ export function createDbReferences(db: Db): ReferencePort {
 
 export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<ApprovalView[]> } {
   const pick = (id: string) => eq(approvalsTable.id, id);
+  const record = (r: typeof approvalsTable.$inferSelect): ApprovalRecord => ({
+    id: r.id,
+    spend: r.spend as Spend,
+    status: r.status,
+    reasons: r.reasons,
+    paypalOrderId: r.paypalOrderId ?? undefined,
+  });
+  const view = (r: typeof approvalsTable.$inferSelect): ApprovalView => ({ ...record(r), createdAt: r.createdAt.toISOString() });
+  // One conditional UPDATE: of two callers racing on the same row, only one sees its WHERE match.
+  const move = async (id: string, from: ApprovalStatus, to: ApprovalStatus, extra: { rejectedBy?: string } = {}) => {
+    const moved = await db
+      .update(approvalsTable)
+      .set({ status: to, ...extra })
+      .where(and(pick(id), eq(approvalsTable.status, from)))
+      .returning({ id: approvalsTable.id });
+    return moved.length > 0;
+  };
   return {
     async create(spend, result, auditId) {
       const [row] = await db
@@ -91,6 +108,7 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
         .returning({ id: approvalsTable.id });
       return row!.id;
     },
+    // approvals_paypal_order_unique makes this throw if another approval already has the order.
     async attachOrder(id, paypalOrderId) {
       await db.update(approvalsTable).set({ paypalOrderId }).where(pick(id));
     },
@@ -104,22 +122,22 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
       const [row] = await db.select().from(approvalsTable).where(pick(id));
       return row ? { spend: row.spend as Spend, status: row.status, paypalOrderId: row.paypalOrderId ?? undefined } : null;
     },
-    async reject(id, by) {
-      await db.update(approvalsTable).set({ status: 'rejected', rejectedBy: by }).where(pick(id));
+    async findByReference(referenceId) {
+      const [row] = await db
+        .select()
+        .from(approvalsTable)
+        .where(sql`${approvalsTable.spend}->>'referenceId' = ${referenceId}`)
+        .orderBy(approvalsTable.createdAt)
+        .limit(1);
+      return row ? record(row) : null;
     },
-    async markPaid(id) {
-      await db.update(approvalsTable).set({ status: 'paid' }).where(pick(id));
-    },
+    claimCapture: (id) => move(id, 'pending', 'capturing'),
+    releaseCapture: (id) => move(id, 'capturing', 'pending'),
+    markPaid: (id) => move(id, 'capturing', 'paid'),
+    reject: (id, by) => move(id, 'pending', 'rejected', { rejectedBy: by }),
     async list() {
       const rows = await db.select().from(approvalsTable).orderBy(asc(approvalsTable.createdAt));
-      return rows.map((r) => ({
-        id: r.id,
-        spend: r.spend as Spend,
-        status: r.status,
-        reasons: r.reasons,
-        paypalOrderId: r.paypalOrderId ?? undefined,
-        createdAt: r.createdAt.toISOString(),
-      }));
+      return rows.map(view);
     },
   };
 }

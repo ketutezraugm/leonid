@@ -42,12 +42,30 @@ export interface ReferencePort {
 
 // The treasurer's approval is the PayPal popup: the approval row points at a PayPal order that only the treasurer
 // can approve. We never mark anything approved ourselves; the executor asks PayPal whether the order is APPROVED.
-export type ApprovalStatus = 'pending' | 'rejected' | 'paid';
+//
+// Status only moves along these edges, each one a single conditional write that says whether it applied, so a capture
+// and a reject (or two captures) racing on one approval can never both win:
+//   pending -> capturing   claimCapture: taken before PayPal is asked to capture
+//   capturing -> paid      markPaid: PayPal captured the spend's exact amount
+//   capturing -> pending   releaseCapture: PayPal did not capture, so it can be retried or rejected
+//   pending -> rejected    reject
+// A row left in 'capturing' means money may have moved but we could not confirm it: it needs a human, never a reject.
+export type ApprovalStatus = 'pending' | 'capturing' | 'rejected' | 'paid';
+export interface ApprovalRecord {
+  id: string;
+  spend: Spend;
+  status: ApprovalStatus;
+  reasons: string[];
+  paypalOrderId?: string;
+}
 export interface ApprovalsPort {
   create(spend: Spend, result: CheckResult, auditId: string): Promise<string>;
-  attachOrder(id: string, paypalOrderId: string): Promise<void>;
+  attachOrder(id: string, paypalOrderId: string): Promise<void>; // one approval per PayPal order: throws if another has it
   findByOrder(paypalOrderId: string): Promise<string | null>; // the approval id for a PayPal order, if it is ours
   get(id: string): Promise<{ spend: Spend; status: ApprovalStatus; paypalOrderId?: string } | null>;
-  reject(id: string, by: string): Promise<void>;
-  markPaid(id: string): Promise<void>;
+  findByReference(referenceId: string): Promise<ApprovalRecord | null>; // the approval already made for this spend, if any
+  claimCapture(id: string): Promise<boolean>;
+  releaseCapture(id: string): Promise<boolean>;
+  markPaid(id: string): Promise<boolean>;
+  reject(id: string, by: string): Promise<boolean>;
 }

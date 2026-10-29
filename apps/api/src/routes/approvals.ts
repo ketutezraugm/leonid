@@ -12,7 +12,8 @@ export interface ApprovalsRouterOptions {
 // Spends the rules sent to the treasurer. Each one has a PayPal order that only the treasurer can approve:
 //   GET  /config        public: the PayPal client id the browser SDK needs (a client id is public by design)
 //   GET  /              (treasurer) ApprovalsResponse (shared): pending and past approvals, oldest first, with the agent's reasoning
-//   POST /:id/capture   (treasurer) after the PayPal popup: PayPal is asked whether the order is approved, then it is captured
+//   POST /:id/capture   (treasurer) after the PayPal popup: PayPal is asked whether the order is approved, then it is captured.
+//                       409 for every refusal, including already_paid / in_progress when the webhook got there first.
 //   POST /:id/reject    (treasurer) body { reason? } (shared RejectApprovalRequest); the reason goes to the audit log
 const toItem = (v: ApprovalView): ApprovalItem => ({
   id: v.id,

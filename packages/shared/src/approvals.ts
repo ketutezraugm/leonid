@@ -5,7 +5,7 @@ import { CurrencyCode, IsoDateTime, MinorUnits } from './common.js';
 // Each one has a PayPal order that only the treasurer can approve in the PayPal popup; the browser then calls
 // POST /api/approvals/:id/capture. The webhook can capture first, so capture answering 409 with status 'paid' on the
 // next list is a success, not an error. `reasons` is why the rules sent it here; `agentReason` is the agent's own summary.
-export const ApprovalStatus = z.enum(['pending', 'rejected', 'paid']);
+export const ApprovalStatus = z.enum(['pending', 'capturing', 'rejected', 'paid']);
 export type ApprovalStatus = z.infer<typeof ApprovalStatus>;
 
 export const ApprovalItem = z.object({
