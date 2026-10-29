@@ -57,14 +57,35 @@ describe('GET /api/treasury', () => {
     });
   });
 
-  it('handles a negative balance, and an account with no balances at all', async () => {
+  it('handles a negative balance with no available amount, and an account with no balances at all', async () => {
     const negative = { ...sandboxBalances, balances: [{ currency: 'USD', total_balance: { currency_code: 'USD', value: '-12.05' } }] };
     const a = await request(build(() => json(200, negative))).get('/api/treasury').set(treasurer);
-    expect(a.body.balances).toEqual([{ currency: 'USD', totalMinor: -1205, availableMinor: -1205, withheldMinor: 0 }]);
+    // available_balance missing: null, not the total.
+    expect(TreasuryResponse.parse(a.body).balances).toEqual([{ currency: 'USD', totalMinor: -1205, availableMinor: null, withheldMinor: 0 }]);
 
     const none = await request(build(() => json(200, { account_id: 'ACCT123', as_of_time: '2026-10-29T03:59:59Z' }))).get('/api/treasury').set(treasurer);
     expect(none.status).toBe(200);
     expect(none.body.balances).toEqual([]);
+  });
+
+  it('skips a balance it cannot convert (zero-decimal or malformed) and keeps the rest', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const mixed = {
+      ...sandboxBalances,
+      balances: [
+        ...sandboxBalances.balances,
+        { currency: 'JPY', total_balance: { currency_code: 'JPY', value: '1500' }, available_balance: { currency_code: 'JPY', value: '1500' } },
+        { currency: 'EUR', total_balance: { currency_code: 'EUR', value: 'not-a-number' } },
+      ],
+    };
+    const res = await request(build(() => json(200, mixed))).get('/api/treasury').set(treasurer);
+    expect(res.status).toBe(200);
+    expect(TreasuryResponse.parse(res.body).balances).toEqual([
+      { currency: 'USD', totalMinor: 521_157, availableMinor: 521_157, withheldMinor: 0 },
+    ]);
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('not-a-number');
+    warn.mockRestore();
   });
 
   it('answers 502 when PayPal refuses, without leaking its message, and 503 when the Treasury app is not configured', async () => {

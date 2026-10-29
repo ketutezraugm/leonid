@@ -7,7 +7,7 @@ import { CurrencyCode } from './common.js';
 export const TreasuryBalance = z.object({
   currency: CurrencyCode,
   totalMinor: z.number().int(), // can be negative after refunds
-  availableMinor: z.number().int(),
+  availableMinor: z.number().int().nullable(), // null when PayPal omits available_balance
   withheldMinor: z.number().int(),
 });
 export type TreasuryBalance = z.infer<typeof TreasuryBalance>;
