@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { Approvals } from './pages/Approvals';
 import { Claims } from './pages/Claims';
 import { EventHome } from './pages/EventHome';
@@ -17,8 +17,10 @@ const nav = [
 ];
 
 export function App() {
+  // Event home is the agent workspace: chat rail plus results canvas, edge to edge.
+  const full = useLocation().pathname === '/';
   return (
-    <div className="shell">
+    <div className={full ? 'shell shell--full' : 'shell'}>
       <header className="shell-header">
         <span className="brand">Quartermaster</span>
         <nav>
@@ -29,7 +31,7 @@ export function App() {
           ))}
         </nav>
       </header>
-      <main className="shell-main">
+      <main className={full ? 'shell-main shell-main--full' : 'shell-main'}>
         <Routes>
           <Route path="/" element={<EventHome />} />
           <Route path="/plan" element={<Plan />} />

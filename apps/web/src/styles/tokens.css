@@ -6,7 +6,13 @@
   --color-border: #e3e3de;
   --color-accent: #0070e0;
   --color-on-accent: #ffffff;
+  --color-accent-soft: #e8f2fd;
   --color-danger: #c4320a;
+  --color-success: #12795b;
+  --color-success-soft: #e6f4ee;
+  --color-warning: #9a5b00;
+  --color-warning-soft: #fdf3e1;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.04);
   --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --space-1: 4px;
   --space-2: 8px;
@@ -60,6 +66,21 @@ body {
   padding: var(--space-4) var(--space-3);
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* Full-bleed screens (the agent workspace) fill the viewport under the header and own their padding. */
+.shell--full {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.shell-main--full {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0;
 }
 
 .muted {
