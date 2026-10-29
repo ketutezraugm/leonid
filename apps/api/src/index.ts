@@ -1,5 +1,8 @@
 import { createApp } from './app.js';
+import { assertDurableMoneyState } from './payments/context.js';
 import { registerLedgerHandlers } from './webhooks/handlers/index.js';
+
+assertDurableMoneyState(); // fail the deploy rather than run production on in-memory money state
 
 // Once per process (not in createApp, which tests call many times).
 registerLedgerHandlers();
