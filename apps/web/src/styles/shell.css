@@ -11,6 +11,53 @@ a.btn {
   text-decoration: none;
 }
 
+/* --- Browser surfaces: selection, caret, scrollbars and link underlines carry the palette too --- */
+::selection {
+  background: var(--color-data-soft);
+  color: var(--color-text);
+}
+
+html {
+  scrollbar-color: var(--color-control-edge) transparent;
+}
+
+input,
+textarea {
+  caret-color: var(--color-accent);
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Keyboard users jump past the sidebar to the screen. Hidden until focused. */
+.skip-link {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 60;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.shell-sheet:focus {
+  outline: none;
+}
+
 /* --- Sidebar: event block, icons, count, wallet status, foot --- */
 .shell-sheet {
   /* room for the floating agent button so it never covers the last row */
@@ -169,6 +216,16 @@ a.btn {
   .shell-sheet {
     padding-bottom: 88px;
   }
+
+  /* The nav strip scrolls sideways; a soft fade says there is more, without a scrollbar. */
+  .shell-nav {
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+  }
+
+  .shell-nav::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* --- Agent button: a forest disc, floating at the bottom-right --- */
@@ -317,8 +374,35 @@ a.btn {
   padding-right: 72px; /* room beside the floating close button */
 }
 
+.drawer .chat-header {
+  min-height: 56px;
+  padding-left: var(--space-4);
+  border-bottom-color: var(--color-border);
+}
+
+.drawer .chat-header h2 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* P1's "Chats" button, dressed as our secondary button so it matches every other control. */
 .drawer .chat-toggle {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.drawer .chat-toggle:hover {
+  background: var(--color-accent-soft);
 }
 
 .drawer .chat-sidebar {
@@ -333,6 +417,42 @@ a.btn {
 
 .drawer .chat-body--list .chat-main {
   display: none;
+}
+
+/* In the drawer the empty state sits above the composer, left-aligned with an even inset, one prompt per row. */
+.drawer .chat-log {
+  padding: var(--space-4);
+}
+
+.drawer .chat-empty {
+  margin: auto 0 0;
+  text-align: left;
+}
+
+.drawer .chat-empty .muted {
+  margin: 0 0 var(--space-3);
+}
+
+.drawer .chat-suggestions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.drawer .chat-error {
+  padding: var(--space-2) var(--space-4);
+}
+
+.drawer .chat-form {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.drawer .chat-form textarea {
+  border-color: var(--color-control-edge);
+}
+
+@media (max-width: 720px) {
+  .drawer .chat-form textarea {
+    font-size: var(--font-size-md);
+  }
 }
 
 /* --- Tabs --- */

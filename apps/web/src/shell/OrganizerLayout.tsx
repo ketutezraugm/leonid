@@ -70,8 +70,11 @@ export function OrganizerLayout() {
 
   return (
     <div className={`shell${rail ? ' shell--rail' : ''}`}>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
       <Sidebar />
-      <main className="shell-sheet">
+      <main id="main" className="shell-sheet" tabIndex={-1}>
         <Outlet />
       </main>
       <Drawer id="agent-drawer" open={open} title="Ask the agent" onClose={() => toggle(false)}>

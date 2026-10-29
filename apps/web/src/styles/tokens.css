@@ -37,6 +37,7 @@
   --color-data-soft: #b9d0bf; /* unlocked budget segment, secondary series */
   --color-brass: #a4812e;
   --color-brass-text: #7d6020; /* brass as words, 5.9:1 on white */
+  --color-brass-soft: #f7f2e6; /* the one surface that says "this needs you"; brass-text on it 5.4:1 */
   --color-hold: #d1d8d3; /* money that exists but cannot be spent: invoiced, pledged */
 
   /* --- Status colors ---

@@ -27,6 +27,16 @@ describe('App', () => {
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
   });
 
+  it('offers a skip link that jumps past the sidebar to the screen', () => {
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Skip to content' })).toHaveAttribute('href', '#main');
+    expect(document.getElementById('main')).toBeInTheDocument();
+  });
+
   it('opens the agent drawer from the floating button and from the "/" key', async () => {
     render(
       <MemoryRouter>

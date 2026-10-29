@@ -84,14 +84,141 @@
   border-radius: var(--radius-sm);
 }
 
-/* --- Event home --- */
+/* --- Event home: the answer first (what can we spend, what needs me), then the ledger, then the plan --- */
 .home {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
 .home .card + .card {
   margin-top: 0;
+}
+
+.countdown {
+  color: var(--color-brass-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.home-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* The product's promise, set on the sheet itself rather than in another card. */
+.unlocked {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.unlocked h2 {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.unlocked-figure {
+  margin: 0;
+  font-size: clamp(36px, 4.4vw, 52px);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.unlocked-rule {
+  max-width: 62ch;
+  margin: 0;
+}
+
+.sample-tag {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+/* Needs you: loud when something waits, one quiet line when nothing does. */
+.needs {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.needs h2,
+.needs p {
+  margin: 0;
+}
+
+.needs--quiet p {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.needs-check {
+  width: 10px;
+  height: 6px;
+  margin-top: -3px;
+  border-left: 2px solid var(--color-status-done);
+  border-bottom: 2px solid var(--color-status-done);
+  transform: rotate(-45deg);
+  flex: none;
+}
+
+.needs--problem {
+  border-color: var(--color-status-risk);
+  background: var(--color-status-risk-soft);
+}
+
+.needs--problem h2 {
+  color: var(--color-status-risk-text);
+}
+
+.needs--waiting {
+  gap: var(--space-3);
+  border-color: var(--color-brass);
+  background: var(--color-brass-soft);
+}
+
+.needs--waiting h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-brass-text);
+}
+
+.needs-count {
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-brass-text);
+  color: var(--color-on-accent);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.needs-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.needs-amount {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.needs .btn-row {
+  margin-top: 0;
+}
+
+.needs-more {
+  font-size: var(--font-size-xs);
 }
 
 .home-grid {
@@ -101,39 +228,49 @@
   align-items: start;
 }
 
-.home-hero {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.home-hero .stat {
-  padding: 0;
-  border: 0;
-}
-
-.sample-note {
-  margin: 0;
-  font-size: var(--font-size-xs);
-}
-
-.waiting {
-  display: grid;
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-2);
+  margin-bottom: 10px;
+}
+
+/* A wide ledger scrolls inside its card on a phone instead of wrapping every column into slivers. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.ledger .table {
+  min-width: 560px;
+}
+
+/* Recent spends reads as a ledger: dated, with the rule that decided each line. */
+.ledger .table td {
+  height: auto;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.ledger-date {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.ledger-verdict {
+  display: grid;
+  gap: 2px;
   justify-items: start;
 }
 
-.waiting p {
-  margin: 0;
-}
-
-.table-wrap--flush {
-  padding: 0;
-  border: 0;
+.ledger-reason {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
 }
 
 .alert-list {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -142,41 +279,63 @@
 .alert-list li {
   display: grid;
   justify-items: start;
-  gap: 4px;
+  gap: 6px;
+}
+
+.alert-list p {
+  margin: 0;
 }
 
 @media (max-width: 900px) {
+  .home-top,
   .home-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  /* On a phone the thing that needs you comes before the money. */
+  .home-top .needs {
+    order: -1;
+  }
 }
 
-/* --- Runway strip: every task on one time axis, event day marked --- */
+/* --- Plan strip: every task on one time axis, months marked, event day in brass --- */
 .runway {
   display: grid;
   gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 
 .runway-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.runway-head p {
+  flex: 1 1 280px;
+  margin: 0;
 }
 
 .runway-track {
   position: relative;
-  height: 110px;
-  border-radius: var(--radius);
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0 calc(100% / 12 - 1px),
-    var(--color-rule) calc(100% / 12 - 1px) calc(100% / 12)
-  );
+  height: 96px;
+}
+
+.runway-month {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding-left: 6px;
+  border-left: 1px solid var(--color-rule);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
 }
 
 .runway-bar {
   position: absolute;
-  height: 10px;
+  height: 8px;
   border-radius: var(--radius-sm);
   background: var(--color-status-pending);
 }
@@ -206,7 +365,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--color-text);
+  background: var(--color-brass);
 }
 
 .runway-event-label {
@@ -214,10 +373,12 @@
   bottom: 0;
   right: 6px;
   padding: 1px 6px;
+  border: 1px solid var(--color-brass);
   border-radius: var(--radius-sm);
-  background: var(--color-text);
-  color: var(--color-surface);
+  background: var(--color-surface);
+  color: var(--color-brass-text);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 
