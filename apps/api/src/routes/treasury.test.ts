@@ -88,6 +88,15 @@ describe('GET /api/treasury', () => {
     warn.mockRestore();
   });
 
+  it('answers 502 when PayPal sends a response shape it does not recognize', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const malformed = { balances: [{ currency: 'USD', total_balance: { currency_code: 'usd', value: 12 } }] };
+    const res = await request(build(() => json(200, malformed))).get('/api/treasury').set(treasurer);
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: 'treasury request failed' });
+    error.mockRestore();
+  });
+
   it('answers 502 when PayPal refuses, without leaking its message, and 503 when the Treasury app is not configured', async () => {
     const refused = await request(build(() => json(403, { name: 'NOT_AUTHORIZED', message: 'secret detail', debug_id: 'd1' }))).get('/api/treasury').set(treasurer);
     expect(refused.status).toBe(502);

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { ZodError } from 'zod';
 import { requireTreasurer } from '../auth/treasurer.js';
 import { getTreasuryBalances } from '../paypal/balances.js';
 import { getPayPalClient, isPayPalAppConfigured, type PayPalClient } from '../paypal/client.js';
@@ -24,7 +25,7 @@ export function treasuryRouter(options: TreasuryRouterOptions = {}) {
       res.json(await getTreasuryBalances((options.client ?? (() => getPayPalClient('treasury')))()));
     } catch (err) {
       console.error('treasury balances failed', err);
-      res.status(err instanceof PayPalApiError ? 502 : 500).json({ error: 'treasury request failed' });
+      res.status(err instanceof PayPalApiError || err instanceof ZodError ? 502 : 500).json({ error: 'treasury request failed' });
     }
   });
 
