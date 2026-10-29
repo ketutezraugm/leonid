@@ -58,6 +58,10 @@ const fingerprintOf = (s: Spend) =>
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
+// Free text from a person, made safe for a one-line audit entry: control and format characters (newlines, tabs, bidi
+// overrides, zero-width marks) and line separators become spaces, so it cannot forge or hide audit lines.
+const oneLine = (text: string) => text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, ' ').replace(/\s+/g, ' ').trim();
+
 export function createExecutor(deps: ExecutorDeps) {
   const { client, check, audit, wallet, approvals, references } = deps;
 
@@ -255,7 +259,8 @@ export function createExecutor(deps: ExecutorDeps) {
     const approval = await approvals.get(approvalId);
     // Conditional on 'pending': a capture that claimed the approval first wins, and the reject is refused.
     if (!approval || !(await approvals.reject(approvalId, actor))) return { rejected: false };
-    const auditId = await audit.record({ actor, action: 'spend.rejected_by_treasurer', input: approval.spend, reason: why ? `treasurer rejected: ${why}` : 'treasurer rejected' });
+    const note = why && oneLine(why);
+    const auditId = await audit.record({ actor, action: 'spend.rejected_by_treasurer', input: approval.spend, reason: note ? `treasurer rejected: ${note}` : 'treasurer rejected' });
     await audit.update(auditId, { outcome: 'rejected', paypalId: approval.paypalOrderId });
     return { rejected: true };
   }

@@ -142,6 +142,29 @@ describe('approvals routes', () => {
     expect(audit.rows.at(-1)).toMatchObject({ action: 'spend.rejected_by_treasurer', reason: 'treasurer rejected: wrong supplier' });
   });
 
+  it('flattens newlines and control characters in the decline reason before it reaches the audit log', async () => {
+    const { app, executor, audit } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    const reason = 'wrong supplier\r\n[audit] approved by treasurer\u0000\u202e\u2028done';
+    expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason })).body).toEqual({ rejected: true });
+    expect(audit.rows.at(-1)?.reason).toBe('treasurer rejected: wrong supplier [audit] approved by treasurer done');
+  });
+
+  it('records a reason made only of control characters as a plain rejection', async () => {
+    const { app, executor, audit } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason: '\u0007\u0000' });
+    expect(audit.rows.at(-1)?.reason).toBe('treasurer rejected');
+  });
+
+  it('lists an approval whose capture is in flight as capturing, and it fits the shared ApprovalItem', async () => {
+    const { app, executor, approvals } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await approvals.claimCapture('approval-1');
+    const body = (await request(app).get('/api/approvals').set(treasurer)).body;
+    expect(ApprovalsResponse.parse(body).approvals[0]?.status).toBe('capturing');
+  });
+
   it('rejects an approval, and a rejected one can no longer be captured', async () => {
     const { app, executor } = await build(approved);
     await executor.requestSpend(prizeSpend);
