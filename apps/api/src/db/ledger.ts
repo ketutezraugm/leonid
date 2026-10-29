@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { Db } from './client.js';
 import { ledgerEntries } from './schema.js';
 
@@ -62,15 +62,39 @@ export async function findIncomeByCapture(db: Db, captureId: string): Promise<Le
 // Unlocked budget (cleared income minus committed spend) is P1's budget function; this is its input.
 export async function clearedIncome(db: Db, eventId: string, currency: string): Promise<number> {
   const rows = await db
-    .select({
-      total: sql<string>`coalesce(sum(case
-        when ${ledgerEntries.direction} = 'in' and ${inArray(ledgerEntries.source, [...INCOME_SOURCES])}
-          then ${ledgerEntries.amount}
-        when ${ledgerEntries.direction} = 'out' and ${ledgerEntries.source} = ${INCOME_REVERSAL_SOURCE}
-          then -${ledgerEntries.amount}
-        else 0 end), 0)`,
-    })
+    .select({ total: clearedSum })
     .from(ledgerEntries)
     .where(and(eq(ledgerEntries.eventId, eventId), eq(ledgerEntries.currency, currency)));
   return Number(rows[0]?.total ?? 0);
 }
+
+// Cleared income per sponsor, by the same arithmetic as clearedIncome (one shared expression, so the two
+// cannot disagree). Income with no sponsor, such as tickets and donations, is not in the map.
+export async function clearedIncomeBySponsor(
+  db: Db,
+  eventId: string,
+  currency: string,
+): Promise<Map<string, number>> {
+  const rows = await db
+    .select({ sponsorId: ledgerEntries.sponsorId, total: clearedSum })
+    .from(ledgerEntries)
+    .where(
+      and(
+        eq(ledgerEntries.eventId, eventId),
+        eq(ledgerEntries.currency, currency),
+        isNotNull(ledgerEntries.sponsorId),
+      ),
+    )
+    .groupBy(ledgerEntries.sponsorId);
+  return new Map(
+    rows.flatMap((r) => (r.sponsorId ? [[r.sponsorId, Number(r.total)] as const] : [])),
+  );
+}
+
+// Income in minus income reversals (refunds and chargebacks of that income), in minor units.
+const clearedSum = sql<string>`coalesce(sum(case
+  when ${ledgerEntries.direction} = 'in' and ${inArray(ledgerEntries.source, [...INCOME_SOURCES])}
+    then ${ledgerEntries.amount}
+  when ${ledgerEntries.direction} = 'out' and ${ledgerEntries.source} = ${INCOME_REVERSAL_SOURCE}
+    then -${ledgerEntries.amount}
+  else 0 end), 0)`;

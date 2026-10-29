@@ -109,3 +109,17 @@ export const DeliveryRiskData = z.object({
   items: z.array(DeliveryRiskItem),
 });
 export type DeliveryRiskData = z.infer<typeof DeliveryRiskData>;
+
+// Where a widget's numbers come from. 'sample' means the owner's data does not exist yet; the command
+// center must label it so nobody mistakes it for the ledger.
+export const WidgetSource = z.enum(['live', 'sample']);
+export type WidgetSource = z.infer<typeof WidgetSource>;
+
+export const widgetResponse = <T extends z.ZodType>(data: T) =>
+  z.object({ source: WidgetSource, data });
+
+export const FundingThermometerResponse = widgetResponse(FundingThermometerData);
+export type FundingThermometerResponse = z.infer<typeof FundingThermometerResponse>;
+
+export const RulesHealthResponse = widgetResponse(RulesHealthData);
+export type RulesHealthResponse = z.infer<typeof RulesHealthResponse>;
