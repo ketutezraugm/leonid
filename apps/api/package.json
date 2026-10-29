@@ -13,6 +13,7 @@
     "channel3:coverage": "tsx --env-file-if-exists=../../.env scripts/channel3-coverage.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=../../.env scripts/migrate.ts",
+    "venues:generate": "tsx scripts/generate-venues.ts",
     "db:seed": "tsx --env-file-if-exists=../../.env scripts/seed.ts",
     "day1:invoicing": "tsx --env-file-if-exists=../../.env scripts/day1/invoicing.ts",
     "day1:payouts": "tsx --env-file-if-exists=../../.env scripts/day1/payouts.ts",

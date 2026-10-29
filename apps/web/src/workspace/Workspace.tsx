@@ -3,6 +3,7 @@ import type { UIMessage } from 'ai';
 import { AgentChat } from '../chat/AgentChat';
 import { venuePickText, type VenueCandidate } from '@quartermaster/shared';
 import { latestVenuePick, venueSearches } from '../chat/parts';
+import { VenueDepositPanel } from './VenueDeposit';
 import { VenueResults } from './VenueResults';
 import './workspace.css';
 
@@ -11,6 +12,7 @@ import './workspace.css';
 export function Workspace({ idle }: { idle?: ReactNode }) {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const searches = useMemo(() => venueSearches(messages), [messages]);
   const picked = useMemo(() => latestVenuePick(messages), [messages]);
   // The chat's send while it is idle; picking a venue goes through the chat like any answer.
@@ -46,9 +48,18 @@ export function Workspace({ idle }: { idle?: ReactNode }) {
           viewingSearchId={viewing?.id ?? null}
           onViewSearch={setViewingId}
           onSendChange={onSendChange}
+          onThreadChange={setThreadId}
         />
       </div>
       <section className="workspace-canvas" aria-label="Results">
+        {/* Shown once the chat is idle: the pick is saved on the server when its run ends. */}
+        {picked && threadId && send && (
+          <VenueDepositPanel
+            key={`${threadId} ${picked.sourceUrl}`}
+            threadId={threadId}
+            pickName={picked.name}
+          />
+        )}
         {viewing ? (
           <VenueResults key={viewing.id} search={viewing} picked={picked} onChoose={choose} />
         ) : (
@@ -76,11 +87,17 @@ function CanvasIdle({ children }: { children?: ReactNode }) {
         </li>
         <li>
           <strong>The agent researches</strong>
-          <span>It searches the web and reads venue pages. You can watch each step.</span>
+          <span>It searches venue listings and reads each page. You can watch each step.</span>
         </li>
         <li>
-          <strong>Compare and confirm</strong>
-          <span>Every figure links to its source. Confirm with the venue before you commit.</span>
+          <strong>Compare and pick</strong>
+          <span>Every figure links to its source. Choose the one that fits.</span>
+        </li>
+        <li>
+          <strong>Pay the deposit with PayPal</strong>
+          <span>
+            Your spending rules decide: small deposits pay at once, bigger ones need the treasurer.
+          </span>
         </li>
       </ol>
       {children}

@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { auditedExecute, auditedStream, todayLine, type AgentContext } from './context.js';
 import { createPlanningAgent } from './planning.js';
 import { createTreasuryAgent } from './treasury.js';
+import type { SearchClient } from '../search/client.js';
 import { createVenueScout } from './venueScout.js';
 import { VENUE_SCOUT_TOOL, scoutCandidates, venuePickLine } from './venuePick.js';
 import { ASK_USER_TOOL, askUserTool } from './tools/askUser.js';
@@ -34,8 +35,9 @@ If read_event returns no event and the organizer describes a new one, call creat
 When something you need is missing or unclear (date, headcount, budget, city, format), do not guess and do not ask in plain text: call ask_user once with every open question together, each with 2-4 likely options, your recommended one first. Then stop and wait for the answers.
 Before any planning or venue search, the organizer chooses what to book. If they have not chosen yet, call choose_bookings once the event exists (right after create_event is fine), pre-ticking what usually fits this kind of event, then stop and wait. delegate_to_planning refuses until they have chosen.
 Once they have chosen, plan and search only for the chosen items. Call choose_bookings again only if they ask to change the list.
-Work through the chosen items one at a time, venue first. When the venue scout returns venues, your turn ends so the organizer can pick one in the results; do not pick for them.
-After they pick a venue, call delegate_to_planning to add the tasks for booking that venue (name it in the task), then move straight on to the next chosen item, such as food & drinks: say whether the picked venue's page mentions catering, and plan the item or call ask_user for what you need. Keep going item by item.
+Only the venue can be booked today. Everything else on the checklist (food & drinks, AV & Wi-Fi, swag, prizes, speakers & volunteers, printing & signage, photo & video) is still in development: if the organizer asks for one, or names other items in their own words, say it is coming soon and do not plan or search for it.
+So start with the venue. When the venue scout returns venues, your turn ends so the organizer can pick one in the results; do not pick for them.
+After they pick a venue, call delegate_to_planning to add the tasks for booking that venue (name it in the task), say whether the picked venue's page mentions catering, then tell them the next step is paying the venue's deposit with PayPal from the results panel. Stop there.
 If there is no event and they ask about "my event", say this chat has no event yet: they can describe one, or start a new chat linked to an existing event.
 delegate_to_treasury only prepares invoice drafts for pledged sponsors. It never sends: the treasurer reviews and sends every invoice, so always say a draft is waiting for the treasurer, never that an invoice was sent. Give amounts from its result, which are in cents.
 You have no tools for purchases or payouts yet. You cannot send, buy or pay anything.
@@ -51,13 +53,23 @@ const venueToolLine =
   'are unverified leads from web pages: always say so, give the source URL, and tell the organizer to ' +
   'confirm with the venue (many only quote on WhatsApp). You cannot book or message a venue.';
 
+// The seeded catalog is not the web: say so, and point the organizer at the deposit they can pay
+// with PayPal once they pick. The agent itself never pays; the button goes through the executor.
+const catalogVenueToolLine =
+  'delegate_to_venue_scout searches the demo venue listings (Indonesia, Malaysia and Singapore) for venues ' +
+  'that fit the headcount. Prices and capacities come from those listing pages: give the source and tell the ' +
+  'organizer to confirm with the venue. Each listing also names a deposit in USD that holds the date. After ' +
+  'the organizer picks a venue, tell them they can pay that deposit with PayPal from the results panel: the ' +
+  'spending rules decide whether it is paid from the agent wallet or goes to the treasurer to approve. You ' +
+  'cannot pay it, book it or message the venue yourself.';
+
 // The orchestrator holds no money tools. Each specialist is a subagent with exactly its PRD §7 row.
 export function createOrchestrator(ctx: AgentContext) {
   const planning = createPlanningAgent(ctx);
   const search = ctx.search;
   const instructions = `${todayLine(ctx)}\n${bookingChoiceLine(ctx.bookings)}\n${venuePickLine(ctx.venuePick)}\n\n${baseInstructions.replace(
     'VENUE_TOOL_LINE\n',
-    search ? `${venueToolLine}\n` : '',
+    search ? `${search.source === 'catalog' ? catalogVenueToolLine : venueToolLine}\n` : '',
   )}`;
 
   return new ToolLoopAgent({
@@ -140,7 +152,7 @@ export function createOrchestrator(ctx: AgentContext) {
                 if (part.type === 'tool-call') {
                   activity.push({
                     id: part.toolCallId,
-                    label: describeScoutCall(part.toolName, part.input),
+                    label: describeScoutCall(part.toolName, part.input, search.source),
                     status: 'running',
                   });
                 } else if (part.type === 'tool-result' || part.type === 'tool-error') {
@@ -188,12 +200,14 @@ interface ScoutActivity {
 }
 
 // A short, human line for each scout tool call; the input is model output, so it is read defensively.
-function describeScoutCall(tool: string, input: unknown): string {
+function describeScoutCall(tool: string, input: unknown, source: SearchClient['source']): string {
   const field = (key: string) => {
     const value = (input as Record<string, unknown> | null)?.[key];
     return typeof value === 'string' ? value : '';
   };
-  if (tool === 'web_search') return `Searching the web: "${field('query')}"`;
+  if (tool === 'web_search') {
+    return `${source === 'catalog' ? 'Searching venue listings' : 'Searching the web'}: "${field('query')}"`;
+  }
   if (tool === 'read_page') {
     try {
       return `Reading ${new URL(field('url')).hostname}`;

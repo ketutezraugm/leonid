@@ -59,16 +59,61 @@ export const BookingItemId = z.enum([
 ]);
 export type BookingItemId = z.infer<typeof BookingItemId>;
 
-export const BOOKING_ITEMS: readonly { id: BookingItemId; label: string; description: string }[] = [
-  { id: 'venue', label: 'Venue', description: 'The space; often needs a deposit' },
-  { id: 'catering', label: 'Food & drinks', description: 'Usually priced per person' },
-  { id: 'av', label: 'AV & Wi-Fi', description: 'Projector, mics, a faster connection' },
-  { id: 'swag', label: 'Swag', description: 'Lanyards, stickers, shirts; weeks to ship' },
-  { id: 'prizes', label: 'Prizes', description: 'For winners, if there is a competition' },
-  { id: 'speakers', label: 'Speakers & volunteers', description: 'Travel, thank-you payments' },
-  { id: 'printing', label: 'Printing & signage', description: 'Badges, banners, directions' },
-  { id: 'photography', label: 'Photo & video', description: 'Someone to capture the day' },
+// `available: false` items are shown as in development: they cannot be ticked, and the server drops
+// them from a choice. Only the venue has demo data (the seeded venue catalog) and a PayPal deposit.
+export const BOOKING_ITEMS: readonly {
+  id: BookingItemId;
+  label: string;
+  description: string;
+  available: boolean;
+}[] = [
+  { id: 'venue', label: 'Venue', description: 'The space; often needs a deposit', available: true },
+  {
+    id: 'catering',
+    label: 'Food & drinks',
+    description: 'Usually priced per person',
+    available: false,
+  },
+  {
+    id: 'av',
+    label: 'AV & Wi-Fi',
+    description: 'Projector, mics, a faster connection',
+    available: false,
+  },
+  {
+    id: 'swag',
+    label: 'Swag',
+    description: 'Lanyards, stickers, shirts; weeks to ship',
+    available: false,
+  },
+  {
+    id: 'prizes',
+    label: 'Prizes',
+    description: 'For winners, if there is a competition',
+    available: false,
+  },
+  {
+    id: 'speakers',
+    label: 'Speakers & volunteers',
+    description: 'Travel, thank-you payments',
+    available: false,
+  },
+  {
+    id: 'printing',
+    label: 'Printing & signage',
+    description: 'Badges, banners, directions',
+    available: false,
+  },
+  {
+    id: 'photography',
+    label: 'Photo & video',
+    description: 'Someone to capture the day',
+    available: false,
+  },
 ];
+
+export const isBookingAvailable = (id: BookingItemId) =>
+  BOOKING_ITEMS.some((item) => item.id === id && item.available);
 
 export const ChooseBookingsInput = z.object({
   suggested: z
@@ -96,7 +141,9 @@ export function bookingChoiceText({ chosen, extra }: BookingChoice): string {
     BOOKING_ITEMS.filter((item) => ids.includes(item.id))
       .map((item) => item.label)
       .join(', ') || 'nothing from the list';
-  const skipped = BOOKING_ITEMS.filter((item) => !chosen.includes(item.id)).map((i) => i.id);
+  const skipped = BOOKING_ITEMS.filter((item) => item.available && !chosen.includes(item.id)).map(
+    (i) => i.id,
+  );
   return [
     `${BOOK_PREFIX} ${labels(chosen)}`,
     skipped.length > 0 && `${SKIP_PREFIX} ${labels(skipped)}`,
@@ -116,9 +163,10 @@ export function parseBookingChoice(text: string): BookingChoice | null {
     .map((label) => label.trim().toLowerCase());
   const extra = lines.find((line) => line.startsWith(EXTRA_PREFIX));
   return {
-    chosen: BOOKING_ITEMS.filter((item) => named.includes(item.label.toLowerCase())).map(
-      (item) => item.id,
-    ),
+    // In-development items never count, even if typed into the message by hand.
+    chosen: BOOKING_ITEMS.filter(
+      (item) => item.available && named.includes(item.label.toLowerCase()),
+    ).map((item) => item.id),
     extra: extra ? extra.slice(EXTRA_PREFIX.length).trim() || null : null,
   };
 }
@@ -252,3 +300,42 @@ export * from './approvals.js';
 export * from './treasury.js';
 export * from './session.js';
 export * from './wallet.js';
+
+// The PayPal deposit that holds the organizer's picked venue. Only seeded demo venues list one. The
+// server reads the pick from the thread and the amount from its venue catalog, never from the
+// browser or the agent, and pays through the rules-checked executor like every other spend.
+export const VenueDeposit = z.object({
+  venue: z.string(),
+  area: z.string(),
+  amountMinor: z.number().int().positive(),
+  currency: z.string().length(3),
+});
+export type VenueDeposit = z.infer<typeof VenueDeposit>;
+
+// GET /api/venue-deposit/:threadId. Null when nothing is picked or the venue lists no deposit.
+export const VenueDepositResponse = z.object({ deposit: VenueDeposit.nullable() });
+export type VenueDepositResponse = z.infer<typeof VenueDepositResponse>;
+
+// What the executor did with the deposit: paid from the agent wallet (within the rules), sent to the
+// treasurer to approve in the PayPal popup, blocked by a rule, or refused (no wallet, kill switch).
+export const SpendOutcome = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('paid'), orderId: z.string(), captureId: z.string().optional() }),
+  z.object({
+    status: z.literal('needs_approval'),
+    approvalId: z.string(),
+    paypalOrderId: z.string(),
+    reasons: z.array(z.string()),
+  }),
+  z.object({ status: z.literal('blocked'), reasons: z.array(z.string()) }),
+  z.object({ status: z.literal('refused'), reason: z.string() }),
+  z.object({
+    status: z.literal('failed'),
+    detail: z.string(),
+    retryable: z.literal(true).optional(),
+  }),
+]);
+export type SpendOutcome = z.infer<typeof SpendOutcome>;
+
+// POST /api/venue-deposit/:threadId (treasurer).
+export const VenueDepositPayResponse = z.object({ deposit: VenueDeposit, outcome: SpendOutcome });
+export type VenueDepositPayResponse = z.infer<typeof VenueDepositPayResponse>;

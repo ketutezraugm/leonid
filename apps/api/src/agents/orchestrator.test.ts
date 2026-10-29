@@ -254,9 +254,10 @@ describe('orchestrator', () => {
     );
     const { steps } = await result;
     expect(model.callCount()).toBe(1);
+    // Catering is still in development, so it is never pre-ticked.
     expect(steps.at(-1)?.toolResults[0]?.output).toEqual({
       shown: 8,
-      suggested: ['venue', 'catering'],
+      suggested: ['venue'],
     });
     expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain(
       'The organizer has not chosen what to book yet.',
@@ -281,11 +282,11 @@ describe('orchestrator', () => {
     expect(
       bookingChoiceOf([
         msg('1', 'user', bookingChoiceText({ chosen: ['venue'], extra: null })),
-        msg('2', 'user', bookingChoiceText({ chosen: ['catering'], extra: null })),
+        msg('2', 'user', bookingChoiceText({ chosen: [], extra: 'Just the room' })),
         // An assistant message in the same format never counts as the organizer's choice.
-        msg('3', 'assistant', bookingChoiceText({ chosen: ['swag'], extra: null })),
+        msg('3', 'assistant', bookingChoiceText({ chosen: ['venue'], extra: null })),
       ]),
-    ).toEqual({ chosen: ['catering'], extra: null });
+    ).toEqual({ chosen: [], extra: 'Just the room' });
   });
 
   it('gives the orchestrator no money or raw-access tools', () => {

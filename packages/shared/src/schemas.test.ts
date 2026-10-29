@@ -23,6 +23,7 @@ import {
   WalletRevokeResponse,
   WalletStatus,
   WidgetFilter,
+  BOOKING_ITEMS,
   bookingChoiceText,
   parseBookingChoice,
 } from './index.js';
@@ -385,13 +386,18 @@ describe('ApprovalItem', () => {
 
 describe('Booking choice', () => {
   it("round-trips the organizer's choice through the chat message", () => {
-    const text = bookingChoiceText({ chosen: ['catering', 'venue'], extra: ' A DJ ' });
-    expect(text).toBe(
-      'Book for this event: Venue, Food & drinks\n' +
-        'Not needed: AV & Wi-Fi, Swag, Prizes, Speakers & volunteers, Printing & signage, Photo & video\n' +
-        'Also: A DJ',
-    );
-    expect(parseBookingChoice(text)).toEqual({ chosen: ['venue', 'catering'], extra: 'A DJ' });
+    const text = bookingChoiceText({ chosen: ['venue'], extra: ' A DJ ' });
+    // In-development items are neither booked nor listed as not needed.
+    expect(text).toBe('Book for this event: Venue\nAlso: A DJ');
+    expect(parseBookingChoice(text)).toEqual({ chosen: ['venue'], extra: 'A DJ' });
+  });
+
+  it('drops in-development items from a choice, even typed by hand', () => {
+    expect(BOOKING_ITEMS.filter((i) => i.available).map((i) => i.id)).toEqual(['venue']);
+    expect(parseBookingChoice('Book for this event: Venue, Food & drinks, Swag')).toEqual({
+      chosen: ['venue'],
+      extra: null,
+    });
   });
 
   it('reads an empty list and ignores ordinary messages', () => {

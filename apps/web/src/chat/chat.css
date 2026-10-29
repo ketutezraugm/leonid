@@ -785,6 +785,23 @@
   border-radius: var(--radius);
 }
 
+.bookings-soon {
+  padding: 0 var(--space-1);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* In development: visible so organizers see what is coming, but not choosable. */
+.bookings-list label.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .bookings fieldset:disabled label {
   cursor: default;
 }

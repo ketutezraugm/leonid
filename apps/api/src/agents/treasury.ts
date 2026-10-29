@@ -1,6 +1,10 @@
 import { ToolLoopAgent, isStepCount } from 'ai';
 import type { AgentContext } from './context.js';
-import { draftSponsorInvoiceTool, listSponsorsToInvoiceTool, type DraftedInvoice } from './tools/treasury.js';
+import {
+  draftSponsorInvoiceTool,
+  listSponsorsToInvoiceTool,
+  type DraftedInvoice,
+} from './tools/treasury.js';
 
 const instructions = `You are the treasury agent for a community tech event.
 Your job here is to prepare sponsor invoice drafts for the treasurer, using your tools.
