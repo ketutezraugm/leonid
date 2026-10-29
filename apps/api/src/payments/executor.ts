@@ -1,7 +1,7 @@
 import type { PayPalClient } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { fromPayPalMoney } from '../paypal/money.js';
-import { createOrder, getOrder } from '../paypal/orders.js';
+import { createOrder, getOrder, payerIdOf } from '../paypal/orders.js';
 import { captureApprovedOrder, chargeVaultedWallet, type Charge } from '../paypal/spend.js';
 import { deletePaymentToken } from '../paypal/vault.js';
 import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, CheckSpend, ReferencePort, Spend, WalletPort } from './ports.js';
@@ -17,11 +17,30 @@ export type SpendOutcome =
   | { status: 'needs_approval'; approvalId: string; paypalOrderId: string; reasons: string[] }
   | { status: 'blocked'; reasons: string[] }
   | { status: 'refused'; reason: RefusedReason }
-  | { status: 'failed'; detail: string }; // safe to retry with the same referenceId, except a capture mismatch (needs a human)
+  // Safe to retry with the same referenceId, except a capture mismatch (needs a human). retryable: PayPal answered 5xx or
+  // 429, so trying again later may well succeed.
+  | { status: 'failed'; detail: string; retryable?: true };
 
 // already_paid and in_progress come from captureApproved when another caller (the browser, or the PayPal webhook) got to
 // the approval first: the spend is paid, or its capture is running right now. Neither means anything went wrong.
-export type RefusedReason = 'no_wallet' | 'paypal_refused' | 'not_approved' | 'reference_reused' | 'already_paid' | 'in_progress';
+// payer_mismatch: the order was approved by a PayPal account other than the one the caller required (see CaptureOptions).
+export type RefusedReason =
+  | 'no_wallet'
+  | 'paypal_refused'
+  | 'not_approved'
+  | 'reference_reused'
+  | 'already_paid'
+  | 'in_progress'
+  | 'payer_mismatch';
+
+export interface CaptureOptions {
+  // Capture only if this PayPal payer id approved the order. The unattended webhook path sets it to the treasurer's
+  // payer id; the browser path is already behind the treasurer guard and leaves it unset.
+  requirePayerId?: string;
+}
+
+const failedFrom = (err: PayPalApiError): SpendOutcome =>
+  err.status >= 500 || err.status === 429 ? { status: 'failed', detail: err.message, retryable: true } : { status: 'failed', detail: err.message };
 
 export interface ExecutorDeps {
   client: PayPalClient; // the Procurement app's client
@@ -163,7 +182,7 @@ export function createExecutor(deps: ExecutorDeps) {
   // the browser: PayPal itself must say the order is APPROVED, for exactly the amount we asked for, before anything is
   // captured. The approval is claimed (pending -> capturing) before PayPal is asked, so a concurrent capture or reject of
   // the same approval loses cleanly instead of both proceeding.
-  async function captureApproved(approvalId: string, actor: string): Promise<SpendOutcome> {
+  async function captureApproved(approvalId: string, actor: string, options: CaptureOptions = {}): Promise<SpendOutcome> {
     const approval = await approvals.get(approvalId);
     if (!approval?.paypalOrderId) return { status: 'refused', reason: 'not_approved' };
     const lost = lostClaim(approval.status);
@@ -197,6 +216,11 @@ export function createExecutor(deps: ExecutorDeps) {
         await audit.update(auditId, { outcome: 'mismatch', paypalId: paypalOrderId, detail: 'approved order amount differs from the spend' });
         return { status: 'failed', detail: 'approved order amount does not match the spend; needs a human to review' };
       }
+      if (options.requirePayerId && payerIdOf(order) !== options.requirePayerId) {
+        await approvals.releaseCapture(approvalId);
+        await audit.update(auditId, { outcome: 'refused', paypalId: paypalOrderId, detail: 'order was approved by a PayPal account other than the treasurer' });
+        return { status: 'refused', reason: 'payer_mismatch' };
+      }
       // Checked again right before the capture: the kill switch may have fired while we talked to PayPal. Deleting the
       // vault token (invariant 3) only stops vault charges; a popup-approved order is not tied to that token, so this
       // re-check is what stops it.
@@ -214,7 +238,7 @@ export function createExecutor(deps: ExecutorDeps) {
       // A PayPal error response means PayPal did not capture. A dropped connection mid-capture might have, so that one
       // stays 'capturing' (cannot be rejected) until a human or the capture webhook settles it.
       if (err instanceof PayPalApiError || !captureSent) await approvals.releaseCapture(approvalId);
-      if (err instanceof PayPalApiError) return { status: 'failed', detail: err.message };
+      if (err instanceof PayPalApiError) return failedFrom(err);
       throw err;
     }
   }

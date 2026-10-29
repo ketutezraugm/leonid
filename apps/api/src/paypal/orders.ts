@@ -18,6 +18,10 @@ export const PayPalOrder = z.object({
     .array(z.object({ reference_id: z.string().optional(), amount: PayPalMoney.optional() }))
     .optional(),
   links: z.array(PayPalLink).default([]),
+  // Who approved the order. Orders v2 spec (2.32): payment_source.paypal.account_id is the current field; payer.payer_id
+  // is deprecated since 2.9 but still returned. Both are the 13-character PayPal payer id.
+  payment_source: z.object({ paypal: z.object({ account_id: z.string().optional() }).optional() }).optional(),
+  payer: z.object({ payer_id: z.string().optional() }).optional(),
 });
 export type PayPalOrder = z.infer<typeof PayPalOrder>;
 
@@ -71,6 +75,10 @@ export async function createOrder(
   });
   return { id: order.id, status: order.status, approveUrl: approveUrlOf(order) };
 }
+
+// The PayPal account that approved the order, if PayPal says.
+export const payerIdOf = (order: PayPalOrder): string | undefined =>
+  order.payment_source?.paypal?.account_id ?? order.payer?.payer_id;
 
 export function getOrder(client: PayPalClient, orderId: string): Promise<PayPalOrder> {
   return client.request({
