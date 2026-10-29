@@ -35,6 +35,13 @@ services:
         value: 'false'
       - key: APP_BASE_URL
         sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: TREASURER_ALLOWLIST
+        sync: false
+      # The hosted judges' demo may turn this on, together with DEMO_LOGIN_ALLOW_PRODUCTION=true (both required in production).
+      - key: DEMO_LOGIN
+        value: 'false'
       - key: TREASURER_TOKEN
         sync: false
       - key: CHANNEL3_API_KEY

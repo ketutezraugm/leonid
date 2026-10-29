@@ -105,11 +105,12 @@ describe('approvals routes', () => {
   });
 
   it('captures once PayPal says the order is approved', async () => {
-    const { app, executor } = await build(approved);
+    const { app, executor, audit } = await build(approved);
     await executor.requestSpend(prizeSpend);
     const res = await request(app).post('/api/approvals/approval-1/capture').set(treasurer);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ status: 'paid', captureId: 'CAP1' });
+    expect(audit.rows.find((r) => r.action === 'spend.capture')).toMatchObject({ actor: 'treasurer:ops-token' }); // who, from the guard
     expect((await request(app).post('/api/approvals/approval-1/capture').set(treasurer)).status).toBe(409); // not twice
   });
 
@@ -139,7 +140,7 @@ describe('approvals routes', () => {
     expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason: 42 })).status).toBe(400);
     const ok = await request(app).post('/api/approvals/approval-1/reject').set(treasurer).send({ reason: ' wrong supplier ' });
     expect(ok.body).toEqual({ rejected: true });
-    expect(audit.rows.at(-1)).toMatchObject({ action: 'spend.rejected_by_treasurer', reason: 'treasurer rejected: wrong supplier' });
+    expect(audit.rows.at(-1)).toMatchObject({ actor: 'treasurer:ops-token', action: 'spend.rejected_by_treasurer', reason: 'treasurer rejected: wrong supplier' });
   });
 
   it('flattens newlines and control characters in the decline reason before it reaches the audit log', async () => {

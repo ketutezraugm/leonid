@@ -499,6 +499,8 @@ describe('invoices routes', () => {
       resumed: false,
     });
     expect((await sponsorRow())?.status).toBe('invoiced');
+    // the actor is whoever passed the treasurer guard, not a fixed label
+    expect(new Set((await db.select().from(auditLog)).map((r) => r.actor))).toEqual(new Set(['treasurer:ops-token']));
   });
 
   it('answers 422 to a body without a valid draft and email, before calling PayPal', async () => {

@@ -1,7 +1,7 @@
 import { InvoiceDraft } from '@quartermaster/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
 import { draftForSponsor } from '../invoices/draft.js';
 import { InvoiceRefusedError, sendSponsorInvoice, type InvoiceRefusal } from '../invoices/send.js';
@@ -108,7 +108,7 @@ export function invoicesRouter(options: InvoicesRouterOptions = {}) {
           sponsorId: String(req.params.sponsorId),
           draft: body.data.draft,
           recipientEmail: body.data.recipientEmail,
-          actor: 'treasurer',
+          actor: treasurerActor(res),
         },
       );
       res.json(sent);
