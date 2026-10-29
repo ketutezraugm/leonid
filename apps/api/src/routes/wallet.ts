@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { WalletConnectResponse, WalletRevokeResponse, WalletStatus } from '@quartermaster/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
@@ -59,7 +60,8 @@ export function walletRouter(options: WalletRouterOptions = {}) {
         cancelUrl: `${base}/api/wallet/cancel`,
       });
       await wallet.beginSetup(setup.setupTokenId);
-      res.json({ approveUrl: setup.approveUrl });
+      const connected: WalletConnectResponse = { approveUrl: setup.approveUrl };
+      res.json(connected);
     }),
   );
 
@@ -114,7 +116,8 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     '/',
     guard,
     safe(async (_req, res, { wallet }) => {
-      res.json(await wallet.snapshot());
+      const status: WalletStatus = await wallet.snapshot();
+      res.json(status);
     }),
   );
 
@@ -122,7 +125,8 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     '/revoke',
     guard,
     safe(async (_req, res, { executor }) => {
-      res.json(await executor.revokeWallet(treasurerActor(res)));
+      const revoked: WalletRevokeResponse = await executor.revokeWallet(treasurerActor(res));
+      res.json(revoked);
     }),
   );
 
