@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { createPaymentToken, createWalletSetup, deletePaymentToken } from '../paypal/vault.js';
@@ -49,7 +49,7 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     guard,
     safe(async (_req, res, { client, wallet }, base) => {
       // One live wallet at a time: connecting over it would leave the old token chargeable with no way to delete it.
-      if (wallet.snapshot().status === 'active') {
+      if ((await wallet.snapshot()).status === 'active') {
         res.status(409).json({ error: 'a wallet is already connected; revoke it first' });
         return;
       }
@@ -58,7 +58,7 @@ export function walletRouter(options: WalletRouterOptions = {}) {
         returnUrl: `${base}/api/wallet/return`,
         cancelUrl: `${base}/api/wallet/cancel`,
       });
-      wallet.beginSetup(setup.setupTokenId);
+      await wallet.beginSetup(setup.setupTokenId);
       res.json({ approveUrl: setup.approveUrl });
     }),
   );
@@ -70,7 +70,7 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     safe(async (req, res, { client, wallet }, base) => {
       const raw = req.query.approval_session_id ?? req.query.approval_token_id;
       const setupTokenId = typeof raw === 'string' ? raw : '';
-      if (!setupTokenId || !wallet.takeSetup(setupTokenId)) {
+      if (!setupTokenId || !(await wallet.takeSetup(setupTokenId))) {
         res.redirect(`${base}/?wallet=error`);
         return;
       }
@@ -83,7 +83,7 @@ export function walletRouter(options: WalletRouterOptions = {}) {
         return;
       }
       try {
-        wallet.activate(saved);
+        await wallet.activate(saved);
       } catch (err) {
         // Another wallet became active in the meantime: the token we just created must not be left chargeable.
         console.error('wallet not activated, deleting the new token', err);
@@ -114,7 +114,7 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     '/',
     guard,
     safe(async (_req, res, { wallet }) => {
-      res.json(wallet.snapshot());
+      res.json(await wallet.snapshot());
     }),
   );
 
@@ -122,7 +122,7 @@ export function walletRouter(options: WalletRouterOptions = {}) {
     '/revoke',
     guard,
     safe(async (_req, res, { executor }) => {
-      res.json(await executor.revokeWallet('treasurer'));
+      res.json(await executor.revokeWallet(treasurerActor(res)));
     }),
   );
 

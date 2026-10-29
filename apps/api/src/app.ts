@@ -4,7 +4,10 @@ import cors from 'cors';
 import express from 'express';
 import type { HealthResponse } from '@quartermaster/shared';
 import { approvalsRouter } from './routes/approvals.js';
+import { authRouter } from './routes/auth.js';
 import { chatRouter } from './routes/chat.js';
+import { invoicesRouter } from './routes/invoices.js';
+import { treasuryRouter } from './routes/treasury.js';
 import { walletRouter } from './routes/wallet.js';
 import { webhookRouter } from './webhooks/router.js';
 
@@ -24,9 +27,12 @@ export function createApp() {
     res.json(body);
   });
 
+  app.use('/api/auth', authRouter());
   app.use('/api/chat', chatRouter);
+  app.use('/api/treasury', treasuryRouter());
   app.use('/api/wallet', walletRouter());
   app.use('/api/approvals', approvalsRouter());
+  app.use('/api/sponsors', invoicesRouter());
 
   // In production the API also serves the built web app (one Render service).
   if (process.env.NODE_ENV === 'production') {

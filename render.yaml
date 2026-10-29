@@ -6,6 +6,8 @@ services:
     runtime: node
     plan: starter
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    # Runs after the build and before the new version takes traffic; a failed migration stops the deploy.
+    preDeployCommand: pnpm --filter @quartermaster/api db:migrate
     startCommand: pnpm start
     healthCheckPath: /api/health
     envVars:
@@ -25,12 +27,21 @@ services:
         sync: false
       - key: PAYPAL_PROCUREMENT_WEBHOOK_ID
         sync: false
+      - key: TREASURY_PAYPAL_PAYER_ID
+        sync: false
       - key: PAYPAL_WEBHOOK_VERIFY
         value: 'true'
       - key: PAYPAL_ACCEPT_SIMULATOR_EVENTS
         value: 'false'
       - key: APP_BASE_URL
         sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: TREASURER_ALLOWLIST
+        sync: false
+      # The hosted judges' demo may turn this on, together with DEMO_LOGIN_ALLOW_PRODUCTION=true (both required in production).
+      - key: DEMO_LOGIN
+        value: 'false'
       - key: TREASURER_TOKEN
         sync: false
       - key: CHANNEL3_API_KEY

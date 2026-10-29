@@ -17,7 +17,7 @@ const orderCreated = () =>
 const orderState = (status: string, amount: string) =>
   json(200, { id: 'ORD-1', status, purchase_units: [{ amount: { currency_code: 'USD', value: amount } }], links: [] });
 
-type SeededApproval = { spend: Spend; status: ApprovalStatus; paypalOrderId?: string };
+type SeededApproval = { spend: Spend; status: ApprovalStatus; paypalOrderId?: string; reasons?: string[] };
 
 // One shared timeline so tests can assert ordering (audit before PayPal, flag before delete, check before capture).
 function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean; approvals?: Record<string, SeededApproval> } = {}) {
@@ -69,24 +69,36 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
 
   // copies, so one test marking an approval paid cannot leak into the next
   const approvalRows = new Map<string, SeededApproval>(Object.entries(opts.approvals ?? {}).map(([id, a]) => [id, { ...a }]));
+  const move = (id: string, from: ApprovalStatus, to: ApprovalStatus) => {
+    const row = approvalRows.get(id);
+    if (row?.status !== from) return false;
+    events.push(`approval ${from}->${to}`);
+    row.status = to;
+    return true;
+  };
   const approvals: ApprovalsPort = {
-    async create(spend) {
+    async create(spend, result) {
       const id = `AP${approvalRows.size + 1}`;
-      approvalRows.set(id, { spend, status: 'pending' });
+      approvalRows.set(id, { spend, status: 'pending', reasons: result.reasons });
       return id;
     },
     async attachOrder(id, paypalOrderId) {
       approvalRows.get(id)!.paypalOrderId = paypalOrderId;
     },
+    async findByOrder(paypalOrderId) {
+      return [...approvalRows].find(([, r]) => r.paypalOrderId === paypalOrderId)?.[0] ?? null;
+    },
     async get(id) {
       return approvalRows.get(id) ?? null;
     },
-    async reject(id) {
-      approvalRows.get(id)!.status = 'rejected';
+    async findByReference(referenceId) {
+      const found = [...approvalRows].find(([, r]) => r.spend.referenceId === referenceId);
+      return found ? { id: found[0], ...found[1], reasons: found[1].reasons ?? [] } : null;
     },
-    async markPaid(id) {
-      approvalRows.get(id)!.status = 'paid';
-    },
+    claimCapture: async (id) => move(id, 'pending', 'capturing'),
+    releaseCapture: async (id) => move(id, 'capturing', 'pending'),
+    markPaid: async (id) => move(id, 'capturing', 'paid'),
+    reject: async (id) => move(id, 'pending', 'rejected'),
   };
 
   const used = new Map<string, string>();
@@ -102,7 +114,7 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
   };
 
   const executor = createExecutor({ client, check: stubCheck, audit, wallet, approvals, references });
-  return { executor, events, fetch, auditRows, approvalRows };
+  return { executor, events, fetch, auditRows, approvalRows, wallet };
 }
 
 const spend = (amountMinor: number, referenceId = 'cart-1'): Spend => ({
@@ -156,7 +168,17 @@ describe('requestSpend', () => {
         pendingDeletions: async () => [],
         confirmDeleted: async () => {},
       },
-      approvals: { create: async () => 'x', attachOrder: async () => {}, get: async () => null, reject: async () => {}, markPaid: async () => {} },
+      approvals: {
+        create: async () => 'x',
+        attachOrder: async () => {},
+        get: async () => null,
+        findByOrder: async () => null,
+        findByReference: async () => null,
+        claimCapture: async () => false,
+        releaseCapture: async () => false,
+        markPaid: async () => false,
+        reject: async () => false,
+      },
       references: { claim: async () => 'new' },
     });
     expect(await blocking.requestSpend(spend(5000))).toEqual({ status: 'blocked', reasons: ['vendor not on the approved list'] });
@@ -212,6 +234,38 @@ describe('requestSpend', () => {
     // PayPal's idempotency key (charge-cart-8) makes both calls resolve to the same order
     const keys = orderPosts(fetch).map(([, init]) => (init?.headers as Record<string, string>)['PayPal-Request-Id']);
     expect(keys).toEqual(['charge-cart-8', 'charge-cart-8']);
+  });
+
+  it('answers a retried approval spend with the existing approval instead of making a second one for the same order', async () => {
+    const { executor, fetch, approvalRows, auditRows } = setup({ routes: { 'POST /v2/checkout/orders': orderCreated } });
+    const first = await executor.requestSpend(spend(42000, 'prizes-3'));
+    expect(await executor.requestSpend(spend(42000, 'prizes-3'))).toEqual(first);
+    expect(approvalRows.size).toBe(1);
+    expect(orderPosts(fetch)).toHaveLength(1);
+    expect(auditRows.at(-1)).toMatchObject({ entry: { action: 'spend.retry' }, patch: { outcome: 'needs_approval', paypalId: 'ORD-1' } });
+  });
+
+  it.each([
+    ['paid', { status: 'paid', orderId: 'ORD-1' }],
+    ['rejected', { status: 'refused', reason: 'not_approved' }],
+    ['capturing', { status: 'refused', reason: 'in_progress' }],
+  ] as const)('answers a retry of a spend whose approval is %s from that approval, without calling PayPal', async (status, expected) => {
+    const { executor, fetch, approvalRows } = setup({ routes: { 'POST /v2/checkout/orders': orderCreated } });
+    await executor.requestSpend(spend(42000, 'prizes-4'));
+    approvalRows.get('AP1')!.status = status;
+    expect(await executor.requestSpend(spend(42000, 'prizes-4'))).toEqual(expected);
+    expect(orderPosts(fetch)).toHaveLength(1);
+    expect(approvalRows.size).toBe(1);
+  });
+
+  it('reuses the approval row when a retry follows a failed order create', async () => {
+    let attempts = 0;
+    const { executor, approvalRows } = setup({
+      routes: { 'POST /v2/checkout/orders': () => (++attempts === 1 ? json(500, { name: 'INTERNAL_SERVER_ERROR' }) : orderCreated()) },
+    });
+    expect((await executor.requestSpend(spend(42000, 'prizes-5'))).status).toBe('failed');
+    expect(await executor.requestSpend(spend(42000, 'prizes-5'))).toMatchObject({ status: 'needs_approval', approvalId: 'AP1', paypalOrderId: 'ORD-1' });
+    expect(approvalRows.size).toBe(1);
   });
 
   it('never records paid when PayPal captured a different amount than was asked', async () => {
@@ -270,17 +324,65 @@ describe('captureApproved (the treasurer approved in the PayPal popup)', () => {
     expect(auditRows[0]!.patch).toMatchObject({ outcome: 'mismatch' });
   });
 
-  it('refuses a second capture of the same approval', async () => {
+  it('claims the approval before asking PayPal, and only marks it paid after the capture', async () => {
+    const { executor, events } = setup({ routes: approvedAtPayPal, approvals: { AP1: pending } });
+    await executor.captureApproved('AP1', 'treasurer');
+    const at = (e: string) => events.indexOf(e);
+    expect(at('approval pending->capturing')).toBeLessThan(at('paypal GET /v2/checkout/orders/ORD-1'));
+    expect(at('paypal POST /v2/checkout/orders/ORD-1/capture')).toBeLessThan(at('approval capturing->paid'));
+  });
+
+  it('answers a second capture of the same approval with already_paid', async () => {
     const { executor, fetch } = setup({ routes: approvedAtPayPal, approvals: { AP1: pending } });
     await executor.captureApproved('AP1', 'treasurer');
-    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'not_approved' });
+    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'already_paid' });
     expect(captures(fetch)).toHaveLength(1);
   });
 
-  it.each([['rejected'], ['paid']] as const)('refuses a %s approval', async (status) => {
+  it.each([
+    ['rejected', 'not_approved'],
+    ['paid', 'already_paid'],
+    ['capturing', 'in_progress'],
+  ] as const)('refuses a %s approval with %s, without calling PayPal', async (status, reason) => {
     const { executor, fetch } = setup({ approvals: { AP1: { ...pending, status } } });
-    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'not_approved' });
+    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason });
     expect(fetch.mock.calls.filter(([u]) => !String(u).includes('oauth2'))).toHaveLength(0);
+  });
+
+  it('lets only one of two concurrent captures reach PayPal; the other is told it is in progress', async () => {
+    const { executor, fetch, approvalRows } = setup({ routes: approvedAtPayPal, approvals: { AP1: pending } });
+    const outcomes = await Promise.all([executor.captureApproved('AP1', 'treasurer'), executor.captureApproved('AP1', 'paypal-webhook')]);
+    expect(outcomes.map((o) => o.status).sort()).toEqual(['paid', 'refused']);
+    expect(outcomes).toContainEqual({ status: 'refused', reason: 'in_progress' });
+    expect(captures(fetch)).toHaveLength(1);
+    expect(approvalRows.get('AP1')?.status).toBe('paid');
+  });
+
+  it('refuses a reject that arrives while the capture is in flight, so money never moves on a rejected approval', async () => {
+    let rejecting: Promise<{ rejected: boolean }> | undefined;
+    const ctx = setup({
+      routes: {
+        ...approvedAtPayPal,
+        'GET /v2/checkout/orders/ORD-1': () => {
+          rejecting = ctx.executor.rejectApproval('AP1', 'treasurer'); // the treasurer clicks Reject mid-capture
+          return orderState('APPROVED', '420.00');
+        },
+      },
+      approvals: { AP1: pending },
+    });
+    expect((await ctx.executor.captureApproved('AP1', 'treasurer')).status).toBe('paid');
+    expect(await rejecting).toEqual({ rejected: false });
+    expect(ctx.approvalRows.get('AP1')?.status).toBe('paid');
+    expect(ctx.auditRows.some((r) => r.entry.action === 'spend.rejected_by_treasurer')).toBe(false);
+  });
+
+  it('never both captures and rejects when the two race from the start', async () => {
+    const { executor, fetch, approvalRows } = setup({ routes: approvedAtPayPal, approvals: { AP1: pending } });
+    const [captured, rejected] = await Promise.all([executor.captureApproved('AP1', 'treasurer'), executor.rejectApproval('AP1', 'treasurer')]);
+    // exactly one wins, and the row agrees with whichever did
+    expect(captured.status === 'paid').not.toBe(rejected.rejected);
+    expect(approvalRows.get('AP1')?.status).toBe(rejected.rejected ? 'rejected' : 'paid');
+    expect(captures(fetch)).toHaveLength(rejected.rejected ? 0 : 1);
   });
 
   it('refuses an approval with no PayPal order, or one that does not exist', async () => {
@@ -295,6 +397,49 @@ describe('captureApproved (the treasurer approved in the PayPal popup)', () => {
     expect(fetch.mock.calls.filter(([u]) => !String(u).includes('oauth2'))).toHaveLength(0);
     expect(approvalRows.get('AP1')?.status).toBe('pending');
     expect(auditRows[0]!.patch).toMatchObject({ outcome: 'refused', paypalId: 'ORD-1' });
+  });
+
+  it('refuses the capture if the kill switch fires between the claim and the capture, and puts the approval back', async () => {
+    const ctx = setup({
+      routes: {
+        ...approvedAtPayPal,
+        'GET /v2/checkout/orders/ORD-1': () => {
+          void ctx.wallet.markRevoked(); // the treasurer hits the kill switch while we ask PayPal about the order
+          return orderState('APPROVED', '420.00');
+        },
+      },
+      approvals: { AP1: pending },
+    });
+    expect(await ctx.executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'no_wallet' });
+    expect(captures(ctx.fetch)).toHaveLength(0);
+    expect(ctx.approvalRows.get('AP1')?.status).toBe('pending');
+    expect(ctx.auditRows[0]!.patch).toMatchObject({ outcome: 'refused', paypalId: 'ORD-1', detail: 'no active agent wallet' });
+  });
+
+  it('releases the claim when PayPal says the order is not approved yet, so it can be captured later', async () => {
+    const { executor, approvalRows } = setup({
+      routes: { 'GET /v2/checkout/orders/ORD-1': () => orderState('PAYER_ACTION_REQUIRED', '420.00') },
+      approvals: { AP1: pending },
+    });
+    await executor.captureApproved('AP1', 'treasurer');
+    expect(approvalRows.get('AP1')?.status).toBe('pending');
+    expect(await executor.rejectApproval('AP1', 'treasurer')).toEqual({ rejected: true });
+  });
+
+  it('keeps the approval claimed when the connection drops mid-capture, since money may have moved', async () => {
+    const { executor, approvalRows } = setup({
+      routes: {
+        ...approvedAtPayPal,
+        'POST /v2/checkout/orders/ORD-1/capture': () => {
+          throw new Error('socket hang up');
+        },
+      },
+      approvals: { AP1: pending },
+    });
+    await expect(executor.captureApproved('AP1', 'treasurer')).rejects.toThrow('socket hang up');
+    expect(approvalRows.get('AP1')?.status).toBe('capturing');
+    expect(await executor.rejectApproval('AP1', 'treasurer')).toEqual({ rejected: false });
+    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'in_progress' });
   });
 
   it('reports a PayPal failure on capture and leaves the approval pending so it can be retried', async () => {
