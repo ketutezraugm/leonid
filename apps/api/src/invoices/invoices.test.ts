@@ -10,7 +10,7 @@ import type { PayPalClient, PayPalRequest } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { invoicesRouter } from '../routes/invoices.js';
 import { buildSponsorInvoiceDraft, draftForSponsor } from './draft.js';
-import { InvoiceRefusedError, sendSponsorInvoice } from './send.js';
+import { CREATE_LEASE_SECONDS, InvoiceRefusedError, markSponsorInvoiced, sendSponsorInvoice } from './send.js';
 
 interface Call {
   method: string;
@@ -18,26 +18,77 @@ interface Call {
   body: unknown;
 }
 
-// A tiny in-memory PayPal Invoicing: create returns a self link, send flips DRAFT to SENT, get reads it.
+interface FakeInvoice {
+  status: string;
+  reference?: string;
+  value: string;
+  currency: string;
+}
+
+interface CreateBody {
+  detail: { reference?: string; currency_code: string };
+  items: { quantity: string; unit_amount: { value: string } }[];
+}
+
+// A tiny in-memory PayPal Invoicing: create returns a self link, send flips DRAFT to SENT, get reads it,
+// search filters by reference.
 function fakePayPal() {
   const calls: Call[] = [];
-  const state = { next: 0, invoices: new Map<string, string>(), failCreate: false, failNextSend: false };
+  const state = {
+    next: 0,
+    invoices: new Map<string, FakeInvoice>(),
+    failCreate: false,
+    failNextSend: false,
+    // PayPal creates the invoice, but the answer never reaches us (a timeout or a dropped connection).
+    loseCreateResponse: false,
+    onCreate: undefined as undefined | (() => Promise<void>),
+  };
+  const view = (id: string, inv: FakeInvoice) => ({
+    id,
+    status: inv.status,
+    detail: {
+      reference: inv.reference,
+      invoice_number: '0001',
+      metadata: { recipient_view_url: `https://www.sandbox.paypal.com/invoice/p/#${id}` },
+    },
+    amount: { currency_code: inv.currency, value: inv.value },
+  });
   const client: PayPalClient = {
     app: 'treasury',
     getAccessToken: async () => 'tok',
     async request<T>(req: PayPalRequest<T>): Promise<T> {
       calls.push({ method: req.method, path: req.path, body: req.body });
       if (req.method === 'POST' && req.path === '/v2/invoicing/invoices') {
+        await state.onCreate?.();
         if (state.failCreate) {
           throw new PayPalApiError({ status: 422, errorName: 'UNPROCESSABLE_ENTITY', issue: 'INVALID_EMAIL', debugId: 'dbg-1' });
         }
+        const body = req.body as CreateBody;
+        const cents = body.items.reduce(
+          (sum, i) => sum + Number(i.quantity) * Math.round(Number(i.unit_amount.value) * 100),
+          0,
+        );
         const id = `INV2-TEST-${++state.next}`;
-        state.invoices.set(id, 'DRAFT');
+        state.invoices.set(id, {
+          status: 'DRAFT',
+          reference: body.detail.reference,
+          value: (cents / 100).toFixed(2),
+          currency: body.detail.currency_code,
+        });
+        if (state.loseCreateResponse) {
+          state.loseCreateResponse = false;
+          throw new Error('socket hang up');
+        }
         return req.schema.parse({
           rel: 'self',
           href: `https://api.sandbox.paypal.com/v2/invoicing/invoices/${id}`,
           method: 'GET',
         });
+      }
+      if (req.method === 'POST' && req.path.startsWith('/v2/invoicing/search-invoices')) {
+        const { reference } = req.body as { reference: string };
+        const items = [...state.invoices].filter(([, inv]) => inv.reference === reference).map(([id, inv]) => view(id, inv));
+        return req.schema.parse({ items });
       }
       const send = /^\/v2\/invoicing\/invoices\/([^/]+)\/send$/.exec(req.path);
       if (req.method === 'POST' && send?.[1]) {
@@ -45,20 +96,16 @@ function fakePayPal() {
           state.failNextSend = false;
           throw new PayPalApiError({ status: 500, errorName: 'INTERNAL_SERVER_ERROR', debugId: 'dbg-2' });
         }
-        state.invoices.set(decodeURIComponent(send[1]), 'SENT');
+        const inv = state.invoices.get(decodeURIComponent(send[1]));
+        if (inv) inv.status = 'SENT';
         return req.schema.parse(undefined);
       }
       const get = /^\/v2\/invoicing\/invoices\/([^/]+)$/.exec(req.path);
       if (req.method === 'GET' && get?.[1]) {
         const id = decodeURIComponent(get[1]);
-        return req.schema.parse({
-          id,
-          status: state.invoices.get(id) ?? 'DRAFT',
-          detail: {
-            invoice_number: '0001',
-            metadata: { recipient_view_url: `https://www.sandbox.paypal.com/invoice/p/#${id}` },
-          },
-        });
+        const inv = state.invoices.get(id);
+        if (!inv) throw new PayPalApiError({ status: 404, errorName: 'RESOURCE_NOT_FOUND', debugId: 'dbg-3' });
+        return req.schema.parse(view(id, inv));
       }
       throw new Error(`unexpected PayPal call ${req.method} ${req.path}`);
     },
@@ -69,7 +116,11 @@ function fakePayPal() {
     client,
     calls,
     state,
+    // An invoice that already exists at PayPal, for the Harbor Cloud pledge unless overridden.
+    put: (id: string, status: string, over: Partial<FakeInvoice> = {}) =>
+      state.invoices.set(id, { status, reference: sponsorId, value: '3500.00', currency: 'USD', ...over }),
     creates: () => calls.filter((c) => c.method === 'POST' && c.path === '/v2/invoicing/invoices').length,
+    searches: () => calls.filter((c) => c.path.startsWith('/v2/invoicing/search-invoices')).length,
     sends: () => count('POST', '/send'),
   };
 }
@@ -159,12 +210,14 @@ describe('sendSponsorInvoice', () => {
 
     const created = paypal.calls[0]?.body as {
       items: { unit_amount: { currency_code: string; value: string } }[];
-      detail: { payment_term: unknown };
+      detail: { payment_term: unknown; reference: string };
       primary_recipients: { billing_info: { email_address: string; business_name: string } }[];
       invoicer: { business_name: string };
     };
     expect(created.items[0]?.unit_amount).toEqual({ currency_code: 'USD', value: '3500.00' });
-    expect(created.detail.payment_term).toEqual({ term_type: 'DUE_ON_DATE_SPECIFIED', due_date: '2026-11-15' });
+    expect(created.detail.payment_term).toEqual({ due_date: '2026-11-15' });
+    // The sponsor id is the reference that finds this invoice again if its create response is lost.
+    expect(created.detail.reference).toBe(sponsorId);
     expect(created.primary_recipients[0]?.billing_info).toEqual({ business_name: 'Harbor Cloud', email_address: EMAIL });
     expect(created.invoicer.business_name).toBe('OpenHack 2027');
     expect(paypal.calls[1]?.body).toMatchObject({ subject: 'Invoice from OpenHack 2027', send_to_recipient: true });
@@ -218,9 +271,11 @@ describe('sendSponsorInvoice', () => {
     expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: null, status: 'pledged' });
     expect(await auditActions()).toEqual(['invoice.create', 'invoice.failed']);
 
-    // The failed attempt created nothing at PayPal, so the retry makes the first and only invoice.
+    // The retry first checks PayPal for an invoice the failed attempt might have made, finds none,
+    // and makes the first and only invoice.
     paypal.state.failCreate = false;
     expect((await send()).paypalInvoiceId).toBe('INV2-TEST-1');
+    expect(paypal.searches()).toBe(1);
     expect(paypal.creates()).toBe(2);
     expect((await sponsorRow())?.status).toBe('invoiced');
   });
@@ -241,7 +296,7 @@ describe('sendSponsorInvoice', () => {
   });
 
   it('does not send again when PayPal already sent the invoice but the sponsor was not updated', async () => {
-    paypal.state.invoices.set('INV2-TEST-9', 'SENT');
+    paypal.put('INV2-TEST-9', 'SENT');
     await db.update(sponsors).set({ paypalInvoiceId: 'INV2-TEST-9' }).where(eq(sponsors.id, sponsorId));
 
     const result = await send();
@@ -253,12 +308,131 @@ describe('sendSponsorInvoice', () => {
   });
 
   it('refuses to resume an invoice PayPal has cancelled', async () => {
-    paypal.state.invoices.set('INV2-TEST-9', 'CANCELLED');
+    paypal.put('INV2-TEST-9', 'CANCELLED');
     await db.update(sponsors).set({ paypalInvoiceId: 'INV2-TEST-9' }).where(eq(sponsors.id, sponsorId));
 
     await expect(send()).rejects.toMatchObject({ code: 'stale_invoice' });
     expect(paypal.sends()).toBe(0);
     expect((await sponsorRow())?.status).toBe('pledged');
+  });
+
+  it('commits the invoice.create audit row before PayPal creates the invoice, then adds the PayPal id', async () => {
+    let seenAtCreate: { action: string; paypalId: string | null }[] = [];
+    paypal.state.onCreate = async () => {
+      seenAtCreate = await db.select({ action: auditLog.action, paypalId: auditLog.paypalId }).from(auditLog);
+    };
+
+    await send();
+
+    expect(seenAtCreate).toEqual([{ action: 'invoice.create', paypalId: null }]);
+    const [created] = await db.select().from(auditLog).where(eq(auditLog.action, 'invoice.create'));
+    expect(created?.paypalId).toBe('INV2-TEST-1');
+  });
+
+  it('finds an invoice whose create answer was lost by its reference, instead of invoicing the sponsor twice', async () => {
+    paypal.state.loseCreateResponse = true;
+    await expect(send()).rejects.toThrow('socket hang up');
+    // PayPal made the invoice, but we never learned its id.
+    expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: null, status: 'pledged' });
+
+    const retried = await send();
+
+    expect(retried).toMatchObject({ paypalInvoiceId: 'INV2-TEST-1', resumed: true });
+    expect(paypal.creates()).toBe(1);
+    expect(paypal.sends()).toBe(1);
+    expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: 'INV2-TEST-1', status: 'invoiced' });
+    expect(await auditActions()).toEqual(['invoice.create', 'invoice.failed', 'invoice.recovered', 'invoice.sent']);
+    const [created] = await db.select().from(auditLog).where(eq(auditLog.action, 'invoice.create'));
+    expect(created?.paypalId).toBe('INV2-TEST-1');
+  });
+
+  describe('after a crash between the PayPal create and recording its id', () => {
+    // What a crashed attempt leaves: its committed invoice.create row, no PayPal id, no invoice.failed.
+    const crashedAttempt = async (secondsAgo: number) => {
+      await db.insert(auditLog).values({
+        actor: 'treasurer',
+        action: 'invoice.create',
+        input: { sponsorId },
+        createdAt: new Date(Date.now() - secondsAgo * 1000),
+      });
+    };
+
+    it('refuses while the attempt may still be running, then recovers the invoice once its lease is over', async () => {
+      paypal.put('INV2-TEST-7', 'DRAFT');
+      await crashedAttempt(5);
+
+      await expect(send()).rejects.toMatchObject({ code: 'in_progress' });
+      expect(paypal.calls).toHaveLength(0);
+
+      await db.update(auditLog).set({ createdAt: new Date(Date.now() - (CREATE_LEASE_SECONDS + 60) * 1000) });
+      const result = await send();
+
+      expect(result).toMatchObject({ paypalInvoiceId: 'INV2-TEST-7', resumed: true });
+      expect(paypal.creates()).toBe(0);
+      expect(paypal.sends()).toBe(1);
+      expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: 'INV2-TEST-7', status: 'invoiced' });
+    });
+
+    it('ignores a cancelled invoice it finds and creates a new one', async () => {
+      paypal.put('INV2-TEST-7', 'CANCELLED');
+      await crashedAttempt(CREATE_LEASE_SECONDS + 60);
+
+      expect((await send()).paypalInvoiceId).toBe('INV2-TEST-1');
+      expect(paypal.creates()).toBe(1);
+    });
+
+    it('refuses a found invoice that is not for the pledge', async () => {
+      paypal.put('INV2-TEST-7', 'DRAFT', { value: '1.00' });
+      await crashedAttempt(CREATE_LEASE_SECONDS + 60);
+
+      await expect(send()).rejects.toMatchObject({ code: 'invoice_mismatch' });
+      expect(paypal.creates()).toBe(0);
+      expect(paypal.sends()).toBe(0);
+      expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: null, status: 'pledged' });
+    });
+
+    it('refuses when PayPal already holds two open invoices for the sponsor', async () => {
+      paypal.put('INV2-TEST-7', 'DRAFT');
+      paypal.put('INV2-TEST-8', 'SENT');
+      await crashedAttempt(CREATE_LEASE_SECONDS + 60);
+
+      await expect(send()).rejects.toMatchObject({ code: 'duplicate_invoice' });
+      expect(paypal.creates()).toBe(0);
+    });
+  });
+
+  it.each([
+    ['amount', { value: '1.00' }],
+    ['currency', { currency: 'EUR' }],
+    ['sponsor', { reference: '00000000-0000-4000-8000-000000000000' }],
+  ])('refuses to resume an invoice whose %s is not the pledge', async (_name, over) => {
+    paypal.put('INV2-TEST-9', 'DRAFT', over);
+    await db.update(sponsors).set({ paypalInvoiceId: 'INV2-TEST-9' }).where(eq(sponsors.id, sponsorId));
+
+    await expect(send()).rejects.toMatchObject({ code: 'invoice_mismatch' });
+    expect(paypal.sends()).toBe(0);
+    expect((await sponsorRow())?.status).toBe('pledged');
+  });
+
+  it('never moves a paid sponsor back to invoiced', async () => {
+    await db.update(sponsors).set({ status: 'paid' }).where(eq(sponsors.id, sponsorId));
+    expect(await markSponsorInvoiced(db, sponsorId)).toBe(false);
+    expect((await sponsorRow())?.status).toBe('paid');
+
+    await db.update(sponsors).set({ status: 'pledged' }).where(eq(sponsors.id, sponsorId));
+    expect(await markSponsorInvoiced(db, sponsorId)).toBe(true);
+    expect((await sponsorRow())?.status).toBe('invoiced');
+  });
+
+  it('leaves a sponsor whose payment landed during the send as paid', async () => {
+    // The INVOICING.INVOICE.PAID handler marks the sponsor paid while PayPal is creating the invoice.
+    paypal.state.onCreate = async () => {
+      await db.update(sponsors).set({ status: 'paid' }).where(eq(sponsors.id, sponsorId));
+    };
+
+    await expect(send()).rejects.toMatchObject({ code: 'already_paid' });
+    expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: 'INV2-TEST-1', status: 'paid' });
+    expect(paypal.sends()).toBe(0);
   });
 
   it('invoices once when two sends arrive at the same time', async () => {

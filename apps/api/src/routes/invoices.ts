@@ -23,6 +23,9 @@ const REFUSAL_STATUS: Record<InvoiceRefusal, number> = {
   already_paid: 409,
   already_invoiced: 409,
   stale_invoice: 409,
+  invoice_mismatch: 409,
+  duplicate_invoice: 409,
+  in_progress: 409,
 };
 
 // Sponsor invoices (F4). Drafting is read-only; sending asks the sponsor for money, so a treasurer
