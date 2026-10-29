@@ -136,7 +136,8 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
     markPaid: (id) => move(id, 'capturing', 'paid'),
     reject: (id, by) => move(id, 'pending', 'rejected', { rejectedBy: by }),
     async list() {
-      const rows = await db.select().from(approvalsTable).orderBy(asc(approvalsTable.createdAt));
+      // Oldest first; id breaks ties between rows created in the same instant, so the order is stable.
+      const rows = await db.select().from(approvalsTable).orderBy(asc(approvalsTable.createdAt), asc(approvalsTable.id));
       return rows.map(view);
     },
   };

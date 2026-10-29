@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { approvals as approvalsTable } from '../db/schema.js';
 import { createTestDb } from '../db/testing.js';
 import type { Db } from '../db/client.js';
 import { createDbApprovals, createDbAudit, createDbReferences, createDbWalletStore } from './db.js';
@@ -74,6 +75,15 @@ describe('audit and approvals', () => {
     expect((await approvals.list()).map((a) => a.id)).toEqual([id, second]); // oldest first
     expect((await approvals.list())[0]?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(await approvals.findByOrder('ORDER-2')).toBeNull();
+  });
+
+  it('breaks ties between approvals created in the same instant by id, so the order is stable', async () => {
+    const approvals = createDbApprovals(db);
+    const auditId = await createDbAudit(db).record({ actor: 'agent', action: 'spend.check', input: spend, reason: 'swag' });
+    const ids = [];
+    for (const ref of ['cart-a', 'cart-b', 'cart-c']) ids.push(await approvals.create({ ...spend, referenceId: ref }, result, auditId));
+    await db.update(approvalsTable).set({ createdAt: new Date('2027-03-14T09:00:00Z') });
+    expect((await approvals.list()).map((a) => a.id)).toEqual([...ids].sort());
   });
 });
 
