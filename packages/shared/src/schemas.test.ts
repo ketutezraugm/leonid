@@ -129,6 +129,7 @@ describe('LedgerEntry', () => {
     currency: 'USD',
     source: 'sponsor_invoice',
     paypalId: 'INV2-ABCD-1234',
+    captureId: null,
     sponsorId: 'sp_1',
     category: null,
     createdAt: NOW,
@@ -141,6 +142,16 @@ describe('LedgerEntry', () => {
   it('rejects an unknown direction and a negative amount', () => {
     expect(LedgerEntry.safeParse({ ...entry, direction: 'sideways' }).success).toBe(false);
     expect(LedgerEntry.safeParse({ ...entry, amount: -1 }).success).toBe(false);
+  });
+
+  it('requires a PayPal id, since (source, paypalId) is what makes ledger writes idempotent', () => {
+    expect(LedgerEntry.safeParse({ ...entry, paypalId: null }).success).toBe(false);
+    expect(LedgerEntry.safeParse({ ...entry, paypalId: '' }).success).toBe(false);
+  });
+
+  it('accepts an income reversal tied to the original capture', () => {
+    const reversal = { ...entry, direction: 'out', source: 'income_reversal', paypalId: 'REF-1', captureId: 'CAP-1' };
+    expect(LedgerEntry.parse(reversal).source).toBe('income_reversal');
   });
 });
 

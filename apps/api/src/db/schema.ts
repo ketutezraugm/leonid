@@ -46,10 +46,15 @@ export const LEDGER_SOURCES = [
   'claim_payout',
   'speaker_payout',
   'prize_payout',
+  'income_reversal',
 ] as const;
 
 // Money PayPal has confirmed, written by webhook handlers only. Cleared income is read from here.
-// (source, paypal_id) is unique so a replayed webhook can never count the same money twice.
+// (source, paypal_id) is unique so a replayed webhook can never count the same money twice, which is
+// why paypal_id is NOT NULL (Postgres treats NULLs as distinct, so a null would defeat the index).
+// capture_id is the PayPal capture that moved the money: the capture itself for ticket/donation income,
+// the invoice's PayPal transaction for sponsor income, and the original capture for an income_reversal.
+// Refund and reversal webhooks find the income they undo through it.
 export const ledgerEntries = pgTable(
   'ledger_entries',
   {
@@ -61,7 +66,8 @@ export const ledgerEntries = pgTable(
     amount: integer('amount').notNull(),
     currency: text('currency').notNull(),
     source: text('source', { enum: LEDGER_SOURCES }).notNull(),
-    paypalId: text('paypal_id'),
+    paypalId: text('paypal_id').notNull(),
+    captureId: text('capture_id'),
     sponsorId: uuid('sponsor_id').references(() => sponsors.id),
     category: text('category'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -69,6 +75,7 @@ export const ledgerEntries = pgTable(
   (t) => [
     uniqueIndex('ledger_entries_source_paypal_idx').on(t.source, t.paypalId),
     index('ledger_entries_event_idx').on(t.eventId),
+    index('ledger_entries_capture_idx').on(t.captureId),
   ],
 ).enableRLS();
 
