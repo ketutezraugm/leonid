@@ -1,4 +1,8 @@
-import { BudgetBurnResponse, DeliveryRiskResponse } from '@quartermaster/shared';
+import {
+  BudgetBurnResponse,
+  DeliveryRiskResponse,
+  PayoutsLedgerResponse,
+} from '@quartermaster/shared';
 import express from 'express';
 import request from 'supertest';
 import { sql } from 'drizzle-orm';
@@ -14,6 +18,7 @@ import {
   AT_RISK_SLACK_DAYS,
   getBudgetBurnSample,
   getDeliveryRiskSample,
+  getPayoutsLedgerSample,
 } from './sample.js';
 
 const NOW = new Date('2026-11-02T10:00:00Z');
@@ -41,6 +46,7 @@ beforeEach(async () => {
 
 const burn = async (filter = {}) => (await getBudgetBurnSample(db, eventId, filter, NOW))!;
 const delivery = async (filter = {}) => (await getDeliveryRiskSample(db, eventId, filter, NOW))!;
+const payouts = async (filter = {}) => (await getPayoutsLedgerSample(db, eventId, filter, NOW))!;
 
 describe('budget burn sample', () => {
   it('matches the numbers in the design mockups: cleared $3,000, committed $1,860, unlocked $1,140', async () => {
@@ -186,6 +192,69 @@ describe('delivery risk sample', () => {
   });
 });
 
+describe('payouts ledger sample', () => {
+  it('lists two prize winners and a volunteer claim, in the event currency', async () => {
+    const data = await payouts();
+
+    expect(data.rows.map((r) => [r.recipientName, r.kind, r.status])).toEqual([
+      ['Ada Winner', 'prize', 'queued'],
+      ['Ravi Winner', 'prize', 'pending_approval'],
+      ['Sam Volunteer', 'claim', 'paid'],
+    ]);
+    expect(data.rows.every((r) => r.currency === 'USD' && r.eventId === eventId)).toBe(true);
+  });
+
+  it("attaches the event's real gold and silver sponsors, so a sponsor click filters it too", async () => {
+    const data = await payouts();
+
+    expect(data.rows.map((r) => r.sponsorId)).toEqual([gold, silver, null]);
+  });
+
+  it('narrows by sponsor, by category, and by both', async () => {
+    const names = async (filter: object) =>
+      (await payouts(filter)).rows.map((r) => r.recipientName);
+
+    expect(await names({ sponsorId: gold })).toEqual(['Ada Winner']);
+    expect(await names({ category: 'food' })).toEqual(['Sam Volunteer']);
+    expect(await names({ category: 'prizes' })).toEqual(['Ada Winner', 'Ravi Winner']);
+    expect(await names({ sponsorId: silver, category: 'prizes' })).toEqual(['Ravi Winner']);
+    expect(await names({ sponsorId: silver, category: 'food' })).toEqual([]);
+  });
+
+  it('only gives a payout a PayPal item and a batch once it is paid, as a real one would', async () => {
+    for (const row of (await payouts()).rows) {
+      const paid = row.status === 'paid';
+      expect(row.paypalItemId !== null, row.id).toBe(paid);
+      expect(row.payoutId !== null, row.id).toBe(paid);
+    }
+  });
+
+  it('gives each payout its own id, and marks the whole set as sample data by its ids', async () => {
+    const ids = (await payouts()).rows.map((r) => r.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.every((id) => id.startsWith('sample-'))).toBe(true);
+  });
+
+  it('keeps amounts as whole cents and the rule results consistent with the status', async () => {
+    for (const row of (await payouts()).rows) {
+      expect(Number.isInteger(row.amount), row.id).toBe(true);
+      if (row.status === 'pending_approval')
+        expect(row.ruleResult?.decision).toBe('needs_approval');
+    }
+  });
+
+  it('leaves the sponsor empty when the event has no sponsor of that tier', async () => {
+    await db.execute(sql`update sponsors set tier = 'bronze' where tier = 'gold'`);
+
+    expect((await payouts()).rows.map((r) => r.sponsorId)).toEqual([null, silver, null]);
+  });
+
+  it('answers nothing for an unknown event', async () => {
+    expect(await getPayoutsLedgerSample(db, UNKNOWN_EVENT, {}, NOW)).toBeUndefined();
+  });
+});
+
 describe('sample widget routes', () => {
   const TOKEN = { 'x-treasurer-token': 'secret' };
   const appWith = (env: NodeJS.ProcessEnv = { TREASURER_TOKEN: 'secret' }) => {
@@ -216,7 +285,18 @@ describe('sample widget routes', () => {
     expect(parsed.data.items.map((i) => i.name)).toEqual(['Prize trophies']);
   });
 
-  it.each(['budget-burn', 'delivery-risk'])(
+  it('labels payouts as sample, and applies the filters from the query string', async () => {
+    const res = await request(appWith())
+      .get(`/api/widgets/payouts?eventId=${eventId}&sponsorId=${silver}&category=prizes`)
+      .set(TOKEN);
+
+    expect(res.status).toBe(200);
+    const parsed = PayoutsLedgerResponse.parse(res.body);
+    expect(parsed.source).toBe('sample');
+    expect(parsed.data.rows.map((r) => r.recipientName)).toEqual(['Ravi Winner']);
+  });
+
+  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
     '%s fails closed without a token and refuses a wrong one',
     async (name) => {
       const url = `/api/widgets/${name}?eventId=${eventId}`;
@@ -225,17 +305,36 @@ describe('sample widget routes', () => {
     },
   );
 
-  it.each(['budget-burn', 'delivery-risk'])(
-    '%s answers 400 to a missing or bad event id and 404 to an unknown event',
+  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
+    '%s answers 400 to a bad event id and 404 to an unknown event',
     async (name) => {
       const app = appWith();
-      expect((await request(app).get(`/api/widgets/${name}`).set(TOKEN)).status).toBe(400);
       expect((await request(app).get(`/api/widgets/${name}?eventId=nope`).set(TOKEN)).status).toBe(
         400,
       );
       expect(
         (await request(app).get(`/api/widgets/${name}?eventId=${UNKNOWN_EVENT}`).set(TOKEN)).status,
       ).toBe(404);
+    },
+  );
+
+  // The web does not know an event's id until the Event endpoint exists, so the demo event is the default.
+  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
+    '%s uses the seeded demo event when no event id is given',
+    async (name) => {
+      const res = await request(appWith()).get(`/api/widgets/${name}`).set(TOKEN);
+
+      expect(res.status).toBe(200);
+      expect(res.body.source).toBe('sample');
+    },
+  );
+
+  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
+    '%s answers 404 with no event id when there is no demo event to fall back on',
+    async (name) => {
+      await db.execute(sql`truncate table audit_log, events restart identity cascade`);
+
+      expect((await request(appWith()).get(`/api/widgets/${name}`).set(TOKEN)).status).toBe(404);
     },
   );
 });

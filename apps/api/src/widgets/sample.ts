@@ -1,8 +1,10 @@
 import {
   BudgetBurnData,
   DeliveryRiskData,
+  PayoutsLedgerData,
   type DeliveryRisk,
   type DeliveryRiskItem,
+  type RuleResult,
   type WidgetFilter,
 } from '@quartermaster/shared';
 import type { Db } from '../db/client.js';
@@ -138,4 +140,107 @@ export async function getDeliveryRiskSample(
       (!filter.category || item.category === filter.category),
   );
   return DeliveryRiskData.parse({ asOf: now.toISOString(), items });
+}
+
+// Prize winners and one volunteer claim, until F17's payouts exist. They use the event's real sponsor ids
+// (gold funds the first prize, silver the second) so a click on a sponsor filters the payouts ledger together
+// with the live funding thermometer, and the categories match the other two samples. Nothing here moves or
+// asks to move money: it is a list of made-up rows for a screen.
+const SAMPLE_PAYOUTS: readonly {
+  name: string;
+  kind: 'claim' | 'prize';
+  tier: 'gold' | 'silver' | null;
+  category: string;
+  amount: number;
+  country: string;
+  email: string;
+  status: 'queued' | 'pending_approval' | 'paid';
+  note: string;
+  ruleResult: RuleResult | null;
+}[] = [
+  {
+    name: 'Ada Winner',
+    kind: 'prize',
+    tier: 'gold',
+    category: 'prizes',
+    amount: 50_000,
+    country: 'GB',
+    email: 'ada@example.com',
+    status: 'queued',
+    note: 'First place',
+    ruleResult: null,
+  },
+  {
+    name: 'Ravi Winner',
+    kind: 'prize',
+    tier: 'silver',
+    category: 'prizes',
+    amount: 30_000,
+    country: 'IN',
+    email: 'ravi@example.com',
+    status: 'pending_approval',
+    note: 'Second place',
+    ruleResult: {
+      decision: 'needs_approval',
+      reasons: ['Payout over $200'],
+      ruleIds: ['payout-threshold'],
+    },
+  },
+  {
+    name: 'Sam Volunteer',
+    kind: 'claim',
+    tier: null,
+    category: 'food',
+    amount: 4_250,
+    country: 'US',
+    email: 'sam@example.com',
+    status: 'paid',
+    note: 'Pizza for volunteers',
+    ruleResult: {
+      decision: 'allow',
+      reasons: ['Under the $50 per day claim cap'],
+      ruleIds: ['claim-daily-cap'],
+    },
+  },
+];
+
+// The payouts ledger for one event, filtered by sponsor and category. The rows are sample.
+// Returns undefined when the event does not exist.
+export async function getPayoutsLedgerSample(
+  db: Db,
+  eventId: string,
+  filter: WidgetFilter = {},
+  now: Date = new Date(),
+): Promise<PayoutsLedgerData | undefined> {
+  const event = await getEvent(db, eventId);
+  if (!event) return undefined;
+  const sponsors = await listSponsors(db, eventId);
+  const at = now.toISOString();
+  const rows = SAMPLE_PAYOUTS.map((p, i) => {
+    const paid = p.status === 'paid';
+    return {
+      id: `sample-payout-${i + 1}`,
+      eventId,
+      payoutId: paid ? 'sample-batch-1' : null,
+      kind: p.kind,
+      recipientName: p.name,
+      destination: { recipientType: 'EMAIL' as const, receiver: p.email, countryCode: p.country },
+      amount: p.amount,
+      currency: event.currency,
+      category: p.category,
+      sponsorId: p.tier ? (sponsors.find((s) => s.tier === p.tier)?.id ?? null) : null,
+      claimId: p.kind === 'claim' ? 'sample-claim-1' : null,
+      note: p.note,
+      senderItemId: `sample-payout-${i + 1}`,
+      paypalItemId: paid ? 'PI-SAMPLE-1' : null,
+      status: p.status,
+      ruleResult: p.ruleResult,
+      updatedAt: at,
+    };
+  }).filter(
+    (row) =>
+      (!filter.sponsorId || row.sponsorId === filter.sponsorId) &&
+      (!filter.category || row.category === filter.category),
+  );
+  return PayoutsLedgerData.parse({ asOf: at, rows });
 }

@@ -296,8 +296,18 @@ describe('widget routes', () => {
     expect(res.body.data.sponsors[0].name).toBe('Pixel Foundry');
   });
 
+  it('uses the seeded demo event when no event id is given, and answers 404 when there is none', async () => {
+    const res = await request(appWith()).get('/api/widgets/funding').set(TOKEN);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.sponsors).toHaveLength(3);
+
+    await db.execute(sql`truncate table audit_log, events restart identity cascade`);
+
+    expect((await request(appWith()).get('/api/widgets/funding').set(TOKEN)).status).toBe(404);
+  });
+
   it.each([
-    ['no event id', '/api/widgets/funding'],
     ['an event id that is not a UUID', '/api/widgets/funding?eventId=nope'],
     [
       'an empty sponsor filter',

@@ -14,6 +14,7 @@ import {
   PayoutDestination,
   PayoutItem,
   PayoutsLedgerData,
+  PayoutsLedgerResponse,
   ReceiptExtraction,
   RulesHealthData,
   SessionInfo,
@@ -299,6 +300,15 @@ describe('Widget data', () => {
     expect(PayoutsLedgerData.parse({ asOf: NOW, rows: [item] }).rows).toHaveLength(1);
   });
 
+  it('wraps the payouts ledger with where its numbers come from, and refuses an unknown source', () => {
+    const data = { asOf: NOW, rows: [item] };
+
+    expect(PayoutsLedgerResponse.parse({ source: 'sample', data }).source).toBe('sample');
+    expect(PayoutsLedgerResponse.parse({ source: 'live', data }).data.rows).toHaveLength(1);
+    expect(PayoutsLedgerResponse.safeParse({ source: 'guess', data }).success).toBe(false);
+    expect(PayoutsLedgerResponse.safeParse({ data }).success).toBe(false);
+  });
+
   it('accepts rules health with reasons', () => {
     const data = {
       asOf: NOW,
@@ -401,7 +411,9 @@ describe('Booking choice', () => {
 
 describe('session and wallet (F1, F13, F15)', () => {
   it('parses what /api/auth/me returns for a PayPal login and for the demo login, and refuses an unknown way in', () => {
-    expect(SessionInfo.parse({ email: 'sb-mb0sv53559833@personal.example.com', via: 'paypal' }).via).toBe('paypal');
+    expect(
+      SessionInfo.parse({ email: 'sb-mb0sv53559833@personal.example.com', via: 'paypal' }).via,
+    ).toBe('paypal');
     expect(SessionInfo.parse({ via: 'demo' })).toEqual({ via: 'demo' });
     expect(SessionInfo.safeParse({ via: 'password' }).success).toBe(false);
     expect(SessionInfo.safeParse({ email: 'a@b.co' }).success).toBe(false);
@@ -415,10 +427,17 @@ describe('session and wallet (F1, F13, F15)', () => {
 
   it('parses the wallet responses seen on staging, and refuses an unknown state or a non-URL approve link', () => {
     expect(WalletStatus.parse({ status: 'none' })).toEqual({ status: 'none' });
-    expect(WalletStatus.parse({ status: 'active', payerEmail: 'sb-mb0sv53559833@personal.example.com' }).status).toBe('active');
+    expect(
+      WalletStatus.parse({ status: 'active', payerEmail: 'sb-mb0sv53559833@personal.example.com' })
+        .status,
+    ).toBe('active');
     expect(WalletStatus.parse({ status: 'revoked' }).status).toBe('revoked');
     expect(WalletStatus.safeParse({ status: 'paused' }).success).toBe(false);
-    expect(WalletConnectResponse.parse({ approveUrl: 'https://www.sandbox.paypal.com/agreements/approve?approval_session_id=X' }).approveUrl).toContain('approve');
+    expect(
+      WalletConnectResponse.parse({
+        approveUrl: 'https://www.sandbox.paypal.com/agreements/approve?approval_session_id=X',
+      }).approveUrl,
+    ).toContain('approve');
     expect(WalletConnectResponse.safeParse({ approveUrl: 'not a url' }).success).toBe(false);
     expect(WalletRevokeResponse.parse({ revoked: true })).toEqual({ revoked: true });
     expect(WalletRevokeResponse.safeParse({ revoked: 'yes' }).success).toBe(false);
