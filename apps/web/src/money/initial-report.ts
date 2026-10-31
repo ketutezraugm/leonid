@@ -14,10 +14,16 @@ type AnyWidgetState = NonNullable<NonNullable<AgPageState['widgets']>[string]>;
 const title = (text: string) => ({ title: { enabled: true, text } });
 const sum = (id: string) => ({ id, aggregation: 'sum' as const });
 
+// Sponsors and budget categories both relate to the rows they filter (payouts, rule checks, deliveries), which
+// would let a click on a sponsor reach the category totals through those rows, or the other way round, and a
+// category total is not a sponsor's. So the event-level widgets ignore other widgets' selections; only the
+// widgets that list individual rows respond to them.
+const eventLevel = { crossFilter: 'none' as const };
+
 const kpi = (text: string, value: ReturnType<typeof sum>) => ({
   type: 'value' as const,
   dataMapping: { value: [value] },
-  format: title(text),
+  format: { ...title(text), ...eventLevel },
 });
 
 const overview: AgPageState = {
@@ -34,7 +40,7 @@ const overview: AgPageState = {
         invoiced: [sum('sponsors.invoiced')],
         cleared: [sum('sponsors.cleared')],
       },
-      format: title('Funding: pledged, invoiced and cleared'),
+      format: { ...title('Funding: pledged, invoiced and cleared'), ...eventLevel },
     } as unknown as AnyWidgetState,
     burn: {
       type: 'budget-burn',
@@ -44,7 +50,7 @@ const overview: AgPageState = {
         spent: [sum('categories.spent')],
         committed: [sum('categories.committed')],
       },
-      format: title('Budget burn by category'),
+      format: { ...title('Budget burn by category'), ...eventLevel },
     } as unknown as AnyWidgetState,
     payouts: {
       type: 'grid',
