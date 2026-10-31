@@ -4,12 +4,12 @@ import { commandCenterReport } from './initial-report';
 import { sampleCommandCenterData } from './sample-data';
 import { buildStudioData } from './studio-data';
 import { quartermasterStudioTheme } from './studio-theme';
-import { fundingThermometerDefinition } from './widgets/definitions';
+import { budgetBurnDefinition, fundingThermometerDefinition } from './widgets/definitions';
 
 // Studio's default widgets stay available; the command center's own are added to them.
 const withCustomWidgets = <T extends { widgets: readonly unknown[] }>(defaults: T) => ({
   ...defaults,
-  widgets: [...defaults.widgets, fundingThermometerDefinition],
+  widgets: [...defaults.widgets, fundingThermometerDefinition, budgetBurnDefinition],
 });
 
 // Default export so the Money page can lazy-load it: AG Studio is a large bundle.

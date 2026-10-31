@@ -37,16 +37,15 @@ const overview: AgPageState = {
       format: title('Funding: pledged, invoiced and cleared'),
     } as unknown as AnyWidgetState,
     burn: {
-      type: 'bar-chart-stacked',
+      type: 'budget-burn',
       dataMapping: {
-        categoryKey: [{ id: 'categories.category' }],
-        valueKey: [sum('categories.spent'), sum('categories.committed')],
+        category: [{ id: 'categories.category' }],
+        cap: [sum('categories.cap')],
+        spent: [sum('categories.spent')],
+        committed: [sum('categories.committed')],
       },
-      format: {
-        ...title('Budget burn by category'),
-        style: { theme: { common: { legend: { enabled: true } } } },
-      },
-    },
+      format: title('Budget burn by category'),
+    } as unknown as AnyWidgetState,
     payouts: {
       type: 'grid',
       dataMapping: {
@@ -66,9 +65,9 @@ const overview: AgPageState = {
     'kpi-cleared': at(0, 0, 8, 7),
     'kpi-outstanding': at(8, 0, 8, 7),
     'kpi-committed': at(16, 0, 8, 7),
-    funding: at(0, 7, 12, 20),
-    burn: at(12, 7, 12, 20),
-    payouts: at(0, 27, 24, 18),
+    funding: at(0, 7, 12, 24),
+    burn: at(12, 7, 12, 24),
+    payouts: at(0, 31, 24, 18),
   },
 };
 
