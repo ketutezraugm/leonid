@@ -20,12 +20,13 @@ const Body = z.object({
   vendor: z.string().trim().min(1).max(100).optional(),
   // Send the same id to retry a spend safely: PayPal's idempotency key comes from it, so it can only be charged once.
   referenceId: z.string().trim().min(1).max(64).optional(),
+  eventId: z.uuid().optional(),
 });
 
 const STATUS: Record<SpendOutcome['status'], number> = { paid: 200, needs_approval: 202, blocked: 403, refused: 409, failed: 502 };
 
 // A stand-in for the procurement agent's spend tool (Harfi), so the Gate 2 beats can be shown before it lands:
-//   POST /spend  (treasurer, only when DEMO_SPEND=true)  { amountMinor, label, category?, vendor?, referenceId? }
+//   POST /spend  (treasurer, only when DEMO_SPEND=true)  { amountMinor, label, category?, vendor?, referenceId?, eventId? }
 // It adds no money path of its own: the spend goes through executor.requestSpend like any agent's would, so the rules
 // check, the audit row, the kill switch and the approval flow all apply. $140 auto-pays, $420 opens an approval.
 // Delete this file once an agent tool calls requestSpend.
@@ -60,7 +61,7 @@ export function demoRouter(options: DemoRouterOptions = {}) {
       return;
     }
     try {
-      const { amountMinor, label, category, vendor, referenceId } = body.data;
+      const { amountMinor, label, category, vendor, referenceId, eventId } = body.data;
       const outcome = await ctx.executor.requestSpend({
         referenceId: referenceId ?? `demo-${randomUUID()}`,
         amountMinor,
@@ -69,6 +70,7 @@ export function demoRouter(options: DemoRouterOptions = {}) {
         reason: `Demo spend: ${label}`,
         category,
         vendor,
+        eventId,
       });
       res.status(STATUS[outcome.status]).json(outcome);
     } catch (err) {
