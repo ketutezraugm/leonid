@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { BRAND } from '../brand';
 import { BrandMark } from '../ui/BrandMark';
 import { Icon, type IconName } from '../ui/icons';
 import { useShellData } from './data';
@@ -28,7 +29,7 @@ export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => voi
       <div className="shell-top">
         <span className="brand">
           <BrandMark />
-          <span className="shell-label">Quartermaster</span>
+          <span className="shell-label">{BRAND.name}</span>
         </span>
         <button
           type="button"

@@ -236,7 +236,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('link', { name: 'Log in with PayPal' })).toHaveAttribute('href', '/api/auth/paypal/login');
-    expect(screen.getByRole('button', { name: 'Enter demo as treasurer' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Enter the demo' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('alert')).toHaveTextContent("isn't allowed");
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
   });
