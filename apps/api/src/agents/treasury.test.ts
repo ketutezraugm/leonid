@@ -63,7 +63,7 @@ describe('treasury agent', () => {
     expect(drafted()[0]).toMatchObject({
       sponsorName: 'Harbor Cloud',
       tier: 'gold',
-      draft: { currency: 'USD', dueInDays: 14, items: [{ quantity: 1, unitAmount: 350_000 }] },
+      draft: { currency: 'USD', dueInDays: 14, items: [{ quantity: 1, unitAmount: 300_000 }] },
     });
     expect(await harbor()).toMatchObject({ status: 'pledged', paypalInvoiceId: null });
     expect(await actions()).toEqual([
@@ -87,7 +87,7 @@ describe('treasury agent', () => {
       dueInDays: 30,
       result: {
         sponsorId: (await harbor())?.id,
-        totalCents: 350_000,
+        totalCents: 300_000,
         currency: 'USD',
         dueInDays: 30,
       },
@@ -147,7 +147,7 @@ describe('treasury agent', () => {
 
     const [d] = drafted();
     expect(d?.draft.items).toEqual([
-      { name: 'OpenHack 2027 gold sponsorship', quantity: 1, unitAmount: 350_000 },
+      { name: 'OpenHack 2027 gold sponsorship', quantity: 1, unitAmount: 300_000 },
     ]);
     expect(d?.draft.note).not.toContain('attacker');
     expect(JSON.stringify(d)).not.toContain('attacker@example.com');
@@ -291,7 +291,7 @@ describe('orchestrator delegation to the treasury agent', () => {
     expect(delegated?.output).toMatchObject({
       sent: false,
       summary: 'Drafted the Harbor Cloud invoice. Nothing was sent.',
-      drafts: [{ sponsorName: 'Harbor Cloud', draft: { items: [{ unitAmount: 350_000 }] } }],
+      drafts: [{ sponsorName: 'Harbor Cloud', draft: { items: [{ unitAmount: 300_000 }] } }],
     });
     expect(await harbor()).toMatchObject({ status: 'pledged', paypalInvoiceId: null });
     expect(await actions()).toEqual([

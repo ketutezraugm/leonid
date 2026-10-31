@@ -118,7 +118,7 @@ function fakePayPal() {
     state,
     // An invoice that already exists at PayPal, for the Harbor Cloud pledge unless overridden.
     put: (id: string, status: string, over: Partial<FakeInvoice> = {}) =>
-      state.invoices.set(id, { status, reference: sponsorId, value: '3500.00', currency: 'USD', ...over }),
+      state.invoices.set(id, { status, reference: sponsorId, value: '3000.00', currency: 'USD', ...over }),
     creates: () => calls.filter((c) => c.method === 'POST' && c.path === '/v2/invoicing/invoices').length,
     searches: () => calls.filter((c) => c.path.startsWith('/v2/invoicing/search-invoices')).length,
     sends: () => count('POST', '/send'),
@@ -167,11 +167,11 @@ describe('buildSponsorInvoiceDraft', () => {
       sponsorId,
       currency: 'USD',
       dueInDays: 14,
-      items: [{ quantity: 1, unitAmount: 350_000 }],
+      items: [{ quantity: 1, unitAmount: 300_000 }],
     });
     expect(d.items[0]?.name).toBe('OpenHack 2027 gold sponsorship');
     expect(d.note).toContain('OpenHack 2027');
-    expect(d.reasoning).toContain('3500.00 USD');
+    expect(d.reasoning).toContain('3000.00 USD');
   });
 
   it('refuses to draft a sponsor with no pledge', () => {
@@ -181,7 +181,7 @@ describe('buildSponsorInvoiceDraft', () => {
   });
 
   it('loads a draft for a stored sponsor, and nothing for an unknown one', async () => {
-    expect((await draftForSponsor(db, sponsorId))?.draft.items[0]?.unitAmount).toBe(350_000);
+    expect((await draftForSponsor(db, sponsorId))?.draft.items[0]?.unitAmount).toBe(300_000);
     expect(await draftForSponsor(db, '00000000-0000-4000-8000-000000000000')).toBeUndefined();
   });
 });
@@ -214,7 +214,7 @@ describe('sendSponsorInvoice', () => {
       primary_recipients: { billing_info: { email_address: string; business_name: string } }[];
       invoicer: { business_name: string };
     };
-    expect(created.items[0]?.unit_amount).toEqual({ currency_code: 'USD', value: '3500.00' });
+    expect(created.items[0]?.unit_amount).toEqual({ currency_code: 'USD', value: '3000.00' });
     expect(created.detail.payment_term).toEqual({ due_date: '2026-11-15' });
     // The sponsor id is the reference that finds this invoice again if its create response is lost.
     expect(created.detail.reference).toBe(sponsorId);
@@ -251,7 +251,7 @@ describe('sendSponsorInvoice', () => {
 
   it.each([
     ['an amount that is not the pledge', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, items: [{ name: 'x', quantity: 1, unitAmount: 1 }] })],
-    ['a quantity that changes the total', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, items: [{ name: 'x', quantity: 2, unitAmount: 350_000 }] })],
+    ['a quantity that changes the total', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, items: [{ name: 'x', quantity: 2, unitAmount: 300_000 }] })],
     ['another currency', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, currency: 'EUR' })],
     ['another sponsor', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, sponsorId: 'someone-else' })],
   ])('refuses a draft with %s', async (_name, tamper) => {
@@ -473,8 +473,8 @@ describe('invoices routes', () => {
     const res = await request(appWith()).get(`/api/sponsors/${sponsorId}/draft`).set(TOKEN);
 
     expect(res.status).toBe(200);
-    expect(res.body.sponsor).toMatchObject({ name: 'Harbor Cloud', pledged: 350_000, status: 'pledged' });
-    expect(res.body.draft.items[0].unitAmount).toBe(350_000);
+    expect(res.body.sponsor).toMatchObject({ name: 'Harbor Cloud', pledged: 300_000, status: 'pledged' });
+    expect(res.body.draft.items[0].unitAmount).toBe(300_000);
     expect(paypal.calls).toHaveLength(0);
   });
 
