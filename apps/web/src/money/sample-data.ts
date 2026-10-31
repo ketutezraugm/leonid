@@ -63,7 +63,6 @@ export const sampleCommandCenterData: CommandCenterData = {
         destination: {
           recipientType: 'EMAIL',
           receiver: 'ada@example.com',
-          wallet: 'PAYPAL',
           countryCode: 'GB',
         },
         amount: 50000,
@@ -87,7 +86,6 @@ export const sampleCommandCenterData: CommandCenterData = {
         destination: {
           recipientType: 'EMAIL',
           receiver: 'ravi@example.com',
-          wallet: 'PAYPAL',
           countryCode: 'IN',
         },
         amount: 30000,
@@ -113,9 +111,8 @@ export const sampleCommandCenterData: CommandCenterData = {
         kind: 'claim',
         recipientName: 'Sam Volunteer',
         destination: {
-          recipientType: 'USER_HANDLE',
-          receiver: '@sam-v',
-          wallet: 'VENMO',
+          recipientType: 'EMAIL',
+          receiver: 'sam@example.com',
           countryCode: 'US',
         },
         amount: 4250,
