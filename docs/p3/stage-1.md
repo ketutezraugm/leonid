@@ -2,14 +2,14 @@
 
 Owner: P3. Source: PRD §7 (treasury agent), §14 (day-1 tests) and the Stage 1 plan. Reader: the team (P1, P2, P4) and P3.
 
-**Status: the code is merged into `development` (PRs #20, #21 and #22), and the current invoice shape was verified in the sandbox on 2026-10-29, but Stage 1 is not complete until the end-to-end check at the bottom has been run on staging.** Items that are not done are marked as such throughout.
+**Status: the code is merged into `development` (PRs #20, #21 and #22), and the end-to-end check ran on staging on 2026-10-29 (run by P2): steps 1 to 7 pass. Stage 1 is complete except step 8, unlocked budget rising, which waits on P1's budget function.** Items that are not done are marked as such throughout.
 
 The Stage 1 goal was: an invoice arrives in the sponsor's sandbox account, and paying it raises the unlocked budget.
 
 | Half of the goal | State |
 | --- | --- |
-| An invoice arrives in the sponsor's sandbox account | Shown. The earlier code sent a real invoice, and on 2026-10-29 PayPal accepted the current code's invoice shape (`due_date` only, `detail.reference`) and found it by reference (see the evidence section). A send with the current code happens in the end-to-end check. |
-| Paying it raises the unlocked budget | **Not shown yet.** The code that writes the income is merged and tested, but it needs staging deployed and P1's budget function, which does not exist yet. |
+| An invoice arrives in the sponsor's sandbox account | Shown. On 2026-10-29 staging sent a real $1.00 invoice for a throwaway sponsor and the sandbox payer paid it (see the evidence section). The current invoice shape was also checked on its own earlier that day. |
+| Paying it raises the unlocked budget | **Half shown.** Paying it wrote one ledger row of 100 USD minor units, marked the sponsor `paid` and audited it, and a replay changed nothing (end-to-end check, steps 5 to 7). The "unlocked budget rises" half needs P1's budget function, which does not exist yet (step 8). |
 
 ## How a sponsor invoice flows
 
@@ -108,11 +108,13 @@ Both routes need the `x-treasurer-token` header. With no `TREASURER_TOKEN` confi
 | Day-1 payout batch `PZN4R5F4LG5NY` | `SUCCESS`. PayPal generated `PAYMENT.PAYOUTSBATCH.SUCCESS`, event `WH-5UE82990P34269438-65M4346561924914E`. |
 | Earlier invoice code | Sent a $1.00 invoice, `INV2-2SFS-ZWAG-ZJA8-9KRJ` (number 0002), which PayPal accepted. No request or response for it is committed, and the body has changed since: `payment_term` now sends only `due_date` (or `term_type: DUE_ON_RECEIPT` when due in 0 days), and `detail.reference` is set. The current shape is verified in the next row. This invoice is unpaid. |
 | Current invoice code (2026-10-29) | Two drafts created with the merged `createInvoice`, tagged with one test reference, never sent, then deleted. `INV2-KU48-3J24-FRP3-RQUV` (due on a date, `payment_term: { due_date }` only): accepted; PayPal stored it as `term_type: DUE_ON_DATE_SPECIFIED` with the due date. `INV2-PQE4-TERG-9VEF-LAR2` (`term_type: DUE_ON_RECEIPT`): accepted. Both read back with the reference and a total of 100 USD minor units. `searchInvoicesByReference` found 2 of 2. Both drafts deleted (`DELETE /v2/invoicing/invoices/{id}`). |
-| Treasury webhook | P2's receiver at `quartermaster-staging.onrender.com/api/webhooks/paypal/treasury` is subscribed to `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED` and `PAYMENT.PAYOUTSBATCH.SUCCESS`. |
+| Staging fixes needed first | The staging database had no migrations `0003` to `0005` (no `ledger_entries`, `approvals`, `agent_wallet`, `spend_references` or `wallet_setups`), and Render's `DATABASE_URL` was wrong, so every query failed. P2 applied the three migrations by hand in one transaction (additive only) and fixed the URL. There is no drizzle migration journal table in that database, so a later `pnpm db:migrate` may try to re-run old migrations: apply future migrations by hand, or set up the journal first. |
+| End-to-end on staging (2026-10-29, run by P2) | A throwaway sponsor with a $1.00 pledge, not a seeded one. Draft: 200, amount equal to the pledge. Send: 200, invoice `INV2-Y5X3-DDT3-YHM4-PEK8` (number 0004), sponsor `invoiced`, and the invoice's `detail.reference` equals the sponsor id. A second send answered 409 `already_invoiced`. Paid from a sandbox payer account: PayPal shows the invoice `PAID` for 1.00, nothing due, with a `SUCCESS` transaction. PayPal created `INVOICING.INVOICE.PAID` (event `WH-2VU667079N833720A-2N511350BM4794140`) at 15:53:29 UTC, and the app's delivery log shows it received at 15:53:37 UTC and answered 200, accepted. Ledger: one `sponsor_invoice` row, 100 USD in. Audit: `invoice.create`, `invoice.sent` and one `ledger.income_recorded`. Replay with PayPal's resend API: answered 200, duplicate, and still one ledger row. Afterwards P2 deleted the ledger row and the test sponsor, and the three seeded sponsors are `pledged`. P3 re-checked the invoice, the event and the audit rows directly against PayPal and the database. |
+| Treasury webhook | P2's receiver at `quartermaster-staging.onrender.com/api/webhooks/paypal/treasury` is subscribed to `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED` and `PAYMENT.PAYOUTSBATCH.SUCCESS`. As of 2026-10-29 it is **not** yet subscribed to `PAYMENT.CAPTURE.REFUNDED` or `REVERSED`. |
 
 **Verified in the sandbox on 2026-10-29** (Treasury app, the code merged in PRs #20 to #22): a `due_date`-only payment term and a `detail.reference` are accepted, search by reference returns the invoice, and drafts can be deleted. The run is in the evidence table above. The search returns every invoice with that reference, so a sponsor's earlier invoice is found as well; the send service relies on that.
 
-**Not confirmed:** whether PayPal's events reached the staging receiver and were answered with a 2xx. PayPal's event list shows they were generated, not delivered. Check the developer dashboard's webhook events or the Render logs. The subscription list above does not include `PAYMENT.CAPTURE.REFUNDED` / `REVERSED`.
+**Delivery is confirmed** for the paid-invoice event (see the end-to-end row). Render's own request log was empty, so the evidence is the app's delivery log (`/api/webhooks/paypal/recent`). **Still not done:** the Treasury webhook is not subscribed to `PAYMENT.CAPTURE.REFUNDED` or `REVERSED`, although the ledger has handlers for them, so a refund would not reduce cleared income yet.
 
 The agent has been tested with a scripted model only, as the project rules require. It has not been run against a real model.
 
@@ -131,8 +133,8 @@ The agent has been tested with a scripted model only, as the project rules requi
 | Who | What is needed | Why |
 | --- | --- | --- |
 | P2 | Any open branch that adds a migration (for example `p2/order-approved`) regenerates it on top of `0005` (`pnpm --filter @quartermaster/api db:generate`) | A numbering clash breaks the migration journal |
-| P2 | Run the migrations on the shared database and deploy staging | The ledger table and handlers must exist where the webhook lands |
-| P2 | Check, and if needed add, the Treasury webhook subscription to `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED` | Otherwise refunds never reduce cleared income |
+| P2 | Done 2026-10-29: migrations `0003` to `0005` applied by hand on the shared database, and staging runs the merged code | The ledger table and handlers must exist where the webhook lands |
+| P2 | Add the Treasury webhook subscription to `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED` (not there as of 2026-10-29) | Otherwise refunds never reduce cleared income |
 | P2 | Set `custom_id` with `buildCaptureTag()` when creating Treasury orders for tickets and donations | Otherwise those captures cannot be credited to an event |
 | P1 | Build the funds-gated budget (F10) on `clearedIncome(db, eventId, currency)` | "Unlocked budget" does not exist yet, so the second half of the goal cannot be shown |
 | P1 / P2 | Decide whether `sponsors` gets a `contact_email` column | The treasurer types the email until then |
@@ -142,12 +144,14 @@ The agent has been tested with a scripted model only, as the project rules requi
 ## What is left to complete Stage 1
 
 1. Done: #20, #21 and #22 are merged into `development`.
-2. P2 runs the migrations and deploys staging.
-3. Run the "to verify in the sandbox" checklist above for the current invoice shape.
-4. **Run the end-to-end check below on staging.** This is the proof of the Stage 1 goal.
-5. Build the confirm screen with P4 (otherwise the demo confirms through the API).
-6. Add Invoicing to the README "PayPal capabilities used" table with its code paths. The team's PayPal rules require it for the judges.
-7. Optional: reconcile invoice fees from Transaction Search, and decide on the APIMatic plugin evidence.
+2. Done: P2 applied migrations `0003` to `0005` and staging runs the merged code (2026-10-29).
+3. Done: the current invoice shape was verified in the sandbox (2026-10-29).
+4. Done except step 8: the end-to-end check ran on staging (2026-10-29).
+5. **Step 8, waiting on P1:** once the funds-gated budget exists, check that unlocked budget rose by the invoice amount. This is the other half of the Stage 1 goal.
+6. P2 adds the `PAYMENT.CAPTURE.REFUNDED` and `REVERSED` subscriptions to the Treasury webhook.
+7. Build the confirm screen with P4 (otherwise the demo confirms through the API).
+8. Done: Invoicing and the ledger handlers are in the README "PayPal capabilities used" table.
+9. Optional: reconcile invoice fees from Transaction Search, and decide on the APIMatic plugin evidence.
 
 ## End-to-end check
 
@@ -163,3 +167,7 @@ Run once staging is deployed from the merged code.
 8. When P1's budget exists, check that unlocked budget rose by the invoice amount.
 
 If step 6 shows nothing, look for `ledger.invoice_unmatched` in the audit log (the invoice id is not on any sponsor) and check the staging logs for the webhook.
+
+### Result
+
+Run on 2026-10-29 by P2 on staging, with a throwaway sponsor: steps 1 to 7 pass (details in the evidence table). Step 8 waits for P1's budget function. Use a throwaway sponsor for any repeat: a paid seeded sponsor would show up in the demo.
