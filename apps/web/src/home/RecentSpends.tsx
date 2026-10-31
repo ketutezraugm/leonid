@@ -1,5 +1,6 @@
 import { RulesHealthResponse, type RuleDecision } from '@quartermaster/shared';
 import { useFetch } from '../shell/api';
+import { useEvent, withEvent } from '../shell/event';
 import { CopyId } from '../ui/CopyId';
 import { formatMoney } from '../ui/money';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -31,7 +32,8 @@ function Verdict({ status, label, reason }: { status: 'done' | 'risk' | 'blocked
 // The rules-health feed once spends have gone through the rules; sample rows, labelled, until then
 // (the feed needs the database, and has no rows on a fresh event). The feed carries no PayPal ID yet.
 export function RecentSpends() {
-  const feed = useFetch('/api/widgets/rules-health', RulesHealthResponse);
+  const event = useEvent();
+  const feed = useFetch(withEvent('/api/widgets/rules-health', event), RulesHealthResponse);
   const live = feed.kind === 'ready' ? feed.data.data.recent.filter((entry) => entry.amount !== null) : [];
 
   return (

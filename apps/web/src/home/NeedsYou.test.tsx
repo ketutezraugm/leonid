@@ -52,6 +52,6 @@ describe('NeedsYou', () => {
     expect(screen.getByText('$420.00')).toBeInTheDocument();
     expect(screen.getByText('Over the $200.00 per-order rule')).toBeInTheDocument();
     expect(screen.getByText('and 1 more waiting')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Review in Approvals' })).toHaveAttribute('href', '/approvals');
+    expect(screen.getByRole('link', { name: 'Review in Approvals' })).toHaveAttribute('href', '/events/demo/approvals');
   });
 });

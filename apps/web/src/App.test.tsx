@@ -12,26 +12,84 @@ vi.mock('./chat/AgentChat', () => ({
   ),
 }));
 
-beforeEach(() => {
-  localStorage.clear();
-  // Requests never settle: these tests check the first render only.
+const json = (body: unknown, status = 200) =>
+  Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }));
+
+// /api/events answers (by default a 404, so the app falls back to the demo event); every other request never
+// settles, so these tests check the shell and first render only.
+function stubApi(events?: unknown) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(() => new Promise(() => {})),
+    vi.fn((url: string) =>
+      String(url).startsWith('/api/events')
+        ? events
+          ? json(events)
+          : json({ error: 'not found' }, 404)
+        : new Promise(() => {}),
+    ),
   );
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  stubApi();
 });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('App', () => {
-  it('renders the shell and event home', () => {
+  it('renders the shell and event home inside an event', async () => {
+    render(
+      <MemoryRouter initialEntries={['/events/demo']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Event home' })).toBeInTheDocument();
+    expect(screen.getByText('Quartermaster')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+  });
+
+  it('opens on All events, with the demo event as a card when the events endpoint is missing', async () => {
     render(
       <MemoryRouter>
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByText('Quartermaster')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Event home' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Your events' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('href', '/events/demo');
+    expect(screen.getByText(/Showing the demo event/)).toBeInTheDocument();
+  });
+
+  it('switches events from the sidebar and stays on the same screen', async () => {
+    const hack = crypto.randomUUID();
+    const meetup = crypto.randomUUID();
+    stubApi({
+      events: [
+        { id: hack, name: 'OpenHack 2027', date: '2027-03-14', people: 200, currency: 'USD' },
+        { id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, currency: 'USD' },
+      ],
+    });
+    render(
+      <MemoryRouter initialEntries={[`/events/${hack}/approvals`]}>
+        <App />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /OpenHack 2027.*Switch event/ }));
+    const other = screen.getByRole('link', { name: /Spring Meetup/ });
+    expect(other).toHaveAttribute('href', `/events/${meetup}/approvals`);
+    expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('aria-current', 'true');
+    fireEvent.click(other);
+    expect(await screen.findByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+  });
+
+  it('says so when the event in the link is not one of yours', async () => {
+    render(
+      <MemoryRouter initialEntries={['/events/not-mine']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('This event isn’t here')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See all your events' })).toHaveAttribute('href', '/events');
   });
 
   it('offers a skip link that jumps past the sidebar to the screen', () => {
@@ -62,11 +120,11 @@ describe('App', () => {
 
   it('reaches the agent workspace from the nav, without the floating button', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/events/demo']}>
         <App />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole('link', { name: 'Agent' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Agent' }));
     expect(await screen.findByRole('region', { name: 'Results' })).toBeInTheDocument();
     expect(document.querySelector('.shell')).toHaveClass('shell--agent', 'shell--rail');
     expect(screen.queryByRole('button', { name: 'Ask the agent' })).not.toBeInTheDocument();
@@ -76,7 +134,7 @@ describe('App', () => {
 
   it('opens venue results from the drawer in the workspace', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/events/demo']}>
         <App />
       </MemoryRouter>,
     );
@@ -116,9 +174,9 @@ describe('App', () => {
     expect(home.container.querySelector('.shell')).not.toHaveClass('shell--rail');
   });
 
-  it('opens and closes the sidebar from its button, and remembers it across screens', () => {
+  it('opens and closes the sidebar from its button, and remembers it across screens', async () => {
     const { container, unmount } = render(
-      <MemoryRouter initialEntries={['/plan']}>
+      <MemoryRouter initialEntries={['/events/demo/plan']}>
         <App />
       </MemoryRouter>,
     );
@@ -127,12 +185,12 @@ describe('App', () => {
     expect(shell).not.toHaveClass('shell--rail');
     expect(screen.getByRole('button', { name: 'Close sidebar' })).toHaveAttribute('aria-expanded', 'true');
 
-    fireEvent.click(screen.getByRole('link', { name: 'Money' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Money' }));
     expect(shell).not.toHaveClass('shell--rail');
     unmount();
 
     const again = render(
-      <MemoryRouter initialEntries={['/money']}>
+      <MemoryRouter initialEntries={['/events/demo/money']}>
         <App />
       </MemoryRouter>,
     );
@@ -140,9 +198,9 @@ describe('App', () => {
     expect(again.container.querySelector('.shell')).toHaveClass('shell--rail');
   });
 
-  it('closes the sidebar on the other screens too, and that choice carries to every screen', () => {
+  it('closes the sidebar on the other screens too, and that choice carries to every screen', async () => {
     const { container } = render(
-      <MemoryRouter initialEntries={['/approvals']}>
+      <MemoryRouter initialEntries={['/events/demo/approvals']}>
         <App />
       </MemoryRouter>,
     );
@@ -151,7 +209,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close sidebar' }));
     expect(shell).toHaveClass('shell--rail');
 
-    fireEvent.click(screen.getByRole('link', { name: 'Rules' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Rules' }));
     expect(shell).toHaveClass('shell--rail');
     expect(screen.getByRole('button', { name: 'Open sidebar' })).toHaveAttribute('aria-expanded', 'false');
 

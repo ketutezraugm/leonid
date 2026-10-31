@@ -8,7 +8,7 @@ import {
 } from '@quartermaster/shared';
 import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';
 import { useShellData } from '../shell/data';
-import { daysUntil, formatEventDate, useEvent } from '../shell/event';
+import { useEvents } from '../shell/event';
 import { useSession } from '../shell/session';
 import { walletConsequence } from '../shell/wallet';
 import { Button } from '../ui/Button';
@@ -27,7 +27,7 @@ const statusBadge: Record<WalletState, { status: 'done' | 'pending' | 'blocked';
 
 export function Settings() {
   const { wallet } = useShellData();
-  const event = useEvent();
+  const { events } = useEvents();
   const treasury = useFetch('/api/treasury', TreasuryResponse);
   const { session, signOut } = useSession();
   const toast = useToast();
@@ -77,12 +77,13 @@ export function Settings() {
     <section>
       <PageHeader title="Settings" description="Is the agent allowed to spend? This is where you stop it." />
 
-      <Card title="Event">
+      <Card title="Events">
         <p>
-          <strong>{event.name}</strong> · {formatEventDate(event.date)}, 2027 · {event.people} people ·{' '}
-          {daysUntil(event.date)} days to go
+          {events.length === 1 ? `You run one event, ${events[0]!.name}.` : `You run ${events.length} events.`} Each
+          keeps its own budget, plan, approvals, rules and claims. The treasury and the agent wallet below are shared
+          by all of them.
         </p>
-        <p className="muted">Event details become editable once the event endpoint exists.</p>
+        <Link to="/events">All events</Link>
       </Card>
 
       <Card title="Treasury">
@@ -183,8 +184,9 @@ export function Settings() {
           onCancel={() => setConfirming(false)}
         >
           <p>
-            The agent will no longer be able to pay for anything. PayPal rejects its next charge, so this holds even
-            if something in our app goes wrong. You can connect a new wallet later.
+            The agent will no longer be able to pay for anything, in any of your events: they share this wallet. PayPal
+            rejects its next charge, so this holds even if something in our app goes wrong. You can connect a new
+            wallet later.
           </p>
         </ConfirmDialog>
       )}

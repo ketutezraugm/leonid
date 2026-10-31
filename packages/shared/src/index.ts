@@ -366,3 +366,4 @@ export type SpendOutcome = z.infer<typeof SpendOutcome>;
 export const VenueDepositPayResponse = z.object({ deposit: VenueDeposit, outcome: SpendOutcome });
 export type VenueDepositPayResponse = z.infer<typeof VenueDepositPayResponse>;
 export * from './spends.js';
+export * from './events.js';

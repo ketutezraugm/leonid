@@ -4,6 +4,7 @@ import { ApprovalsResponse } from '@quartermaster/shared';
 import { timeAgo } from '../chat/sessions';
 import { errorMessage, useFetch } from '../shell/api';
 import { useShellData } from '../shell/data';
+import { useEvent, withEvent } from '../shell/event';
 import { walletConsequence } from '../shell/wallet';
 import { formatMoney } from '../ui/money';
 import { PageState } from '../ui/PageState';
@@ -20,7 +21,8 @@ const parseConfig = {
 
 // A queue on the left (oldest first), the selected item on the right. On a phone they stack.
 export function ApprovalsScreen() {
-  const list = useFetch('/api/approvals', ApprovalsResponse);
+  const event = useEvent();
+  const list = useFetch(withEvent('/api/approvals', event), ApprovalsResponse);
   const config = useFetch('/api/approvals/config', parseConfig);
   const { wallet, refreshApprovals } = useShellData();
   const [selected, setSelected] = useState<string | null>(null);

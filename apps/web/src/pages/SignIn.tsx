@@ -24,7 +24,7 @@ export function SignIn() {
     setProblem(null);
     try {
       await sendJson('/api/auth/demo-login', parseOk);
-      navigate('/', { replace: true });
+      navigate('/events', { replace: true });
       // The session context reads /me once on load, so a full reload picks up the new cookie.
       window.location.reload();
     } catch (err) {
