@@ -140,9 +140,9 @@
   padding: var(--space-1) var(--space-3);
   font-size: 0.8125rem;
   font-weight: 600;
-  border-radius: 999px;
-  color: var(--color-success);
-  background: var(--color-success-soft);
+  border-radius: var(--radius-pill);
+  color: var(--color-status-done-text);
+  background: var(--color-status-done-soft);
 }
 
 .results-status--running {
@@ -152,7 +152,7 @@
 
 .results-status--failed {
   color: var(--color-danger);
-  background: var(--color-warning-soft);
+  background: var(--color-status-risk-soft);
 }
 
 .results-note {
@@ -160,8 +160,8 @@
   padding: var(--space-2) var(--space-3);
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: var(--color-warning);
-  background: var(--color-warning-soft);
+  color: var(--color-status-risk-text);
+  background: var(--color-status-risk-soft);
   border-radius: var(--radius);
 }
 
@@ -239,7 +239,6 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -297,7 +296,6 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
 }
 
 .venue-info {
@@ -328,17 +326,17 @@
   padding: 2px var(--space-2);
   font-size: 0.8125rem;
   background: var(--color-bg);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .venue-facts .is-good {
-  color: var(--color-success);
-  background: var(--color-success-soft);
+  color: var(--color-status-done-text);
+  background: var(--color-status-done-soft);
 }
 
 .venue-facts .is-warn {
-  color: var(--color-warning);
-  background: var(--color-warning-soft);
+  color: var(--color-status-risk-text);
+  background: var(--color-status-risk-soft);
 }
 
 .venue-facts .is-unknown {
@@ -524,7 +522,7 @@
 
 .results-activity .is-done::before {
   content: '✓';
-  color: var(--color-success);
+  color: var(--color-status-done-text);
 }
 
 .results-activity .is-failed {
@@ -572,8 +570,8 @@
 }
 
 .venue-card.is-chosen {
-  border-color: var(--color-success);
-  box-shadow: 0 0 0 1px var(--color-success);
+  border-color: var(--color-status-done);
+  box-shadow: 0 0 0 1px var(--color-status-done);
 }
 
 .venue-choose {
@@ -597,8 +595,8 @@
   padding: var(--space-2) var(--space-3);
   font-weight: 600;
   text-align: center;
-  color: var(--color-success);
-  background: var(--color-success-soft);
+  color: var(--color-status-done-text);
+  background: var(--color-status-done-soft);
   border-radius: var(--radius);
 }
 
@@ -609,11 +607,10 @@
   background: var(--color-surface);
   border: 1px solid var(--color-accent);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
 }
 
 .deposit.is-paid {
-  border-color: var(--color-success);
+  border-color: var(--color-status-done);
 }
 
 .deposit-head {
@@ -677,8 +674,8 @@
 
 .deposit-paid {
   padding: var(--space-2) var(--space-3);
-  color: var(--color-success);
-  background: var(--color-success-soft);
+  color: var(--color-status-done-text);
+  background: var(--color-status-done-soft);
   border-radius: var(--radius);
 }
 

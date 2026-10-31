@@ -23,6 +23,8 @@
   },
   "dependencies": {
     "@ai-sdk/react": "4.0.158",
+    "@bryntum/gantt": "npm:@bryntum/gantt-trial@7.3.7",
+    "@bryntum/gantt-react": "7.3.7",
     "@quartermaster/shared": "workspace:*",
     "ai": "7.0.154",
     "ag-grid-community": "36.2.0",
