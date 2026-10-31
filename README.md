@@ -49,8 +49,13 @@ The Money screen is an AG Studio command center, themed from `apps/web/src/style
 | Theme from design tokens                                    | `apps/web/src/money/studio-theme.ts`   |
 | Data sources from the shared shapes                         | `apps/web/src/money/studio-data.ts`    |
 | Default report (KPIs, funding, budget burn, payouts ledger) | `apps/web/src/money/initial-report.ts` |
+| Custom widgets: funding thermometer, budget burn            | `apps/web/src/money/widgets/`          |
 
 ![Money command center](docs/p3/screenshots/money-stage-0.png)
+
+Budget burn is a custom widget: for each budget category it shows what was spent (captured) and committed (approved, not yet captured) against the category's cap. A category over its cap says so in words and gets a line at the cap. Clicking a category cross-filters the widgets that share its table. Its numbers are still sample data until the funds-gated budget lands.
+
+![Budget burn widget](docs/p3/screenshots/budget-burn.png)
 
 Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.md). The licence key is read from `VITE_AG_STUDIO_LICENSE` and is not committed.
 

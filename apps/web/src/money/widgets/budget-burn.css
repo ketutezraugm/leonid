@@ -1,13 +1,13 @@
-/* Budget burn. Colours come from the design tokens; the fallbacks keep it readable until the chart tokens
-   (color-data, color-hold) are merged. Meaning never rests on colour alone: every figure is also in text,
-   committed money is hatched, and a category over its cap says so in words and gets a marker at the cap. */
+/* Budget burn. Colours come from the design tokens: spent and committed money are the data series (committed
+   is the hatched one) and the track is the sunken surface. The fallbacks only keep it readable on a branch
+   that predates the tokens. Meaning never rests on colour alone: every figure is also in text, committed
+   money is hatched, and a category over its cap says so in words and gets a marker at the cap. */
 .qm-burn {
   --qm-spent: var(--color-data, var(--color-accent, #0070e0));
-  --qm-hold: var(--color-hold, #a8741a);
   --qm-danger: var(--color-danger, #c4320a);
   --qm-text: var(--color-text, #1d1d1b);
   --qm-muted: var(--color-muted, #6b6b66);
-  --qm-border: var(--color-border, #e3e3de);
+  --qm-track: var(--color-surface-sunken, #e8ede9);
   --qm-focus: var(--color-accent, #0070e0);
 
   box-sizing: border-box;
@@ -112,6 +112,11 @@
   background: var(--color-accent-soft, #e5f0fc);
 }
 
+/* The selected row's background is nearly the track's colour, so the track turns white to stay visible. */
+.qm-burn__row[aria-pressed='true'] .qm-burn__track {
+  background: var(--color-surface, #fff);
+}
+
 .qm-burn__row[data-dimmed='true'] {
   opacity: 0.5;
 }
@@ -138,7 +143,7 @@
   min-width: 2px;
   overflow: hidden;
   border-radius: 4px;
-  background: var(--qm-border);
+  background: var(--qm-track);
 }
 
 .qm-burn__seg {
@@ -153,8 +158,8 @@
 
 .qm-burn__seg--committed,
 .qm-burn__swatch--committed {
-  background: repeating-linear-gradient(135deg, var(--qm-hold) 0 2px, transparent 2px 5px);
-  outline: 1px solid var(--qm-hold);
+  background: repeating-linear-gradient(135deg, var(--qm-spent) 0 2px, transparent 2px 5px);
+  outline: 1px solid var(--qm-spent);
   outline-offset: -1px;
 }
 
