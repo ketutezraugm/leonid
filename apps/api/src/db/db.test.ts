@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from './client.js';
 import { createEventForThread, getDemoEvent, getEvent, listSponsors } from './events.js';
@@ -8,6 +9,7 @@ import {
   getThread,
   replaceChecklist,
 } from './mandates.js';
+import { sponsors } from './schema.js';
 import { seedDemoEvent } from './seed.js';
 import { createTasks, linkTaskToSponsor, listTasks } from './tasks.js';
 import { createTestDb } from './testing.js';
@@ -25,6 +27,22 @@ describe('seed', () => {
     expect(first).toMatchObject({ headcount: 200, budgetTotal: 800_000, currency: 'USD' });
     expect(await listSponsors(db, first.id)).toHaveLength(3);
     expect((await getDemoEvent(db))?.id).toBe(first.id);
+  });
+
+  it('brings an already seeded event up to the current pledges, and leaves an invoiced sponsor alone', async () => {
+    const event = await seedDemoEvent(db);
+    await db.update(sponsors).set({ pledged: 350_000 }).where(eq(sponsors.name, 'Harbor Cloud'));
+    await db.update(sponsors).set({ pledged: 200_000 }).where(eq(sponsors.name, 'Lumen Labs'));
+    await db.update(sponsors).set({ pledged: 100_000, status: 'invoiced' }).where(eq(sponsors.name, 'Pixel Foundry'));
+
+    await seedDemoEvent(db);
+
+    const pledged = (await listSponsors(db, event.id)).map((s) => [s.name, s.pledged]);
+    expect(pledged).toEqual([
+      ['Harbor Cloud', 300_000],
+      ['Lumen Labs', 250_000],
+      ['Pixel Foundry', 100_000],
+    ]);
   });
 });
 
