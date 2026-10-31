@@ -23,9 +23,9 @@ export async function seedDemoEvent(db: Db) {
   if (!event) throw new Error('Could not seed the demo event');
 
   await db.insert(sponsors).values([
-    { eventId: event.id, name: 'Harbor Cloud', tier: 'gold', pledged: 350_000 },
-    { eventId: event.id, name: 'Lumen Labs', tier: 'silver', pledged: 200_000 },
-    { eventId: event.id, name: 'Pixel Foundry', tier: 'bronze', pledged: 100_000 },
+    { eventId: event.id, name: 'Harbor Cloud', tier: 'gold', pledged: 300_000 },
+    { eventId: event.id, name: 'Lumen Labs', tier: 'silver', pledged: 250_000 },
+    { eventId: event.id, name: 'Pixel Foundry', tier: 'bronze', pledged: 250_000 },
   ]);
   return event;
 }
