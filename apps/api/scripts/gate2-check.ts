@@ -9,6 +9,8 @@
 // Needs STAGING_TREASURER_TOKEN in .env, and DEMO_SPEND=true on the server (POST /api/demo/spend).
 // Optional, for stronger checks: STAGING_DATABASE_URL (audit rows, the wallet's token id) and the Procurement
 // credentials (the order status and the token at PayPal). GATE2_BASE_URL points it at another deployment.
+// Needs GATE2_EVENT_ID too, the seeded event's id: the rules check a spend against its event's budget, so that event needs
+// a paid sponsor invoice first, and a spend with no event is blocked. Connect the wallet again if the last run revoked it.
 // It prints no secrets. The kill-switch step revokes the agent wallet: reconnect with --connect afterwards.
 import postgres from 'postgres';
 import { z } from 'zod';
@@ -17,6 +19,7 @@ import { PayPalApiError } from '../src/paypal/errors.js';
 
 const BASE = (process.env.GATE2_BASE_URL ?? 'https://quartermaster-staging.onrender.com').replace(/\/$/, '');
 const TOKEN = process.env.STAGING_TREASURER_TOKEN;
+const EVENT_ID = process.env.GATE2_EVENT_ID;
 const args = process.argv.slice(2);
 const finishId = args.includes('--finish') ? args[args.indexOf('--finish') + 1] : undefined;
 
@@ -57,6 +60,7 @@ const auditOutcome = async (referenceId: string) =>
 
 async function preflight() {
   if (!TOKEN) stop('STAGING_TREASURER_TOKEN is not set in .env');
+  if (!EVENT_ID) stop('GATE2_EVENT_ID is not set in .env: use the seeded event, which needs a paid sponsor invoice');
   console.log(`Gate 2 rehearsal against ${BASE}\n`);
   const health = await api('GET', '/api/health');
   if (!check(health.status === 200, 'server is up', `(${health.status})`)) stop('server is not answering');
@@ -83,10 +87,10 @@ async function beats() {
 
   const run = Date.now();
   const auto = `gate2-${run}-140`;
-  const paid = await api('POST', '/api/demo/spend', { amountMinor: 14_000, label: 'Lanyards (200)', category: 'swag', vendor: 'Lanyard Co', referenceId: auto });
+  const paid = await api('POST', '/api/demo/spend', { amountMinor: 14_000, label: 'Lanyards (200)', category: 'swag', vendor: 'Lanyard Co', referenceId: auto, eventId: EVENT_ID });
   check(paid.status === 200 && paid.json.status === 'paid', '$140 auto-paid', paid.status === 200 ? `capture ${String(paid.json.captureId)}` : `(${paid.status}) ${JSON.stringify(paid.json)}`);
   const asked = `gate2-${run}-420`;
-  const held = await api('POST', '/api/demo/spend', { amountMinor: 42_000, label: 'Prize cart', category: 'prizes', vendor: 'Prize Co', referenceId: asked });
+  const held = await api('POST', '/api/demo/spend', { amountMinor: 42_000, label: 'Prize cart', category: 'prizes', vendor: 'Prize Co', referenceId: asked, eventId: EVENT_ID });
   const opened = check(held.status === 202 && held.json.status === 'needs_approval', '$420 opened an approval and charged nothing', `(${held.status})`);
 
   if (db) {
@@ -128,7 +132,7 @@ async function finish(approvalId: string) {
   const revoke = await api('POST', '/api/wallet/revoke');
   check(revoke.status === 200 && revoke.json.revoked === true, 'kill switch: wallet revoked', `(${revoke.status})`);
   check((await api('GET', '/api/wallet')).json.status === 'revoked', 'wallet shows as revoked');
-  const refused = await api('POST', '/api/demo/spend', { amountMinor: 14_000, label: 'After the kill switch', referenceId: `gate2-${Date.now()}-after-kill` });
+  const refused = await api('POST', '/api/demo/spend', { amountMinor: 14_000, label: 'After the kill switch', referenceId: `gate2-${Date.now()}-after-kill`, eventId: EVENT_ID });
   check(refused.status === 409 && refused.json.reason === 'no_wallet', 'a spend after the kill switch is refused', `(${refused.status})`);
   if (procurement && token) {
     const gone = await procurement.request({ method: 'GET', path: `/v3/vault/payment-tokens/${encodeURIComponent(String(token))}`, schema: z.unknown() }).then(
