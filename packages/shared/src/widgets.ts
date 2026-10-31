@@ -123,3 +123,9 @@ export type FundingThermometerResponse = z.infer<typeof FundingThermometerRespon
 
 export const RulesHealthResponse = widgetResponse(RulesHealthData);
 export type RulesHealthResponse = z.infer<typeof RulesHealthResponse>;
+
+export const BudgetBurnResponse = widgetResponse(BudgetBurnData);
+export type BudgetBurnResponse = z.infer<typeof BudgetBurnResponse>;
+
+export const DeliveryRiskResponse = widgetResponse(DeliveryRiskData);
+export type DeliveryRiskResponse = z.infer<typeof DeliveryRiskResponse>;
