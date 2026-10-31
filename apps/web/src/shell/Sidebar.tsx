@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { BrandMark } from '../ui/BrandMark';
 import { Icon, type IconName } from '../ui/icons';
 import { useShellData } from './data';
-import { daysUntil, EVENT, formatEventDate } from './event';
+import { daysUntil, formatEventDate, useEvent } from './event';
 import { useSession } from './session';
 import { walletLabel } from './wallet';
 
@@ -19,7 +19,8 @@ const nav: { to: string; label: string; icon: IconName }[] = [
 export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const { session, signOut } = useSession();
   const { wallet, waiting } = useShellData();
-  const days = daysUntil(EVENT.date);
+  const event = useEvent();
+  const days = daysUntil(event.date);
 
   return (
     <aside className="shell-side">
@@ -40,9 +41,9 @@ export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => voi
         </button>
       </div>
       <div className="shell-event shell-label">
-        <strong>{EVENT.name}</strong>
+        <strong>{event.name}</strong>
         <span className="muted">
-          {formatEventDate(EVENT.date)} · {days >= 0 ? `${days} days to go` : 'Event over'}
+          {formatEventDate(event.date)} · {days >= 0 ? `${days} days to go` : 'Event over'}
         </span>
       </div>
       <nav className="shell-nav" aria-label="Main">

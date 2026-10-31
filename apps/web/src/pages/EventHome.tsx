@@ -6,7 +6,7 @@ import { NeedsYou } from '../home/NeedsYou';
 import { RecentSpends } from '../home/RecentSpends';
 import { RunwayStrip } from '../home/RunwayStrip';
 import { useFetch } from '../shell/api';
-import { daysUntil, EVENT, formatEventDate } from '../shell/event';
+import { daysUntil, formatEventDate, useEvent } from '../shell/event';
 import { BudgetBar, unlockedToSpend } from '../ui/BudgetBar';
 import { formatMoney } from '../ui/money';
 import { PageHeader } from '../ui/PageHeader';
@@ -19,7 +19,8 @@ export function EventHome() {
   const approvals = useFetch('/api/approvals', ApprovalsResponse);
   const waiting = approvals.kind === 'ready' ? waitingItems(approvals.data.approvals) : [];
   const budget = SAMPLE_BUDGET;
-  const days = daysUntil(EVENT.date);
+  const event = useEvent();
+  const days = daysUntil(event.date);
 
   return (
     <section className="home">
@@ -27,7 +28,7 @@ export function EventHome() {
         title="Event home"
         description={
           <>
-            <span className="countdown num">{days} days</span> to {EVENT.name} on {formatEventDate(EVENT.date)},
+            <span className="countdown num">{days} days</span> to {event.name} on {formatEventDate(event.date)},
             2027.
           </>
         }

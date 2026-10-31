@@ -8,7 +8,7 @@ import {
 } from '@quartermaster/shared';
 import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';
 import { useShellData } from '../shell/data';
-import { daysUntil, EVENT, formatEventDate } from '../shell/event';
+import { daysUntil, formatEventDate, useEvent } from '../shell/event';
 import { useSession } from '../shell/session';
 import { walletConsequence } from '../shell/wallet';
 import { Button } from '../ui/Button';
@@ -27,6 +27,7 @@ const statusBadge: Record<WalletState, { status: 'done' | 'pending' | 'blocked';
 
 export function Settings() {
   const { wallet } = useShellData();
+  const event = useEvent();
   const treasury = useFetch('/api/treasury', TreasuryResponse);
   const { session, signOut } = useSession();
   const toast = useToast();
@@ -78,8 +79,8 @@ export function Settings() {
 
       <Card title="Event">
         <p>
-          <strong>{EVENT.name}</strong> · {formatEventDate(EVENT.date)}, 2027 · {EVENT.people} people ·{' '}
-          {daysUntil(EVENT.date)} days to go
+          <strong>{event.name}</strong> · {formatEventDate(event.date)}, 2027 · {event.people} people ·{' '}
+          {daysUntil(event.date)} days to go
         </p>
         <p className="muted">Event details become editable once the event endpoint exists.</p>
       </Card>
