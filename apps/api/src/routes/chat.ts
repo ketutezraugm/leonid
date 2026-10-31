@@ -23,7 +23,7 @@ import {
   setTitleIfMissing,
   updateThread,
 } from '../db/threads.js';
-import { searchClientFromEnv } from '../search/client.js';
+import { createCatalogSearchClient } from '../search/venueCatalog.js';
 import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
 // Only the most recent messages go to the model; the full history stays in the thread.
@@ -159,7 +159,7 @@ export function createChatRouter({
       const agent = createOrchestrator({
         db,
         model,
-        search: searchClientFromEnv(),
+        search: createCatalogSearchClient(),
         eventId: thread.eventId,
         threadId,
         goal: message.parts[0]?.text ?? '',

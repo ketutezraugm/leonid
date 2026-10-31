@@ -1,4 +1,4 @@
-import type { VenueCandidate } from '@quartermaster/shared';
+import type { VenueAddOn, VenueCandidate } from '@quartermaster/shared';
 
 export type VenueSort = 'best' | 'cheapest' | 'roomiest';
 
@@ -23,14 +23,73 @@ export const perLabel: Record<NonNullable<VenueCandidate['price']>['per'], strin
   day: 'per day',
 };
 
+export const addOnUnitLabel: Record<VenueAddOn['unit'], string> = {
+  person: 'per person',
+  hour: 'per hour',
+  event: 'per event',
+};
+
+// How long an estimate assumes the venue is hired for.
+export const VENUE_DAY_HOURS = 8;
+
+export interface VenueEstimate {
+  lines: { label: string; amountMinor: number }[];
+  total: number;
+}
+
+// What one day costs for this headcount: the price at its minimums, the required add-ons, then tax
+// and service. Null for a venue with no terms, as nothing says what its price covers.
+export function venueEstimate(
+  venue: VenueCandidate,
+  headcount: number | null,
+): VenueEstimate | null {
+  const { price, terms } = venue;
+  if (!price || !terms || headcount === null) return null;
+  const hours = Math.max(VENUE_DAY_HOURS, terms.minHours ?? 0);
+  const billed = Math.max(headcount, terms.minPax ?? 0);
+  const base = {
+    pax: { label: `${billed} people`, quantity: billed },
+    hour: { label: `${hours} hours`, quantity: hours },
+    day: { label: '1 day', quantity: 1 },
+    package: { label: 'Package', quantity: 1 },
+  }[price.per];
+  const quantities = { person: headcount, hour: hours, event: 1 };
+  const lines = [
+    { label: base.label, amountMinor: price.amountMinor * base.quantity },
+    ...terms.addOns
+      .filter((addOn) => addOn.required)
+      .map(({ name, amountMinor, unit }) => ({
+        label: unit === 'event' ? name : `${name} x ${quantities[unit]}`,
+        amountMinor: amountMinor * quantities[unit],
+      })),
+  ];
+  const subtotal = lines.reduce((sum, line) => sum + line.amountMinor, 0);
+  const tax = Math.round((subtotal * terms.taxPercent) / 100);
+  if (tax > 0) lines.push({ label: `Tax and service ${terms.taxPercent}%`, amountMinor: tax });
+  return { lines, total: subtotal + tax };
+}
+
+// The short facts on a card: how the venue charges and any minimum.
+export function chargeFacts({ price, terms }: VenueCandidate): string[] {
+  if (!price || !terms) return [];
+  return [
+    price.per === 'pax' ? 'Per-person package' : 'Whole venue hire',
+    ...(terms.minPax !== null ? [`Minimum ${terms.minPax} people`] : []),
+    ...(terms.minHours !== null ? [`Minimum ${terms.minHours} hours`] : []),
+  ];
+}
+
 export function fits(venue: VenueCandidate, headcount: number | null): boolean | null {
   if (!venue.capacity || headcount === null) return null;
   return venue.capacity.value >= headcount;
 }
 
-// A comparable number for sorting only, never shown: a per-person price is scaled by headcount so
-// it sits next to package and day prices. Hourly prices stay as listed (we do not guess hours).
+// A comparable number for sorting: the one-day estimate when there is one. Otherwise a per-person
+// price is scaled by headcount so it sits next to package and day prices, and hourly prices stay
+// as listed.
 function sortPrice(venue: VenueCandidate, headcount: number | null): number | null {
+  const estimate = venueEstimate(venue, headcount);
+  if (estimate) return estimate.total;
   if (!venue.price) return null;
   return venue.price.per === 'pax'
     ? venue.price.amountMinor * (headcount ?? 1)

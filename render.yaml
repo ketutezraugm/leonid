@@ -51,10 +51,6 @@ services:
         sync: false
       - key: OPENROUTER_API_KEY
         sync: false
-      - key: VENUE_SEARCH
-        value: catalog
-      - key: TAVILY_API_KEY
-        sync: false
       - key: OPENROUTER_BASE_URL
         value: https://openrouter.ai/api/v1
       - key: OPENROUTER_MODEL

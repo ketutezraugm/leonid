@@ -1,13 +1,14 @@
 .workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 400px) 1fr;
+  grid-template-columns: 1fr minmax(320px, 400px);
   height: 100%;
   min-height: 0;
 }
 
 .workspace-rail {
+  order: 1;
   min-height: 0;
-  border-right: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
   background: var(--color-surface);
 }
 
@@ -26,18 +27,15 @@
   }
 
   .workspace-rail {
+    order: 0;
     height: 70dvh;
-    border-right: 0;
+    border-left: 0;
     border-bottom: 1px solid var(--color-border);
   }
 
   .workspace-canvas {
     overflow: visible;
     padding: var(--space-3);
-  }
-
-  .shell--full {
-    height: auto;
   }
 }
 
@@ -379,6 +377,40 @@
   margin: 0;
   font-style: italic;
   overflow-wrap: anywhere;
+}
+
+.venue-costs dd {
+  font-style: normal;
+}
+
+.venue-costs h4 {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: inherit;
+  color: var(--color-muted);
+}
+
+.venue-costs ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.venue-costs li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.venue-costs li > :last-child {
+  white-space: nowrap;
+}
+
+.venue-costs .venue-costs-total {
+  padding-top: 2px;
+  border-top: 1px solid var(--color-border);
+  font-weight: 600;
 }
 
 .venue-price {

@@ -15,7 +15,7 @@ export interface AgentContext {
   // The user's latest message, used as the mandate's goal when the checklist is first created.
   goal: string;
   model: LanguageModel;
-  // Web research backend. Absent means the venue scout is not offered at all.
+  // Venue search backend. Absent means the venue scout is not offered at all.
   search?: SearchClient | null;
   // What the organizer chose to book, read by the route from their own messages. Null until they
   // choose; planning refuses to start before then.

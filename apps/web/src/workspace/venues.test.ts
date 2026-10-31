@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { VenueCandidate } from '@quartermaster/shared';
-import { filterVenues, noFilters, safeLinks, sortVenues } from './venues';
+import {
+  chargeFacts,
+  filterVenues,
+  noFilters,
+  safeLinks,
+  sortVenues,
+  venueEstimate,
+} from './venues';
 
 const venue = (name: string, over: Partial<VenueCandidate> = {}): VenueCandidate => ({
   name,
@@ -18,6 +25,82 @@ const price = (amountMinor: number, per: 'pax' | 'package' = 'package') => ({
   currency: 'IDR',
   per,
   quote: `Rp ${amountMinor}`,
+});
+
+describe('venueEstimate', () => {
+  const terms = (over: Partial<NonNullable<VenueCandidate['terms']>> = {}) => ({
+    minPax: null,
+    minHours: null,
+    includes: [],
+    addOns: [],
+    taxPercent: 0,
+    ...over,
+  });
+  const chair = { name: 'Chair', amountMinor: 20_000, unit: 'person', required: true } as const;
+  const stage = { name: 'Stage', amountMinor: 900_000, unit: 'event', required: false } as const;
+  const cleaning = { name: 'Clean', amountMinor: 500_000, unit: 'event', required: true } as const;
+
+  it('needs a price, terms and a headcount', () => {
+    expect(venueEstimate(venue('a', { terms: terms() }), 100)).toBeNull();
+    expect(venueEstimate(venue('a', { price: price(1_000) }), 100)).toBeNull();
+    expect(venueEstimate(venue('a', { price: price(1_000), terms: terms() }), null)).toBeNull();
+  });
+
+  it('bills a per-person package at its minimum headcount, plus tax', () => {
+    const package_ = venue('a', {
+      price: price(100_000, 'pax'),
+      terms: terms({ minPax: 50, taxPercent: 21 }),
+    });
+    expect(venueEstimate(package_, 80)?.total).toBe(9_680_000);
+    expect(venueEstimate(package_, 20)).toEqual({
+      lines: [
+        { label: '50 people', amountMinor: 5_000_000 },
+        { label: 'Tax and service 21%', amountMinor: 1_050_000 },
+      ],
+      total: 6_050_000,
+    });
+  });
+
+  it('adds required add-ons to whole-venue hire and leaves optional ones out', () => {
+    const hall = venue('a', {
+      price: { ...price(30_000_000), per: 'day' },
+      terms: terms({ addOns: [chair, cleaning, stage] }),
+    });
+    expect(venueEstimate(hall, 200)).toEqual({
+      lines: [
+        { label: '1 day', amountMinor: 30_000_000 },
+        { label: 'Chair x 200', amountMinor: 4_000_000 },
+        { label: 'Clean', amountMinor: 500_000 },
+      ],
+      total: 34_500_000,
+    });
+  });
+
+  it('bills hourly hire for a full day', () => {
+    const floor = venue('a', {
+      price: { ...price(1_000_000), per: 'hour' },
+      terms: terms({ minHours: 4 }),
+    });
+    expect(venueEstimate(floor, 100)?.total).toBe(8_000_000);
+  });
+
+  it('ranks by the estimate, so a cheap hall with costly chairs is not the lowest price', () => {
+    const hall = venue('hall', {
+      price: { ...price(1_000_000), per: 'day' },
+      terms: terms({ addOns: [chair] }),
+    });
+    const room = venue('room', { price: price(3_000_000), terms: terms() });
+    expect(sortVenues([hall, room], 'cheapest', 200).map((v) => v.name)).toEqual(['room', 'hall']);
+  });
+
+  it('says how the venue charges', () => {
+    const perPerson = { price: price(1, 'pax'), terms: terms({ minPax: 50 }) };
+    expect(chargeFacts(venue('a', perPerson))).toEqual(['Per-person package', 'Minimum 50 people']);
+    expect(chargeFacts(venue('a', { price: price(1), terms: terms() }))).toEqual([
+      'Whole venue hire',
+    ]);
+    expect(chargeFacts(venue('a', { price: price(1) }))).toEqual([]);
+  });
 });
 
 describe('sortVenues', () => {
