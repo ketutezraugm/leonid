@@ -14,6 +14,10 @@ export interface Spend {
   // which the rules-health widget reads to scope its counts per event. Not part of the retry fingerprint on purpose,
   // so a retry that adds it is not refused as a different spend. Callers that know their event should set it.
   eventId?: string;
+  // What check() needs beyond a plain purchase. kind defaults to 'purchase'.
+  kind?: 'purchase' | 'claim' | 'payout';
+  payee?: string; // the person a claim or payout is for
+  fundedBySponsorId?: string; // tasks.funded_by_sponsor_id: this spend waits on that sponsor's paid invoice
 }
 
 // Same shape as money-safety.md: { decision, reasons, ruleIds }.

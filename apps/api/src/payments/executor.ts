@@ -54,7 +54,7 @@ export interface ExecutorDeps {
 // Every field that gives a spend its meaning or changes its rules outcome. Free-text `reason` is left out on purpose,
 // so a retry may reword it.
 const fingerprintOf = (s: Spend) =>
-  JSON.stringify([s.amountMinor, s.currency, s.vendor ?? null, s.category ?? null, s.actor]);
+  JSON.stringify([s.amountMinor, s.currency, s.vendor ?? null, s.category ?? null, s.actor, s.kind ?? null, s.payee ?? null, s.fundedBySponsorId ?? null]);
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -64,6 +64,15 @@ const oneLine = (text: string) => text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, 
 
 export function createExecutor(deps: ExecutorDeps) {
   const { client, check, audit, wallet, approvals, references } = deps;
+
+  // The funds gate reads committed spend from audit rows, so a check and the row it writes must not overlap with another
+  // check, or two carts could each see the same dollars free. One server process, so a promise chain is enough.
+  let lastCheck: Promise<unknown> = Promise.resolve();
+  const inTurn = <T>(step: () => Promise<T>): Promise<T> => {
+    const turn = lastCheck.then(step, step);
+    lastCheck = turn;
+    return turn;
+  };
 
   // Turn PayPal's answer into an outcome. Never records "paid" for money we did not ask for.
   async function settle(spend: Spend, auditId: string, charge: Charge): Promise<SpendOutcome> {
@@ -142,13 +151,16 @@ export function createExecutor(deps: ExecutorDeps) {
       await audit.update(retryId, { outcome: replay.status, paypalId: existing.paypalOrderId, detail: `same spend as approval ${existing.id} (${existing.status})` });
       return replay;
     }
-    const result = await check(spend);
-    const auditId = await audit.record({
-      actor: spend.actor,
-      action: 'spend.check',
-      input: spend,
-      reason: spend.reason,
-      ruleResult: result,
+    const { result, auditId } = await inTurn(async () => {
+      const result = await check(spend);
+      const auditId = await audit.record({
+        actor: spend.actor,
+        action: 'spend.check',
+        input: spend,
+        reason: spend.reason,
+        ruleResult: result,
+      });
+      return { result, auditId };
     });
     if (result.decision === 'block') {
       await audit.update(auditId, { outcome: 'blocked', detail: result.reasons.join('; ') });

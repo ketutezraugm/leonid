@@ -1,0 +1,222 @@
+import { eq } from 'drizzle-orm';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Db } from '../db/client.js';
+import { listSponsors } from '../db/events.js';
+import { recordLedgerEntry } from '../db/ledger.js';
+import { auditLog, sponsors } from '../db/schema.js';
+import { seedDemoEvent } from '../db/seed.js';
+import { createTestDb } from '../db/testing.js';
+import { createPayPalClient } from '../paypal/client.js';
+import { createDbApprovals, createDbAudit, createDbReferences, createDbWalletStore } from './db.js';
+import { createExecutor } from './executor.js';
+import type { CheckResult, Spend } from './ports.js';
+import { createRulesCheck } from './rulesCheck.js';
+
+const NOW = new Date('2026-11-03T12:00:00Z');
+const YESTERDAY = new Date('2026-11-02T23:59:59Z');
+
+let db: Db;
+let eventId: string;
+beforeEach(async () => {
+  db = await createTestDb();
+  eventId = (await seedDemoEvent(db)).id;
+});
+
+const rulesCheck = () => createRulesCheck(db, { now: () => NOW });
+const spend = (referenceId: string, amountMinor: number, extra: Partial<Spend> = {}): Spend => ({
+  referenceId,
+  amountMinor,
+  currency: 'USD',
+  actor: 'procurement-agent',
+  reason: 'x',
+  category: 'prizes',
+  eventId,
+  ...extra,
+});
+
+let nextPayPalId = 0;
+const clear = async (amount: number, sponsorId?: string, currency = 'USD') =>
+  recordLedgerEntry(db, { eventId, direction: 'in', amount, currency, source: 'sponsor_invoice', paypalId: `PAY-${nextPayPalId++}`, sponsorId });
+
+const allow: CheckResult = { decision: 'allow', reasons: [], ruleIds: [] };
+const ask: CheckResult = { decision: 'needs_approval', reasons: [], ruleIds: [] };
+const block: CheckResult = { decision: 'block', reasons: [], ruleIds: [] };
+async function recorded(s: Spend, result: CheckResult, outcome: string | undefined, at: Date = NOW) {
+  const audit = createDbAudit(db);
+  const id = await audit.record({ actor: s.actor, action: 'spend.check', input: s, reason: s.reason, ruleResult: result });
+  if (outcome) await audit.update(id, { outcome });
+  await db.update(auditLog).set({ createdAt: at }).where(eq(auditLog.id, id));
+  return id;
+}
+
+describe('createRulesCheck', () => {
+  it('blocks everything while nothing has cleared, because pledges are not money', async () => {
+    const pledged = (await listSponsors(db, eventId)).reduce((t, s) => t + s.pledged, 0);
+    expect(pledged).toBe(800_000);
+    expect((await rulesCheck()(spend('a', 14_000))).decision).toBe('block');
+  });
+
+  it('a paid sponsor invoice raises the unlocked budget and the same spend now passes', async () => {
+    await clear(300_000);
+    expect((await rulesCheck()(spend('a', 14_000))).decision).toBe('allow');
+  });
+
+  it('takes committed spend off the unlocked budget', async () => {
+    await clear(50_000);
+    await recorded(spend('paid', 20_000), allow, 'paid');
+    await recorded(spend('waiting', 20_000), ask, 'needs_approval');
+    expect((await rulesCheck()(spend('next', 10_000))).decision).toBe('allow');
+    expect((await rulesCheck()(spend('next', 10_001))).reasons[0]).toContain('100.01 USD');
+  });
+
+  it('frees the money when the treasurer rejects', async () => {
+    await clear(20_000);
+    const s = spend('held', 20_000);
+    const auditId = await recorded(s, ask, 'needs_approval');
+    const approvals = createDbApprovals(db);
+    const approvalId = await approvals.create(s, ask, auditId);
+    expect((await rulesCheck()(spend('next', 10_000))).decision).toBe('block');
+    await approvals.reject(approvalId, 'treasurer');
+    expect((await rulesCheck()(spend('next', 10_000))).decision).toBe('allow');
+  });
+
+  it('does not count another event, or a block, against this budget', async () => {
+    await clear(20_000);
+    await recorded(spend('elsewhere', 20_000, { eventId: '00000000-0000-4000-8000-000000000000' }), allow, 'paid', YESTERDAY);
+    await recorded(spend('no-event', 20_000, { eventId: undefined }), allow, 'paid', YESTERDAY);
+    await recorded(spend('blocked', 20_000), block, 'blocked');
+    expect((await rulesCheck()(spend('next', 20_000))).decision).toBe('allow');
+  });
+
+  it('a retry is not stopped by its own earlier row', async () => {
+    await clear(20_000);
+    await recorded(spend('same', 20_000), allow, 'error');
+    expect((await rulesCheck()(spend('same', 20_000))).decision).toBe('allow');
+  });
+
+  it('checks funds in the spend\'s own currency', async () => {
+    await clear(300_000);
+    expect((await rulesCheck()(spend('gbp', 100, { currency: 'GBP' }))).decision).toBe('block');
+    await clear(300_000, undefined, 'GBP');
+    expect((await rulesCheck()(spend('gbp', 100, { currency: 'GBP' }))).decision).toBe('needs_approval');
+  });
+
+  it('opens the sponsor gate only when that sponsor has paid, and shuts it again if the money goes back', async () => {
+    const [sponsor] = await listSponsors(db, eventId);
+    await clear(300_000);
+    const gated = spend('gated', 14_000, { fundedBySponsorId: sponsor!.id });
+    expect(await rulesCheck()(gated)).toMatchObject({ decision: 'block', ruleIds: ['sponsor-gate'] });
+
+    await clear(300_000, sponsor!.id);
+    await db.update(sponsors).set({ status: 'paid' }).where(eq(sponsors.id, sponsor!.id));
+    expect((await rulesCheck()(gated)).decision).toBe('allow');
+
+    await recordLedgerEntry(db, { eventId, direction: 'out', amount: 300_000, currency: 'USD', source: 'income_reversal', paypalId: 'REV-1', sponsorId: sponsor!.id });
+    expect(await rulesCheck()(gated)).toMatchObject({ decision: 'block', ruleIds: ['sponsor-gate'] });
+  });
+
+  it('sums committed swag for the category cap, whatever case it was written in', async () => {
+    await clear(800_000);
+    await recorded(spend('old', 95_000, { category: 'SWAG', vendor: 'Lanyard Co' }), ask, 'needs_approval', YESTERDAY);
+    const next = spend('next', 6_000, { category: 'swag', vendor: 'Lanyard Co' });
+    expect(await rulesCheck()(next)).toMatchObject({ decision: 'block', ruleIds: ['swag-budget-cap'] });
+  });
+
+  it('counts only today\'s unattended spend towards the daily cap, on every event', async () => {
+    await clear(800_000);
+    await recorded(spend('old', 95_000), allow, 'paid', YESTERDAY);
+    await recorded(spend('approved', 95_000), ask, 'needs_approval');
+    await recorded(spend('other-event', 90_000, { eventId: undefined }), allow, 'paid');
+    expect((await rulesCheck()(spend('ok', 10_000))).decision).toBe('allow');
+    expect(await rulesCheck()(spend('over', 10_001))).toMatchObject({ decision: 'needs_approval', ruleIds: ['daily-auto-spend-cap'] });
+  });
+
+  it('counts claims per person, per day', async () => {
+    await clear(800_000);
+    const claim = (referenceId: string, amountMinor: number, payee: string) =>
+      spend(referenceId, amountMinor, { kind: 'claim', payee, category: 'volunteers' });
+    await recorded(claim('c1', 3_000, 'volunteer-1'), allow, 'paid');
+    await recorded(claim('c2', 3_000, 'volunteer-2'), allow, 'paid');
+    await recorded(claim('c3', 3_000, 'volunteer-1'), allow, 'paid', YESTERDAY);
+    expect((await rulesCheck()(claim('c4', 2_000, 'volunteer-1'))).decision).toBe('allow');
+    expect((await rulesCheck()(claim('c5', 2_001, 'volunteer-1'))).decision).toBe('block');
+  });
+
+  it('skips an audit row it cannot read instead of failing the spend', async () => {
+    await clear(20_000);
+    await db.insert(auditLog).values({ actor: 'x', action: 'spend.check', input: { currency: 'USD', eventId }, ruleResult: 'not json' });
+    expect((await rulesCheck()(spend('next', 20_000))).decision).toBe('allow');
+  });
+});
+
+describe('the executor with the real check()', () => {
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+  // Every call succeeds at PayPal, so only the funds gate can stop a spend.
+  function executor(check = rulesCheck()) {
+    let orders = 0;
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
+      if (String(url).endsWith('/v1/oauth2/token')) return json(200, { access_token: 't', token_type: 'Bearer', expires_in: 3600 });
+      orders += 1;
+      const body = JSON.parse(String(init?.body)) as { payment_source?: { paypal?: { vault_id?: string } }; purchase_units: [{ amount: { value: string } }] };
+      if (!body.payment_source?.paypal?.vault_id) {
+        return json(201, { id: `ORD-${orders}`, status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: `https://www.sandbox.paypal.com/checkoutnow?token=ORD-${orders}` }] });
+      }
+      const amount = { currency_code: 'USD', value: body.purchase_units[0].amount.value };
+      return json(201, { id: `ORD-${orders}`, status: 'COMPLETED', purchase_units: [{ payments: { captures: [{ id: `CAP-${orders}`, status: 'COMPLETED', amount }] } }] });
+    });
+    return createExecutor({
+      client: createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch }),
+      check,
+      audit: createDbAudit(db),
+      wallet: createDbWalletStore(db),
+      approvals: createDbApprovals(db),
+      references: createDbReferences(db),
+    });
+  }
+  const connectWallet = () => createDbWalletStore(db).activate({ paymentTokenId: 'pt_1' });
+
+  it('two carts racing for the same dollars cannot both be paid', async () => {
+    await clear(15_000);
+    await connectWallet();
+    const { requestSpend } = executor();
+    const outcomes = await Promise.all([requestSpend(spend('cart-1', 10_000)), requestSpend(spend('cart-2', 10_000))]);
+    expect(outcomes.map((o) => o.status).sort()).toEqual(['blocked', 'paid']);
+  });
+
+  it('two carts racing for the treasurer cannot both hold the same dollars', async () => {
+    await clear(50_000);
+    await connectWallet();
+    const { requestSpend } = executor();
+    const outcomes = await Promise.all([requestSpend(spend('cart-1', 42_000)), requestSpend(spend('cart-2', 42_000))]);
+    expect(outcomes.map((o) => o.status).sort()).toEqual(['blocked', 'needs_approval']);
+  });
+
+  it('a check that throws does not hold up the spends behind it', async () => {
+    await clear(50_000);
+    await connectWallet();
+    const real = rulesCheck();
+    const flaky = vi.fn(real).mockRejectedValueOnce(new Error('database went away'));
+    const { requestSpend } = executor(flaky);
+    const [first, second] = await Promise.allSettled([requestSpend(spend('cart-1', 10_000)), requestSpend(spend('cart-2', 10_000))]);
+    expect(first.status).toBe('rejected');
+    expect(second).toMatchObject({ status: 'fulfilled', value: { status: 'paid' } });
+  });
+
+  it('plays the Gate 2 beats as scripts/gate2-check.ts sends them, once a sponsor has paid', async () => {
+    await clear(300_000);
+    await connectWallet();
+    const { requestSpend, revokeWallet } = executor();
+    const demo = (referenceId: string, amountMinor: number, extra: Partial<Spend>) =>
+      spend(referenceId, amountMinor, { actor: 'demo:treasurer', category: undefined, ...extra });
+
+    const auto = await requestSpend(demo('gate2-140', 14_000, { category: 'swag', vendor: 'Lanyard Co' }));
+    expect(auto.status).toBe('paid');
+    const held = await requestSpend(demo('gate2-420', 42_000, { category: 'prizes', vendor: 'Prize Co' }));
+    expect(held.status).toBe('needs_approval');
+
+    await revokeWallet('treasurer').catch(() => undefined); // the fake PayPal does not do token deletes; our flag still flips
+    expect(await requestSpend(demo('gate2-after-kill', 14_000, {}))).toEqual({ status: 'refused', reason: 'no_wallet' });
+  });
+});
