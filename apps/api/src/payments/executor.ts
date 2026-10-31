@@ -52,9 +52,14 @@ export interface ExecutorDeps {
 }
 
 // Every field that gives a spend its meaning or changes its rules outcome. Free-text `reason` is left out on purpose,
-// so a retry may reword it.
-const fingerprintOf = (s: Spend) =>
-  JSON.stringify([s.amountMinor, s.currency, s.vendor ?? null, s.category ?? null, s.actor, s.kind ?? null, s.payee ?? null, s.fundedBySponsorId ?? null]);
+// so a retry may reword it. The later fields join only when set, so a spend using none of them keeps the fingerprint it
+// had before they existed, and a retry across a deploy is not refused as reference_reused.
+const fingerprintOf = (s: Spend) => {
+  const base = [s.amountMinor, s.currency, s.vendor ?? null, s.category ?? null, s.actor];
+  const later = { kind: s.kind, payee: s.payee, fundedBySponsorId: s.fundedBySponsorId };
+  const anySet = Object.values(later).some((value) => value !== undefined);
+  return JSON.stringify(anySet ? [...base, later] : base);
+};
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 

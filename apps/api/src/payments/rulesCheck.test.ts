@@ -204,6 +204,35 @@ describe('the executor with the real check()', () => {
     expect(second).toMatchObject({ status: 'fulfilled', value: { status: 'paid' } });
   });
 
+  it('a retry of a reference made before these fields existed is still the same spend', async () => {
+    await clear(50_000);
+    await connectWallet();
+    const before = spend('old-cart', 10_000);
+    const oldFingerprint = JSON.stringify([before.amountMinor, before.currency, null, before.category, before.actor]);
+    await createDbReferences(db).claim('old-cart', oldFingerprint);
+    expect((await executor().requestSpend(before)).status).toBe('paid');
+  });
+
+  it.each([
+    ['kind', { kind: 'claim' }],
+    ['payee', { payee: 'volunteer-1' }],
+    ['fundedBySponsorId', { fundedBySponsorId: 'sponsor-1' }],
+  ] as const)('refuses a reference reused with a different %s', async (_field, change) => {
+    await clear(50_000);
+    await connectWallet();
+    const { requestSpend } = executor();
+    await requestSpend(spend('cart', 10_000));
+    expect(await requestSpend(spend('cart', 10_000, change))).toEqual({ status: 'refused', reason: 'reference_reused' });
+  });
+
+  it('does not confuse which field a value was set on', async () => {
+    await clear(50_000);
+    await connectWallet();
+    const { requestSpend } = executor();
+    await requestSpend(spend('cart', 10_000, { payee: 'x' }));
+    expect(await requestSpend(spend('cart', 10_000, { fundedBySponsorId: 'x' }))).toEqual({ status: 'refused', reason: 'reference_reused' });
+  });
+
   it('plays the Gate 2 beats as scripts/gate2-check.ts sends them, once a sponsor has paid', async () => {
     await clear(300_000);
     await connectWallet();
