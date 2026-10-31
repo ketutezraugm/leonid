@@ -1,10 +1,12 @@
 import type { AgWidgetDefinition } from 'ag-studio-react';
 import { BudgetBurn } from './budget-burn';
 import { FundingThermometer } from './funding-thermometer';
+import { RulesHealth } from './rules-health';
 
 // Custom widgets for the command center (PRD section 8). Studio's default widgets are kept; these are added.
 export const FUNDING_THERMOMETER = 'funding-thermometer';
 export const BUDGET_BURN = 'budget-burn';
+export const RULES_HEALTH = 'rules-health';
 
 export const fundingThermometerDefinition: AgWidgetDefinition = {
   id: FUNDING_THERMOMETER,
@@ -53,4 +55,33 @@ export const budgetBurnDefinition: AgWidgetDefinition = {
   comp: BudgetBurn,
   defaultSize: { width: 480, height: 360 },
   minSize: { width: 240, height: 160 },
+};
+
+// The check, its decision and the reasons are required; the category, amount and day add detail.
+export const rulesHealthDefinition: AgWidgetDefinition = {
+  id: RULES_HEALTH,
+  label: 'Rules health',
+  dataMapping: {
+    id: { type: 'field', supportedRoles: ['category'], required: true, intent: 'category' },
+    decision: { type: 'field', supportedRoles: ['category'], required: true, intent: 'category' },
+    reasons: { type: 'field', supportedRoles: ['category'], required: true, intent: 'category' },
+    category: { type: 'field', supportedRoles: ['category'], intent: 'category' },
+    amount: { type: 'field', supportedRoles: ['numeric'], intent: 'value' },
+    date: { type: 'field', supportedRoles: ['category'], intent: 'category' },
+  },
+  form: (f) =>
+    f.createDefaults({
+      supportsCrossHighlight: false,
+      dataMappingItems: [
+        { key: 'id', label: 'Check' },
+        { key: 'decision', label: 'Decision' },
+        { key: 'reasons', label: 'Reasons' },
+        { key: 'category', label: 'Category' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'date', label: 'Day' },
+      ],
+    }),
+  comp: RulesHealth,
+  defaultSize: { width: 480, height: 400 },
+  minSize: { width: 240, height: 200 },
 };

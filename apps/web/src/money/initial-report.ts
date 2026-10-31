@@ -52,6 +52,21 @@ const overview: AgPageState = {
       },
       format: { ...title('Budget burn by category'), ...eventLevel },
     } as unknown as AnyWidgetState,
+    // Lists the checks themselves, so it responds to a sponsor or a category selected in another widget. Its
+    // category is the budget category's, not the rules table's own column: a click then filters from the
+    // category down to every table that lists rows, instead of leaking up through one of them.
+    rules: {
+      type: 'rules-health',
+      dataMapping: {
+        id: [{ id: 'rules.id' }],
+        decision: [{ id: 'rules.decision' }],
+        reasons: [{ id: 'rules.reasons' }],
+        category: [{ id: 'categories.category' }],
+        amount: [sum('rules.amount')],
+        date: [{ id: 'rules.day' }],
+      },
+      format: title('Rules health'),
+    } as unknown as AnyWidgetState,
     payouts: {
       type: 'grid',
       dataMapping: {
@@ -72,7 +87,8 @@ const overview: AgPageState = {
     'kpi-committed': at(16, 0, 8, 7),
     funding: at(0, 7, 12, 24),
     burn: at(12, 7, 12, 24),
-    payouts: at(0, 31, 24, 18),
+    rules: at(0, 31, 12, 18),
+    payouts: at(0, 49, 24, 18),
   },
 };
 

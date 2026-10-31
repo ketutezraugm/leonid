@@ -164,6 +164,7 @@ export function buildTables(data: CommandCenterData): StudioTable[] {
       data: data.rules.recent.map((r) => ({
         id: r.auditId,
         date: r.at.slice(0, 10),
+        day: r.at.slice(0, 10),
         actor: r.actor,
         action: r.action,
         sponsorId: r.sponsorId,
@@ -175,6 +176,9 @@ export function buildTables(data: CommandCenterData): StudioTable[] {
       fields: fields([
         ['id', 'Audit ID', 'textFormat', true],
         ['date', 'Date', 'dateFormat'],
+        // The same day as plain text: a widget that only shows it avoids Studio turning it into a Date, which
+        // reads a day early east of Greenwich. It sorts correctly as text.
+        ['day', 'Day', 'textFormat', true],
         ['actor', 'Actor', 'textFormat'],
         ['action', 'Action', 'textFormat'],
         ['sponsorId', 'Sponsor ID', 'textFormat', true],
