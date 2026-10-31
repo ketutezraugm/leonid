@@ -56,7 +56,9 @@ Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.
 
 ### Bryntum
 
-_TODO (P4)_
+The Plan screen is a Bryntum Gantt (trial 7.3.7, React wrapper) in [`apps/web/src/plan/`](apps/web/src/plan/). Each sponsor invoice is a task, and the purchases that sponsor funds depend on it, so they stay blocked until PayPal reports the invoice paid. Event day is a fixed milestone. Task colors and the Gantt theme come from the same design tokens as the rest of the app.
+
+_Status: hello world on a static slice of the demo plan. Next: live tasks from the planning agent (F11), tracking dates (F18) and the late-delivery cascade (F19). Screenshot of the invoice-gated cascade to come._
 
 ### Channel3
 

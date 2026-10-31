@@ -1,5 +1,5 @@
-// Day-1 test (PRD §14, P3): send one Payouts batch to a PayPal recipient and a Venmo recipient and
-// confirm the batch succeeds. Fallback if Venmo fails: PayPal-only payouts.
+// Day-1 test (PRD §14, P3): send one Payouts batch to a PayPal recipient and confirm the batch succeeds
+// and PayPal generates PAYMENT.PAYOUTSBATCH.SUCCESS.
 //
 //   pnpm --filter @quartermaster/api day1:payouts
 //   flags: --batch-id <stable id>  --amount-cents 100  --wait-minutes 3
@@ -51,51 +51,34 @@ const Batch = z.object({
 
 const TERMINAL = new Set(['SUCCESS', 'DENIED', 'CANCELED']);
 
-// The docs show the Venmo wallet as VENMO in one place and Venmo in another, so the script tries both.
-export type WalletCasing = 'VENMO' | 'Venmo';
-
 export type PayoutsOptions = {
   senderBatchId: string;
   amountCents: number;
   paypalEmail: string;
-  venmo?: { recipientType: 'USER_HANDLE' | 'EMAIL'; receiver: string };
   waitMinutes: number;
   log?: (line: string) => void;
   clock?: Clock;
 };
 
 export function buildPayoutBody(
-  opts: Pick<PayoutsOptions, 'senderBatchId' | 'amountCents' | 'paypalEmail' | 'venmo'>,
-  venmoCasing: WalletCasing = 'VENMO',
+  opts: Pick<PayoutsOptions, 'senderBatchId' | 'amountCents' | 'paypalEmail'>,
 ) {
-  const amount = { currency: 'USD', value: toPayPalValue(opts.amountCents, 'USD') };
-  const items: Record<string, unknown>[] = [
-    {
-      recipient_type: 'EMAIL',
-      receiver: opts.paypalEmail,
-      amount,
-      note: 'Quartermaster day-1 test (PayPal)',
-      sender_item_id: `${opts.senderBatchId}-paypal`.slice(0, 63),
-      recipient_wallet: 'PAYPAL',
-    },
-  ];
-  if (opts.venmo) {
-    items.push({
-      recipient_type: opts.venmo.recipientType,
-      receiver: opts.venmo.receiver,
-      amount,
-      note: 'Quartermaster day-1 test (Venmo)',
-      sender_item_id: `${opts.senderBatchId}-venmo`.slice(0, 63),
-      recipient_wallet: venmoCasing,
-    });
-  }
   return {
     sender_batch_header: {
       sender_batch_id: opts.senderBatchId,
       email_subject: 'Quartermaster day-1 test payout',
       email_message: 'Sandbox test payout.',
     },
-    items,
+    items: [
+      {
+        recipient_type: 'EMAIL',
+        receiver: opts.paypalEmail,
+        amount: { currency: 'USD', value: toPayPalValue(opts.amountCents, 'USD') },
+        note: 'Quartermaster day-1 test (PayPal)',
+        sender_item_id: `${opts.senderBatchId}-paypal`.slice(0, 63),
+        recipient_wallet: 'PAYPAL',
+      },
+    ],
   };
 }
 
@@ -112,60 +95,14 @@ export async function runPayouts(
     log(formatResult(r));
   };
 
-  const create = (batchOpts: Parameters<typeof buildPayoutBody>[0], casing: WalletCasing) =>
-    client.request('POST', '/v1/payments/payouts', Created, {
-      body: buildPayoutBody(batchOpts, casing),
-      // Retries with the same batch id can never pay twice.
-      headers: { 'PayPal-Request-Id': batchOpts.senderBatchId },
-    });
-
-  let batchId: string | undefined;
-  let withVenmo = Boolean(opts.venmo);
   try {
-    if (!opts.venmo) {
-      add('payouts.venmo', 'SKIP', 'Set DAY1_VENMO_HANDLE (or DAY1_VENMO_EMAIL) to test Venmo.');
-    } else {
-      let venmoError: PayPalError | undefined;
-      for (const casing of ['VENMO', 'Venmo'] as const) {
-        try {
-          const created = await create(opts, casing);
-          batchId = created.data.batch_header.payout_batch_id;
-          add(
-            'payouts.create',
-            'PASS',
-            `${batchId} with recipient_wallet=${casing} (debug_id ${created.debugId ?? 'n/a'})`,
-          );
-          venmoError = undefined;
-          break;
-        } catch (err) {
-          if (!(err instanceof PayPalError) || err.status >= 500) throw err;
-          venmoError = err;
-        }
-      }
-      if (venmoError) {
-        add(
-          'payouts.venmo',
-          'FAIL',
-          `Venmo item rejected (HTTP ${venmoError.status}, debug_id ${venmoError.debugId ?? 'n/a'}): ${venmoError.body.slice(0, 300)}`,
-        );
-        withVenmo = false;
-      }
-    }
-
-    if (!batchId) {
-      // Fallback from the PRD: PayPal-only payouts. Proves the batch path works without Venmo.
-      const fallbackId = withVenmo ? opts.senderBatchId : `${opts.senderBatchId}-paypal-only`;
-      const created = await create(
-        { ...opts, senderBatchId: fallbackId, venmo: undefined },
-        'VENMO',
-      );
-      batchId = created.data.batch_header.payout_batch_id;
-      add(
-        'payouts.create',
-        'PASS',
-        `${batchId} (${opts.venmo ? 'PayPal-only fallback' : 'PayPal only, Venmo not configured'}, debug_id ${created.debugId ?? 'n/a'})`,
-      );
-    }
+    const created = await client.request('POST', '/v1/payments/payouts', Created, {
+      body: buildPayoutBody(opts),
+      // Retries with the same batch id can never pay twice.
+      headers: { 'PayPal-Request-Id': opts.senderBatchId },
+    });
+    const batchId = created.data.batch_header.payout_batch_id;
+    add('payouts.create', 'PASS', `${batchId} (debug_id ${created.debugId ?? 'n/a'})`);
 
     const final = await pollUntil(
       clock,
@@ -185,7 +122,7 @@ export async function runPayouts(
     if (status === 'SUCCESS') {
       const events = await pollUntil(
         clock,
-        () => findEvents(client, EVENT, batchId as string),
+        () => findEvents(client, EVENT, batchId),
         (e) => e.length > 0,
         { intervalMs: 5_000, timeoutMs: 60_000 },
       );
@@ -217,19 +154,11 @@ const compactStamp = (d: Date) => d.toISOString().replace(/[-:T]/g, '').slice(0,
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const client = createClient(loadTreasuryCredentials());
-  const handle = process.env.DAY1_VENMO_HANDLE;
-  const venmoEmail = process.env.DAY1_VENMO_EMAIL;
-  const venmo = handle
-    ? ({ recipientType: 'USER_HANDLE', receiver: handle } as const)
-    : venmoEmail
-      ? ({ recipientType: 'EMAIL', receiver: venmoEmail } as const)
-      : undefined;
   const results = await runPayouts(client, {
     senderBatchId:
       typeof args['batch-id'] === 'string' ? args['batch-id'] : `day1-${compactStamp(new Date())}`,
     amountCents: Number(args['amount-cents'] ?? 100),
     paypalEmail: requireEnv('DAY1_PAYPAL_RECIPIENT_EMAIL'),
-    ...(venmo && { venmo }),
     waitMinutes: Number(args['wait-minutes'] ?? 3),
   });
   process.exitCode = hasFailure(results) ? 1 : 0;

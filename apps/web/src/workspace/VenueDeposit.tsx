@@ -6,8 +6,9 @@ import {
   VenueDepositResponse,
   type VenueDeposit,
 } from '@quartermaster/shared';
-import { formatMoney } from '../lib/money';
+import { formatMoney } from '../ui/money';
 import { loadPayPalSdk } from '../lib/paypalSdk';
+import { rememberReturnPath } from '../shell/returnPath';
 
 type State =
   | { kind: 'idle' }
@@ -77,7 +78,8 @@ export function VenueDepositPanel({ threadId, pickName }: { threadId: string; pi
     if (!/^https:\/\/www\.sandbox\.paypal\.com\//.test(approveUrl)) {
       return setState({ kind: 'error', message: 'PayPal did not return a wallet approval link.' });
     }
-    // PayPal sends the browser back to this page once the wallet is connected.
+    // PayPal sends the browser back to the app once the wallet is connected; come back here.
+    rememberReturnPath('/agent');
     window.location.assign(approveUrl);
   }
 
@@ -113,7 +115,11 @@ export function VenueDepositPanel({ threadId, pickName }: { threadId: string; pi
         <div className="deposit-body" role="alert">
           <p>Only the treasurer can move money. Sign in to pay this deposit.</p>
           <div className="deposit-actions">
-            <a className="deposit-pay" href="/api/auth/paypal/login">
+            <a
+              className="deposit-pay"
+              href="/api/auth/paypal/login"
+              onClick={() => rememberReturnPath('/agent')}
+            >
               Log in with PayPal
             </a>
             <button type="button" className="link-button" onClick={demoSignIn}>

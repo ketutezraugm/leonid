@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { VenueCandidate, VenuePick } from '@quartermaster/shared';
 import type { VenueSearch } from '../chat/parts';
-import { formatMoney } from '../lib/money';
+import { formatMoney } from '../ui/money';
 import {
   filterVenues,
   fits,

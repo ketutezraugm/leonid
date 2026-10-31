@@ -2,27 +2,18 @@ import { z } from 'zod';
 import { CurrencyCode, Id, IsoDateTime, MinorUnits, RuleResult } from './common.js';
 
 // PayPal Payouts recipient_type. PHONE is left out because the sandbox does not support it.
-export const PayoutRecipientType = z.enum(['EMAIL', 'PAYPAL_ID', 'USER_HANDLE']);
+export const PayoutRecipientType = z.enum(['EMAIL', 'PAYPAL_ID']);
 export type PayoutRecipientType = z.infer<typeof PayoutRecipientType>;
 
-export const PayoutWallet = z.enum(['PAYPAL', 'VENMO']);
-export type PayoutWallet = z.infer<typeof PayoutWallet>;
-
-// Where a person gets paid. USER_HANDLE is a Venmo handle, so it only makes sense on the Venmo wallet.
-export const PayoutDestination = z
-  .object({
-    recipientType: PayoutRecipientType,
-    receiver: z.string().min(1).max(127),
-    wallet: PayoutWallet,
-    countryCode: z
-      .string()
-      .regex(/^[A-Z]{2}$/)
-      .nullable(),
-  })
-  .refine((d) => d.recipientType !== 'USER_HANDLE' || d.wallet === 'VENMO', {
-    message: 'A USER_HANDLE receiver is a Venmo handle and needs wallet VENMO',
-    path: ['wallet'],
-  });
+// Where a person gets paid: their PayPal account, found by email or PayPal ID.
+export const PayoutDestination = z.object({
+  recipientType: PayoutRecipientType,
+  receiver: z.string().min(1).max(127),
+  countryCode: z
+    .string()
+    .regex(/^[A-Z]{2}$/)
+    .nullable(),
+});
 export type PayoutDestination = z.infer<typeof PayoutDestination>;
 
 export const PayoutKind = z.enum(['claim', 'speaker', 'prize']);

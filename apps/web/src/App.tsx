@@ -1,47 +1,56 @@
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+import { Agent } from './pages/Agent';
 import { Approvals } from './pages/Approvals';
 import { Claims } from './pages/Claims';
 import { EventHome } from './pages/EventHome';
 import { Money } from './pages/Money';
+import { NotFound } from './pages/NotFound';
 import { Plan } from './pages/Plan';
 import { Rules } from './pages/Rules';
+import { Settings } from './pages/Settings';
+import { SignIn } from './pages/SignIn';
 import { SponsorReport } from './pages/SponsorReport';
+import { OrganizerLayout } from './shell/OrganizerLayout';
+import { SessionProvider } from './shell/session';
+import { ToastProvider } from './ui/Toast';
 
-const nav = [
-  { to: '/', label: 'Event home' },
-  { to: '/plan', label: 'Plan' },
-  { to: '/money', label: 'Money' },
-  { to: '/approvals', label: 'Approvals' },
-  { to: '/rules', label: 'Rules' },
-  { to: '/claims', label: 'Claims' },
-];
+// Sponsor reports are shared outside the team, so they get no organizer navigation.
+function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="public-main">
+      {children}
+      <footer className="public-footer muted">Prepared by Quartermaster from PayPal records.</footer>
+    </main>
+  );
+}
 
 export function App() {
-  // Event home is the agent workspace: chat rail plus results canvas, edge to edge.
-  const full = useLocation().pathname === '/';
   return (
-    <div className={full ? 'shell shell--full' : 'shell'}>
-      <header className="shell-header">
-        <span className="brand">Quartermaster</span>
-        <nav>
-          {nav.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === '/'}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-      <main className={full ? 'shell-main shell-main--full' : 'shell-main'}>
+    <ToastProvider>
+      <SessionProvider>
         <Routes>
-          <Route path="/" element={<EventHome />} />
-          <Route path="/plan" element={<Plan />} />
-          <Route path="/money" element={<Money />} />
-          <Route path="/approvals" element={<Approvals />} />
-          <Route path="/rules" element={<Rules />} />
-          <Route path="/claims" element={<Claims />} />
-          <Route path="/report/:sponsorId" element={<SponsorReport />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route element={<OrganizerLayout />}>
+            <Route path="/" element={<EventHome />} />
+            <Route path="/agent" element={<Agent />} />
+            <Route path="/plan" element={<Plan />} />
+            <Route path="/money" element={<Money />} />
+            <Route path="/approvals" element={<Approvals />} />
+            <Route path="/rules" element={<Rules />} />
+            <Route path="/claims" element={<Claims />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+          <Route
+            path="/report/:shareToken"
+            element={
+              <PublicLayout>
+                <SponsorReport />
+              </PublicLayout>
+            }
+          />
         </Routes>
-      </main>
-    </div>
+      </SessionProvider>
+    </ToastProvider>
   );
 }

@@ -54,7 +54,6 @@ If a sandbox capability fails its day-1 test, use the documented fallback instea
 
 - Vault fails: every cart goes through supervised approval.
 - Invoicing fails: Orders checkout link for sponsors.
-- Venmo payouts fail: PayPal-only payouts.
 - Tracking fails: store tracking in our DB.
 
 ## Prize evidence

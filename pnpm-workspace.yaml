@@ -3,6 +3,9 @@ packages:
   - packages/*
 allowBuilds:
   esbuild: true
+  # Bryntum trial: postinstall stamps a trial ID into the package's own JS (fs only, no network).
+  '@bryntum/gantt-trial': true
+  '@bryntum/gantt-trial-lib': true
 minimumReleaseAgeExclude:
   - '@ai-sdk/gateway@4.0.127'
   - '@ai-sdk/openai-compatible@3.0.79'

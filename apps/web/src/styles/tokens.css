@@ -1,97 +1,121 @@
+/*
+ * Quartermaster design system tokens, v2 "Forest and brass" (owner: P4).
+ *
+ * One source of truth for color, type, spacing and shape. Every screen, the
+ * agent chat, and the AG Studio and Bryntum themes read these variables.
+ * Never hard-code a color or a spacing value in a component; add or reuse a
+ * token here instead (see .claude/rules/web-ui.md).
+ *
+ * Mirrors the "Quartermaster" design system in Claude Design
+ * (https://claude.ai/artifact/4VM9W7CbxAMmoQe4HzHDmi). Change a value there
+ * and here together. Component styles live in components.css.
+ */
+
 :root {
-  --color-bg: #f7f7f5;
-  --color-surface: #ffffff;
-  --color-text: #1d1d1b;
-  --color-muted: #6b6b66;
-  --color-border: #e3e3de;
-  --color-accent: #0070e0;
+  /* --- Frame, sheet and ink ---
+   * The frame (bg) holds the sidebar; each screen is a white sheet on it, and
+   * cards on the sheet are white with a 1px border. No shadows at rest. */
+  --color-bg: #eef1ee; /* green-grey frame: text 15.7:1, muted 5.6:1 */
+  --color-surface: #ffffff; /* the sheet and every card */
+  --color-surface-sunken: #e8ede9; /* secondary buttons, bar tracks, row hover */
+  --color-text: #0f1a14; /* ink, 17.8:1 on white */
+  --color-muted: #56625b; /* secondary text, 6.4:1 on white */
+  --color-border: #e1e6e2; /* card and sheet edges: decorative, never a control outline */
+  --color-rule: #edf1ee; /* row rules inside tables and lists */
+  --color-control-edge: #7d8a82; /* input and checkbox outlines, 3.6:1 on white */
+
+  /* --- Forest: the one action color --- */
+  --color-accent: #1f3a2c; /* primary buttons, links, active nav text; white on it 12.4:1 */
+  --color-accent-strong: #142a1f; /* primary hover and pressed */
+  --color-accent-soft: #e1e9e3; /* active nav row, selected rows; accent text on it 10:1 */
   --color-on-accent: #ffffff;
-  --color-accent-soft: #e8f2fd;
-  --color-danger: #c4320a;
-  --color-success: #12795b;
-  --color-success-soft: #e6f4ee;
-  --color-warning: #9a5b00;
-  --color-warning-soft: #fdf3e1;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.04);
-  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* --- Data and brass ---
+   * One chart hue on the main data element. Brass is the insignia: the brand
+   * mark and the today line only, never an area and never text (3.6:1). */
+  --color-data: #2d5a3d; /* committed spend, main series, in-progress bars; 8:1 on white */
+  --color-data-soft: #b9d0bf; /* unlocked budget segment, secondary series */
+  --color-brass: #a4812e;
+  --color-brass-text: #7d6020; /* brass as words, 5.9:1 on white */
+  --color-brass-soft: #f7f2e6; /* the one surface that says "this needs you"; brass-text on it 5.4:1 */
+  --color-hold: #d1d8d3; /* money that exists but cannot be spent: invoiced, pledged */
+
+  /* --- Status colors ---
+   * Shared by badges, the Gantt, AG Studio and Approvals so a "blocked" spend
+   * and a "blocked" task read as the same state everywhere. Base = fills and
+   * bars, -soft = badge fill, -text = words (each 6.7:1 or better on its soft). */
+  --color-status-done: #2e7d32; /* paid / delivered / allowed; brighter than the brand forest on purpose */
+  --color-status-done-soft: #dcfae5;
+  --color-status-done-text: #14622c;
+  --color-status-progress: var(--color-data); /* in flight */
+  --color-status-progress-soft: var(--color-accent-soft);
+  --color-status-progress-text: var(--color-accent);
+  --color-status-pending: #8a948e; /* not started */
+  --color-status-pending-soft: var(--color-surface-sunken);
+  --color-status-pending-text: #3d4a42;
+  --color-status-risk: #b26a00; /* at risk / needs approval: a fill or mark, 4.2:1 */
+  --color-status-risk-soft: #fffbeb;
+  --color-status-risk-text: #92400e;
+  --color-status-blocked: #c4242a; /* blocked, missed deadline, danger action; white on it 5.8:1 */
+  --color-status-blocked-soft: #ffedea;
+  --color-status-blocked-text: #831c1e;
+  --color-danger: var(--color-status-blocked);
+
+  /* --- Typography ---
+   * Geist for everything; Geist Mono for PayPal IDs and rule JSON only.
+   * Body is 14px on desktop and 16px on phones and in every input (iOS won't zoom). */
+  --font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'Consolas', monospace;
+  --font-size-xs: 12px; /* badges, table headers, legends, captions */
+  --font-size-sm: 14px; /* desktop body */
+  --font-size-md: 16px; /* phone body, inputs, section titles */
+  --font-size-lg: 18px;
+  --font-size-xl: 24px; /* page title */
+  --font-size-2xl: 30px; /* the one headline figure per screen */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500; /* labels, active nav, badges */
+  --font-weight-semibold: 600; /* headings */
+  --font-weight-bold: 700; /* money figures only */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+
+  /* --- Spacing scale --- */
   --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 16px;
-  --space-4: 24px;
-  --radius: 8px;
+  --space-2: 8px; /* also the sheet inset */
+  --space-3: 16px; /* phone gutter */
+  --space-4: 20px; /* card padding and the gap between cards */
+  --space-5: 28px; /* sheet padding on desktop */
+  --space-6: 48px; /* empty and error states */
+
+  /* --- Shape and size --- */
+  --radius-sm: 4px; /* Gantt and runway bars, legend swatches */
+  --radius: 6px; /* buttons, inputs, nav rows, badges */
+  --radius-card: 8px; /* cards; AG Studio widgets match */
+  --radius-sheet: 16px; /* the sheet, the one large corner */
+  --radius-pill: 999px;
+  --shadow-menu: 0 8px 24px rgba(15, 26, 20, 0.14); /* only what floats: menus, popovers, dialogs */
+  --control-height: 36px; /* 44px on phones */
+  --row-height: 44px;
+  --sidebar-width: 228px;
+
+  /* --- Motion: state changes ease instead of snapping; zeroed for reduced motion --- */
+  --motion-fast: 150ms; /* hover, press, focus */
+  --motion-base: 200ms; /* color and border changes on controls */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* --- Gantt tokens (consumed by the plan view, the runway and the Bryntum theme) --- */
+  --gantt-row-height: 32px;
+  --gantt-bar-height: 20px;
+  --gantt-label-width: 240px;
+  --gantt-bar-radius: var(--radius-sm);
+  --gantt-grid-line: var(--color-rule);
+  --gantt-today-line: var(--color-brass);
+  --gantt-milestone: var(--color-text);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.shell-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-3);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.shell-header nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.shell-header a {
-  color: var(--color-muted);
-  text-decoration: none;
-}
-
-.shell-header a.active {
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
-.brand {
-  font-weight: 700;
-}
-
-.shell-main {
-  padding: var(--space-4) var(--space-3);
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Full-bleed screens (the agent workspace) fill the viewport under the header and own their padding. */
-.shell--full {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-}
-
-.shell-main--full {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  max-width: none;
-  padding: 0;
-}
-
-.muted {
-  color: var(--color-muted);
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+  }
 }

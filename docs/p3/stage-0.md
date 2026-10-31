@@ -7,7 +7,7 @@ Owner: P3. Source: PRD §14 (day-1 tests) and §11 (roles). Gate: Oct 28, "every
 | Item | Where | State |
 | --- | --- | --- |
 | Shared zod contract: Sponsor, Invoice (+ draft, reminder draft), LedgerEntry, PayoutItem/Batch, Claim (+ receipt extraction), 4 widget payloads + payouts ledger, `WidgetFilter` | `packages/shared/src/*.ts` | Done, 22 tests |
-| Day-1 scripts: Invoicing, Payouts, Transaction Search | `apps/api/scripts/day1/` | Written and unit-tested against a fake PayPal (27 tests). Run against the sandbox on 2026-10-27: Transaction Search passed, Invoicing create+send passed, PayPal payouts passed. Still open: paying the invoice, the two webhook events, and Venmo |
+| Day-1 scripts: Invoicing, Payouts, Transaction Search | `apps/api/scripts/day1/` | Written and unit-tested against a fake PayPal (27 tests). Run against the sandbox on 2026-10-27: Transaction Search passed, Invoicing create+send passed, PayPal payouts passed. Still open: paying the invoice and the two webhook events |
 | AG Studio in the Vite app: theme from tokens, data sources from the shared shapes, default report, lazy-loaded | `apps/web/src/money/`, `apps/web/src/pages/Money.tsx` | Renders in a browser with sample data, see `docs/p3/screenshots/money-stage-0.png` |
 | APIMatic Context Plugin | `claude plugin list` | Installed (user scope). Not yet used: needs `/reload-plugins`. Log: `docs/apimatic-log.md` |
 
@@ -15,9 +15,9 @@ Owner: P3. Source: PRD §14 (day-1 tests) and §11 (roles). Gate: Oct 28, "every
 
 ### 1. Sandbox accounts and the Treasury app (developer.paypal.com > Apps & Credentials > Sandbox)
 
-1. Sandbox accounts: a **Business** account (the event treasury), a **Personal** account that pays invoices, and a **Personal** account that receives payouts. For Venmo, a Venmo test account if the dashboard offers one.
+1. Sandbox accounts: a **Business** account (the event treasury), a **Personal** account that pays invoices, and a **Personal** account that receives payouts.
 2. A REST app on the Business account named like `quartermaster-treasury`. Enable the features it lists that we use: **Transaction Search** (required for the search test), **Payouts**, and **Invoicing** if it is listed. P2 owns the second app (Procurement).
-3. Put the keys in `.env` (copy `.env.example`): `PAYPAL_TREASURY_CLIENT_ID`, `PAYPAL_TREASURY_CLIENT_SECRET`, `DAY1_SPONSOR_EMAIL` (the paying Personal account), `DAY1_PAYPAL_RECIPIENT_EMAIL`, and `DAY1_VENMO_HANDLE` or `DAY1_VENMO_EMAIL`. Leave both Venmo values blank to skip Venmo.
+3. Put the keys in `.env` (copy `.env.example`): `PAYPAL_TREASURY_CLIENT_ID`, `PAYPAL_TREASURY_CLIENT_SECRET`, `DAY1_SPONSOR_EMAIL` (the paying Personal account), and `DAY1_PAYPAL_RECIPIENT_EMAIL`.
 
 ### 2. Register a webhook for the Treasury app
 
@@ -38,7 +38,6 @@ Flags: `day1:invoicing --invoice-id INV2-... | --no-wait | --amount-cents 100 | 
 | `invoicing.paid` PASS and `invoicing.webhook-event` PASS | F4 can be webhook-driven | none needed |
 | `invoicing.webhook-event` FAIL | Invoice paid but PayPal fired no event | Poll the invoice, or an Orders checkout link for sponsors |
 | `invoicing.create`/`send` FAIL | Invoicing not usable on this app | Orders checkout link for sponsors |
-| `payouts.venmo` FAIL, PayPal-only fallback PASS | Venmo not enabled in the sandbox | PayPal-only payouts |
 | `search.query` FAIL with 403 | Transaction Search not enabled on the app | Enable it in the app's features |
 | `search.data` WARN (0 rows) | Valid on a fresh sandbox; results lag up to ~3 hours | Re-run after the other two tests |
 
@@ -46,7 +45,7 @@ Notes on the scripts:
 
 - They hard-code `https://api-m.sandbox.paypal.com` and cannot reach live PayPal.
 - The payout script creates a sandbox payout **outside the rules engine**, because PRD §14 asks for this test and the engine does not exist yet. Production payouts go only through P1's executor.
-- Venmo: PayPal's docs show the wallet as `VENMO` in one place and `Venmo` in another. The script tries both and records which one worked, and the sandbox does not support `PHONE` recipients, so use a handle or an email.
+- Payouts are PayPal-only. The sandbox does not support `PHONE` recipients, so use the recipient's PayPal email.
 - Endpoint shapes were taken from PayPal's published OpenAPI specs (`developer.paypal.com/api/<name>/schema.json`), not from the APIMatic plugin. See `docs/apimatic-log.md`.
 
 ### Day-1 results (fill in)
@@ -54,7 +53,7 @@ Notes on the scripts:
 | Test | Date | Result lines | Decision |
 | --- | --- | --- | --- |
 | Invoicing | 2026-10-27 | `invoicing.create PASS` (INV2-KUAD-G3SZ-RL4H-P6QK), `invoicing.send PASS` (HTTP 200), `invoicing.state PASS` (SENT). **Payment and `INVOICING.INVOICE.PAID` not yet checked**: waiting for the invoice to be paid and for P2's webhook | Create and send work. Re-run with `--invoice-id INV2-KUAD-G3SZ-RL4H-P6QK` after paying |
-| Payouts (PayPal + Venmo) | 2026-10-27 | `payouts.create PASS` (batch VBTQYXLLQSYU2, PayPal recipient), item `SUCCESS`, `payouts.batch PASS` (SUCCESS). `payouts.venmo SKIP` (no Venmo recipient configured), `payouts.webhook-event WARN` (no webhook subscribed) | PayPal payouts work. Venmo untested: needs a Venmo handle or email |
+| Payouts | 2026-10-27 | `payouts.create PASS` (batch VBTQYXLLQSYU2, PayPal recipient), item `SUCCESS`, `payouts.batch PASS` (SUCCESS), `payouts.webhook-event WARN` (no webhook subscribed) | PayPal payouts work |
 | Transaction Search | 2026-10-27 | `search.query PASS` (HTTP 200, 0 rows in 14 days, last refreshed 2026-10-27T13:29:59Z), `search.data WARN` (fresh sandbox) | Works: use it for reconciliation and reports. Re-run after the other tests |
 
 ### 4. AG Studio trial licence
@@ -75,7 +74,7 @@ Run `/reload-plugins`, then `/onboard-context-matic`, then the prompts in `docs/
 - **Sponsor `tier` is a free string**, because the PRD does not name the tiers. P4's seed defines them.
 - **`RuleDecision` and `RuleResult` live in `common.ts`** with the shape from `money-safety.md`. P1 owns them: move or extend as needed.
 - **`LedgerSource` is a first guess** (sponsor_invoice, subscription, ticket, donation, purchase, refund, claim_payout, speaker_payout, prize_payout) and `LedgerEntry.category` is added so Budget burn can group by category. P1 and P2 should confirm.
-- **`PayoutDestination` rejects `USER_HANDLE` on the PayPal wallet** (a handle is a Venmo handle) and omits `PHONE` (unsupported in the sandbox).
+- **`PayoutDestination` is PayPal-only**: an email or a PayPal ID. Handle-style recipients and `PHONE` (unsupported in the sandbox) are rejected.
 - Money is integer minor units plus an ISO code everywhere. The only place cents become dollars is `studio-data.ts`, because Studio's currency format wants dollars.
 
 ## Things to raise at standup

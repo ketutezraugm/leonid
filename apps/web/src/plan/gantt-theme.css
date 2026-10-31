@@ -1,0 +1,54 @@
+/*
+ * Bryntum theme overrides, driven only by tokens.css. Loaded after the
+ * Svalbard theme so these win.
+ */
+
+.qm-gantt {
+  height: 480px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.qm-gantt .b-gantt {
+  --b-primary: var(--color-accent);
+  --b-gantt-task-primary: var(--color-accent);
+  --b-grid-row-height: var(--gantt-row-height);
+  --b-gantt-task-border-radius: var(--gantt-bar-radius);
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+/* Task bar colors follow the shared status vocabulary (StatusBadge). Bryntum
+ * derives each bar's --b-primary from --b-gantt-task-primary on the bar itself. */
+.qm-gantt .qm-status-done {
+  --b-gantt-task-primary: var(--color-status-done);
+}
+
+.qm-gantt .qm-status-progress {
+  --b-gantt-task-primary: var(--color-status-progress);
+}
+
+.qm-gantt .qm-status-pending {
+  --b-gantt-task-primary: var(--color-status-pending);
+}
+
+.qm-gantt .qm-status-risk {
+  --b-gantt-task-primary: var(--color-status-risk);
+}
+
+.qm-gantt .qm-status-blocked {
+  --b-gantt-task-primary: var(--color-status-blocked);
+}
+
+/* Event day: the fixed milestone and its line use the milestone ink, not a
+ * status color. Bryntum sets --b-primary on these elements via .b-colorize,
+ * so these selectors have to outrank that. */
+.qm-gantt .b-gantt-task-wrap.b-milestone-wrap,
+.qm-gantt .b-sch-time-range.b-colorize {
+  --b-primary: var(--gantt-milestone);
+  --b-gantt-task-primary: var(--gantt-milestone);
+  --b-gantt-milestone-primary: var(--gantt-milestone);
+}

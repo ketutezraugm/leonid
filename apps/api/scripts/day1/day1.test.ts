@@ -323,7 +323,6 @@ describe('payouts', () => {
     senderBatchId: 'day1-test',
     amountCents: 100,
     paypalEmail: 'payee@example.com',
-    venmo: { recipientType: 'USER_HANDLE' as const, receiver: '@payee' },
     waitMinutes: 3,
   };
   const created = (id: string) => () => ({
@@ -355,19 +354,16 @@ describe('payouts', () => {
     },
   };
 
-  it('builds a mixed PayPal and Venmo batch with stable ids', () => {
-    const body = buildPayoutBody(batchOpts, 'VENMO');
+  it('builds one PayPal email item with stable ids', () => {
+    const body = buildPayoutBody(batchOpts);
     expect(body.sender_batch_header.sender_batch_id).toBe('day1-test');
-    expect(body.items).toHaveLength(2);
+    expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
       recipient_type: 'EMAIL',
+      receiver: 'payee@example.com',
       recipient_wallet: 'PAYPAL',
       amount: { currency: 'USD', value: '1.00' },
-    });
-    expect(body.items[1]).toMatchObject({
-      recipient_type: 'USER_HANDLE',
-      receiver: '@payee',
-      recipient_wallet: 'VENMO',
+      sender_item_id: 'day1-test-paypal',
     });
   });
 
@@ -392,81 +388,16 @@ describe('payouts', () => {
     expect(statusOf(results, 'payouts.webhook-event')).toBe('PASS');
   });
 
-  it('retries the Venmo wallet with the other casing when PayPal rejects the first', async () => {
-    const wallets: unknown[] = [];
-    const { client } = fakePayPal({
-      'POST /v1/payments/payouts': [
-        (c) => {
-          wallets.push(
-            (c.body as { items: { recipient_wallet: string }[] }).items[1]?.recipient_wallet,
-          );
-          return {
-            status: 400,
-            body: { name: 'VALIDATION_ERROR', message: 'recipient_wallet invalid' },
-          };
-        },
-        (c) => {
-          wallets.push(
-            (c.body as { items: { recipient_wallet: string }[] }).items[1]?.recipient_wallet,
-          );
-          return {
-            status: 201,
-            body: { batch_header: { payout_batch_id: 'PB-1', batch_status: 'PENDING' } },
-          };
-        },
-      ],
-      'GET /v1/payments/payouts/PB-1': batch('PB-1', 'SUCCESS', 'SUCCESS'),
-      'GET /v1/notifications/webhooks-events': () => events,
+  it('fails once, and sends no second batch, when PayPal rejects the batch', async () => {
+    const { client, calls } = fakePayPal({
+      'POST /v1/payments/payouts': () => ({
+        status: 422,
+        body: { name: 'USER_BUSINESS_ERROR', message: 'Rejected' },
+      }),
     });
     const results = await runPayouts(client, { ...batchOpts, log: () => {}, clock: fakeClock() });
-    expect(wallets).toEqual(['VENMO', 'Venmo']);
-    expect(results.find((r) => r.step === 'payouts.create')?.detail).toContain(
-      'recipient_wallet=Venmo',
-    );
-  });
-
-  it('records a Venmo FAIL and proves the PayPal-only fallback when Venmo is rejected both ways', async () => {
-    const ids: string[] = [];
-    const { client } = fakePayPal({
-      'POST /v1/payments/payouts': (c) => {
-        const body = c.body as {
-          sender_batch_header: { sender_batch_id: string };
-          items: unknown[];
-        };
-        ids.push(body.sender_batch_header.sender_batch_id);
-        return body.items.length === 2
-          ? { status: 422, body: { name: 'USER_BUSINESS_ERROR', message: 'Venmo not enabled' } }
-          : {
-              status: 201,
-              body: { batch_header: { payout_batch_id: 'PB-2', batch_status: 'PENDING' } },
-            };
-      },
-      'GET /v1/payments/payouts/PB-2': batch('PB-2', 'SUCCESS', 'SUCCESS'),
-      'GET /v1/notifications/webhooks-events': () => events,
-    });
-    const results = await runPayouts(client, { ...batchOpts, log: () => {}, clock: fakeClock() });
-    expect(statusOf(results, 'payouts.venmo')).toBe('FAIL');
-    expect(results.find((r) => r.step === 'payouts.create')?.detail).toContain(
-      'PayPal-only fallback',
-    );
-    expect(ids).toEqual(['day1-test', 'day1-test', 'day1-test-paypal-only']);
-    expect(statusOf(results, 'payouts.batch')).toBe('PASS');
-  });
-
-  it('skips Venmo when no recipient is configured', async () => {
-    const { client } = fakePayPal({
-      'POST /v1/payments/payouts': created('PB-3'),
-      'GET /v1/payments/payouts/PB-3': batch('PB-3', 'SUCCESS', 'SUCCESS'),
-      'GET /v1/notifications/webhooks-events': () => events,
-    });
-    const results = await runPayouts(client, {
-      ...batchOpts,
-      venmo: undefined,
-      log: () => {},
-      clock: fakeClock(),
-    });
-    expect(statusOf(results, 'payouts.venmo')).toBe('SKIP');
-    expect(statusOf(results, 'payouts.batch')).toBe('PASS');
+    expect(statusOf(results, 'payouts.run')).toBe('FAIL');
+    expect(calls.filter((c) => c.method === 'POST')).toHaveLength(1);
   });
 
   it('fails when the batch ends DENIED', async () => {
@@ -474,12 +405,7 @@ describe('payouts', () => {
       'POST /v1/payments/payouts': created('PB-4'),
       'GET /v1/payments/payouts/PB-4': batch('PB-4', 'DENIED', 'BLOCKED'),
     });
-    const results = await runPayouts(client, {
-      ...batchOpts,
-      venmo: undefined,
-      log: () => {},
-      clock: fakeClock(),
-    });
+    const results = await runPayouts(client, { ...batchOpts, log: () => {}, clock: fakeClock() });
     expect(statusOf(results, 'payouts.batch')).toBe('FAIL');
   });
 });
