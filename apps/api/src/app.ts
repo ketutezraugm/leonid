@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.js';
 import { chatRouter } from './routes/chat.js';
 import { demoRouter } from './routes/demo.js';
 import { invoicesRouter } from './routes/invoices.js';
+import { spendsRouter } from './routes/spends.js';
 import { treasuryRouter } from './routes/treasury.js';
 import { venueDepositRouter } from './routes/venueDeposit.js';
 import { walletRouter } from './routes/wallet.js';
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api/auth', authRouter());
   app.use('/api/chat', chatRouter);
   app.use('/api/demo', demoRouter());
+  app.use('/api/spends', spendsRouter());
   app.use('/api/treasury', treasuryRouter());
   app.use('/api/wallet', walletRouter());
   app.use('/api/approvals', approvalsRouter());
