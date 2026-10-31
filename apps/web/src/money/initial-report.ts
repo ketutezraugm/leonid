@@ -8,6 +8,9 @@ const at = (xTrack: number, yTrack: number, xSpan: number, ySpan: number): AgWid
   xSpan,
   ySpan,
 });
+// A custom widget's state is not part of Studio's default registry types, so it is cast to the general shape.
+type AnyWidgetState = NonNullable<NonNullable<AgPageState['widgets']>[string]>;
+
 const title = (text: string) => ({ title: { enabled: true, text } });
 const sum = (id: string) => ({ id, aggregation: 'sum' as const });
 
@@ -24,27 +27,25 @@ const overview: AgPageState = {
     'kpi-outstanding': kpi('Invoiced, not yet paid', sum('sponsors.outstanding')),
     'kpi-committed': kpi('Spent and committed', sum('categories.used')),
     funding: {
-      type: 'column-chart-grouped',
+      type: 'funding-thermometer',
       dataMapping: {
-        categoryKey: [{ id: 'sponsors.name' }],
-        valueKey: [sum('sponsors.pledged'), sum('sponsors.invoiced'), sum('sponsors.cleared')],
+        sponsor: [{ id: 'sponsors.name' }],
+        pledged: [sum('sponsors.pledged')],
+        invoiced: [sum('sponsors.invoiced')],
+        cleared: [sum('sponsors.cleared')],
       },
-      format: {
-        ...title('Funding: pledged, invoiced and cleared'),
-        style: { theme: { common: { legend: { enabled: true } } } },
-      },
-    },
+      format: title('Funding: pledged, invoiced and cleared'),
+    } as unknown as AnyWidgetState,
     burn: {
-      type: 'bar-chart-stacked',
+      type: 'budget-burn',
       dataMapping: {
-        categoryKey: [{ id: 'categories.category' }],
-        valueKey: [sum('categories.spent'), sum('categories.committed')],
+        category: [{ id: 'categories.category' }],
+        cap: [sum('categories.cap')],
+        spent: [sum('categories.spent')],
+        committed: [sum('categories.committed')],
       },
-      format: {
-        ...title('Budget burn by category'),
-        style: { theme: { common: { legend: { enabled: true } } } },
-      },
-    },
+      format: title('Budget burn by category'),
+    } as unknown as AnyWidgetState,
     payouts: {
       type: 'grid',
       dataMapping: {
@@ -63,9 +64,9 @@ const overview: AgPageState = {
     'kpi-cleared': at(0, 0, 8, 7),
     'kpi-outstanding': at(8, 0, 8, 7),
     'kpi-committed': at(16, 0, 8, 7),
-    funding: at(0, 7, 12, 20),
-    burn: at(12, 7, 12, 20),
-    payouts: at(0, 27, 24, 18),
+    funding: at(0, 7, 12, 24),
+    burn: at(12, 7, 12, 24),
+    payouts: at(0, 31, 24, 18),
   },
 };
 

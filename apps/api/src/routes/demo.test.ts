@@ -19,20 +19,27 @@ const captured = (value: string) => ({
   purchase_units: [{ payments: { captures: [{ id: 'CAP-AUTO', status: 'COMPLETED', amount: { currency_code: 'USD', value } }] } }],
 });
 
-async function build(env: NodeJS.ProcessEnv = on, { wallet: withWallet = true } = {}) {
+async function build(env: NodeJS.ProcessEnv = on, { wallet: withWallet = true, hangFirstCharge = false } = {}) {
   const orderPosts: unknown[] = [];
+  const requestIds: Array<string | null> = [];
+  let hangs = hangFirstCharge;
   const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
     const path = new URL(String(url)).pathname;
     if (path === '/v1/oauth2/token') return json(200, { access_token: 't', token_type: 'Bearer', expires_in: 3600 });
     if (init?.method === 'POST' && path === '/v2/checkout/orders') {
       const body = JSON.parse(String(init.body));
       orderPosts.push(body);
+      requestIds.push(new Headers(init.headers).get('PayPal-Request-Id'));
+      if (hangs && body.payment_source?.paypal?.vault_id) {
+        hangs = false; // only the first charge hangs: PayPal never answers, the client's deadline fires
+        return new Promise<Response>((_resolve, reject) => init.signal?.addEventListener('abort', () => reject(init.signal?.reason)));
+      }
       if (body.payment_source?.paypal?.vault_id) return json(201, captured(body.purchase_units[0].amount.value));
       return json(201, { id: 'ORD-APPROVE', status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: 'https://www.sandbox.paypal.com/checkoutnow?token=ORD-APPROVE' }] });
     }
     throw new Error(`unexpected PayPal call: ${init?.method} ${path}`);
   });
-  const client = createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch });
+  const client = createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch, timeoutMs: 50 });
   const wallet = createMemoryWalletStore();
   if (withWallet) await wallet.activate({ paymentTokenId: 'pt_1' });
   const approvals = createMemoryApprovals();
@@ -41,7 +48,7 @@ async function build(env: NodeJS.ProcessEnv = on, { wallet: withWallet = true } 
   const app = express();
   app.use(express.json());
   app.use('/api/demo', demoRouter({ env, payments: () => ({ client, wallet, executor, approvals }) }));
-  return { app, orderPosts, wallet, approvals, audit };
+  return { app, orderPosts, requestIds, wallet, approvals, audit };
 }
 
 const spend = (amountMinor: number, extra: object = {}) => ({ amountMinor, label: 'Lanyards (200)', ...extra });
@@ -97,6 +104,29 @@ describe('POST /api/demo/spend', () => {
     expect(different.status).toBe(409);
     expect(different.body).toEqual({ status: 'refused', reason: 'reference_reused' });
     expect(orderPosts).toHaveLength(1);
+  });
+
+  it('records the event on the audit row when the caller sends one, and refuses an eventId that is not a UUID', async () => {
+    const { app, audit, orderPosts } = await build();
+    const eventId = '3bbd0ba2-ed6c-41d4-a8f0-719e60f44a13';
+    expect((await request(app).post('/api/demo/spend').set(treasurer).send(spend(14_000, { eventId, category: 'swag' }))).status).toBe(200);
+    expect(audit.rows.find((r) => r.action === 'spend.check')?.input).toMatchObject({ eventId, amountMinor: 14_000, currency: 'USD', category: 'swag' });
+    expect((await request(app).post('/api/demo/spend').set(treasurer).send(spend(14_000, { eventId: 'not-a-uuid' }))).status).toBe(422);
+    expect(orderPosts).toHaveLength(1);
+  });
+
+  it('a PayPal call that never answers is recorded as an error, and a retry reuses the same PayPal-Request-Id so it cannot charge twice', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { app, audit, requestIds } = await build(on, { hangFirstCharge: true });
+    const first = await request(app).post('/api/demo/spend').set(treasurer).send(spend(14_000, { referenceId: 'demo-slow' }));
+    expect(first.status).toBe(500);
+    expect(audit.rows.find((r) => r.action === 'spend.check')).toMatchObject({ outcome: 'error', detail: expect.stringContaining('did not answer') });
+
+    const retry = await request(app).post('/api/demo/spend').set(treasurer).send(spend(14_000, { referenceId: 'demo-slow' }));
+    expect(retry.status).toBe(200);
+    expect(requestIds).toHaveLength(2);
+    expect(requestIds[0]).toBe(requestIds[1]);
+    expect(requestIds[0]).toBe('charge-demo-slow');
   });
 
   it('rejects an invalid or oversized body before touching PayPal', async () => {
