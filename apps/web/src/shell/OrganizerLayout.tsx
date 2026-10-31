@@ -7,12 +7,14 @@ import { ShellDataProvider } from './data';
 import { clearReturnPath, peekReturnPath } from './returnPath';
 import { useSession } from './session';
 import { Sidebar } from './Sidebar';
+import { readSidebarOpen, saveSidebarOpen } from './sidebarPref';
 
 // P1's chat is large (AI SDK), so it loads the first time the drawer opens, then stays mounted.
 const AgentChat = lazy(() => import('../chat/AgentChat').then((m) => ({ default: m.AgentChat })));
 
-// Plan, Money and Agent need the full width: the sidebar collapses to an icon rail.
-const RAIL_ROUTES = ['/plan', '/money', '/agent'];
+// Plan, Money and Agent need the full width: the sidebar starts as an icon rail there and open elsewhere,
+// until the person picks a state with its button.
+const WIDE_ROUTES = ['/plan', '/money', '/agent'];
 
 // PayPal sends the browser back to /?wallet=… and /?login=… (return paths to confirm with P2).
 const returnMessages: Record<string, { kind: 'success' | 'error'; text: string }> = {
@@ -31,8 +33,10 @@ export function OrganizerLayout() {
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const [everOpened, setEverOpened] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
   const button = useRef<HTMLButtonElement>(null);
-  const rail = RAIL_ROUTES.includes(pathname);
+  const wide = WIDE_ROUTES.includes(pathname);
+  const rail = !(sidebarOpen ?? !wide);
   // The workspace has its own chat rail, so a second chat on the same thread would only fight it.
   const onAgent = pathname === '/agent';
 
@@ -41,6 +45,11 @@ export function OrganizerLayout() {
     if (next) setEverOpened(true);
     else button.current?.focus();
   }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen(rail);
+    saveSidebarOpen(rail);
+  }, [rail]);
 
   const openWorkspace = useCallback(() => {
     toggle(false);
@@ -94,7 +103,7 @@ export function OrganizerLayout() {
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <Sidebar />
+        <Sidebar open={!rail} onToggle={toggleSidebar} />
         <main id="main" className="shell-sheet" tabIndex={-1}>
           <Outlet />
         </main>
