@@ -136,15 +136,52 @@ const PER_LABEL = {
   en: { pax: 'per pax', package: 'per package', hour: 'per hour', day: 'per day' },
 } as const;
 
+const ADD_ON_UNIT = {
+  id: { person: 'per orang', hour: 'per jam', event: 'per acara' },
+  en: { person: 'per person', hour: 'per hour', event: 'per event' },
+} as const;
+
+function moneyText(amountMinor: number, currency: VenueListing['price']['currency']): string {
+  return currency === 'IDR'
+    ? `Rp ${amountMinor.toLocaleString('de-DE')}`
+    : `${currency === 'MYR' ? 'RM' : 'S$'} ${(amountMinor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+}
+
 // The price as it appears on the page. Its digits equal amountMinor, which is what the scout's
 // verifier checks: "Rp 175.000" for 175000 rupiah, "RM 85.00" for 8500 sen.
-export function priceText(price: NonNullable<VenueListing['price']>, lang: 'id' | 'en'): string {
-  const { amountMinor, currency, per } = price;
-  const amount =
-    currency === 'IDR'
-      ? `Rp ${amountMinor.toLocaleString('de-DE')}`
-      : `${currency === 'MYR' ? 'RM' : 'S$'} ${(amountMinor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-  return `${amount} ${PER_LABEL[lang][per]}`;
+export function priceText(price: VenueListing['price'], lang: 'id' | 'en'): string {
+  return `${moneyText(price.amountMinor, price.currency)} ${PER_LABEL[lang][price.per]}`;
+}
+
+// The page's price line, in the venue's local language.
+export function priceLine(listing: VenueListing): string {
+  const lang = listing.country === 'id' ? 'id' : 'en';
+  return `${lang === 'id' ? 'Harga mulai' : 'Price from'} ${priceText(listing.price, lang)}`;
+}
+
+// Minimums, what the price covers, tax and every add-on, one fact per line.
+function termsLines({ terms, price }: VenueListing, lang: 'id' | 'en'): string[] {
+  const id = lang === 'id';
+  const { minPax, minHours, includes, addOns, taxPercent } = terms;
+  return [
+    ...(minPax !== null ? [id ? `Minimum ${minPax} orang` : `Minimum ${minPax} guests`] : []),
+    ...(minHours !== null
+      ? [id ? `Minimum sewa ${minHours} jam` : `Minimum hire ${minHours} hours`]
+      : []),
+    `${id ? 'Termasuk' : 'Included'}: ${includes.join(', ')}`,
+    taxPercent > 0
+      ? id
+        ? `Belum termasuk pajak dan layanan ${taxPercent}%`
+        : `Excludes ${taxPercent}% tax and service`
+      : id
+        ? 'Sudah termasuk pajak dan layanan'
+        : 'Includes tax and service',
+    ...(addOns.length > 0 ? [id ? 'Biaya tambahan:' : 'Add-ons:'] : []),
+    ...addOns.map(({ name, amountMinor, unit, required }) => {
+      const need = required ? (id ? 'wajib' : 'required') : id ? 'opsional' : 'optional';
+      return `- ${name}: ${moneyText(amountMinor, price.currency)} ${ADD_ON_UNIT[lang][unit]} (${need})`;
+    }),
+  ];
 }
 
 // A plain-text listing page in the venue's local language (Indonesian for Indonesia, English otherwise).
@@ -164,11 +201,8 @@ export function renderListingPage(listing: VenueListing): string {
       : id
         ? 'Kapasitas: hubungi venue'
         : 'Capacity: ask the venue',
-    listing.price !== null
-      ? `${id ? 'Harga mulai' : 'Price from'} ${priceText(listing.price, lang)}`
-      : id
-        ? 'Harga: tanya via WhatsApp'
-        : 'Price: on request',
+    priceLine(listing),
+    ...termsLines(listing, lang),
     {
       yes: id
         ? 'Termasuk makan siang dan coffee break'
@@ -198,7 +232,6 @@ export function createCatalogSearchClient(
 ): SearchClient {
   const byUrl = new Map(listings.map((l) => [listingUrl(l), l]));
   return {
-    source: 'catalog',
     search(query) {
       const results: SearchResult[] = searchCatalog(listings, query).map((l) => ({
         url: listingUrl(l),

@@ -6,7 +6,8 @@ import { createTestDb } from '../db/testing.js';
 import type { SearchClient } from '../search/client.js';
 import { createOrchestrator } from './orchestrator.js';
 import { scriptedModel, type ScriptStep } from './testing.js';
-import { createVenueScout, verifyCandidate } from './venueScout.js';
+import { listingUrl, loadVenueCatalog, priceLine } from '../search/venueCatalog.js';
+import { createVenueScout, verifyCandidate, withListingPrice } from './venueScout.js';
 import { venuePickOf } from './venuePick.js';
 
 const URL_A = 'https://hotel.test/meeting';
@@ -49,6 +50,38 @@ describe('verifyCandidate', () => {
   });
 });
 
+describe('withListingPrice', () => {
+  const listing = loadVenueCatalog().find((l) => l.price.currency === 'IDR')!;
+  const seeded: VenueCandidate = {
+    ...base,
+    name: listing.name,
+    sourceUrls: [listingUrl(listing)],
+    price: null,
+  };
+  const fromListing = { ...listing.price, quote: priceLine(listing) };
+
+  it('fills in the listing price and terms when the model lost the price', () => {
+    expect(withListingPrice(seeded)).toMatchObject({ price: fromListing, terms: listing.terms });
+  });
+
+  it('replaces a price the model misread', () => {
+    // "Rp 370.000" reported as 37000 passes the quote check, so the listing has to win.
+    const misread = {
+      ...seeded,
+      price: { ...fromListing, amountMinor: listing.price.amountMinor / 10 },
+    };
+    expect(withListingPrice(misread).price).toEqual(fromListing);
+  });
+
+  it('leaves a venue that is not in the catalog alone', () => {
+    expect(withListingPrice(base)).toEqual(base);
+  });
+
+  it('gives nothing to a candidate naming a different venue than its page', () => {
+    expect(withListingPrice({ ...seeded, name: 'Another Venue' }).price).toBeNull();
+  });
+});
+
 describe('venue scout run', () => {
   let db: Db;
   beforeEach(async () => {
@@ -68,7 +101,7 @@ describe('venue scout run', () => {
 
   it('reports verified candidates and ignores instructions inside a page', async () => {
     const reported = await runScout([
-      { tool: 'web_search', input: { query: 'paket meeting jogja' } },
+      { tool: 'search_venues', input: { query: 'paket meeting jogja' } },
       { tool: 'read_page', input: { url: URL_A } },
       {
         tool: 'report_venues',
@@ -95,7 +128,7 @@ describe('venue scout run', () => {
     expect(Object.keys(createVenueScout(ctx, search).agent.tools).sort()).toEqual([
       'read_page',
       'report_venues',
-      'web_search',
+      'search_venues',
     ]);
   });
 });
@@ -120,7 +153,7 @@ describe('orchestrator venue delegation', () => {
   const scoutSteps = (candidates: VenueCandidate[]): ScriptStep[] => [
     { tool: 'delegate_to_venue_scout', input: { city: 'Jogja', headcount: 100 } },
     // venue scout (shares the script)
-    { tool: 'web_search', input: { query: 'paket meeting jogja' } },
+    { tool: 'search_venues', input: { query: 'paket meeting jogja' } },
     { tool: 'read_page', input: { url: URL_A } },
     ...(candidates.length > 0 ? [{ tool: 'report_venues', input: { candidates } }] : []),
     { text: 'Done.' },

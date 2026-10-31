@@ -32,7 +32,9 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
   const db = options.db ?? getDb;
   const router = Router();
 
-  async function pickedListing(threadId: string): Promise<VenueListing | null> {
+  async function pickedVenue(
+    threadId: string,
+  ): Promise<{ listing: VenueListing; eventId: string | null } | null> {
     const thread = await getThread(db(), threadId);
     if (!thread || !Array.isArray(thread.messages) || thread.messages.length === 0) return null;
     let messages: UIMessage[];
@@ -43,7 +45,7 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
     }
     const pick = venuePickOf(messages);
     const listing = pick && findListing(pick.sourceUrl);
-    return listing && listing.name === pick.name ? listing : null;
+    return listing && listing.name === pick.name ? { listing, eventId: thread.eventId } : null;
   }
 
   const depositOf = (listing: VenueListing): VenueDeposit => ({
@@ -76,8 +78,8 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
   router.get(
     '/:threadId',
     handle(async (_req, res, threadId) => {
-      const listing = await pickedListing(threadId);
-      const body: VenueDepositResponse = { deposit: listing ? depositOf(listing) : null };
+      const picked = await pickedVenue(threadId);
+      const body: VenueDepositResponse = { deposit: picked ? depositOf(picked.listing) : null };
       res.json(body);
     }),
   );
@@ -93,11 +95,12 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
         res.status(503).json({ error: 'PayPal Procurement app is not configured' });
         return;
       }
-      const listing = await pickedListing(threadId);
-      if (!listing) {
+      const picked = await pickedVenue(threadId);
+      if (!picked) {
         res.status(409).json({ error: 'Pick one of the seeded venues in this chat first.' });
         return;
       }
+      const { listing, eventId } = picked;
       const deposit = depositOf(listing);
       const outcome = await ctx.executor.requestSpend({
         referenceId: `venue-deposit-${threadId}-${listing.id}`,
@@ -107,6 +110,7 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
         reason: `Deposit to hold ${listing.name} (${deposit.area}), picked in the agent chat`,
         category: 'venue',
         vendor: listing.name,
+        eventId: eventId ?? undefined,
       });
       const body: VenueDepositPayResponse = { deposit, outcome };
       const status =

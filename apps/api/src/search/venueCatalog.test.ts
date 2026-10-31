@@ -38,6 +38,52 @@ describe('venue catalog', () => {
   });
 });
 
+describe('how venues charge', () => {
+  it('gives every venue a price, with minimums that match how it charges', () => {
+    for (const { price, terms, capacity } of catalog) {
+      expect(price.amountMinor).toBeGreaterThan(0);
+      expect(terms.minPax !== null).toBe(price.per === 'pax');
+      expect(terms.minHours !== null).toBe(price.per === 'hour');
+      if (terms.minPax !== null && capacity !== null) {
+        expect(terms.minPax).toBeLessThanOrEqual(capacity);
+      }
+    }
+  });
+
+  it('hires convention halls empty, with chairs as a required add-on per person', () => {
+    const halls = catalog.filter((l) => l.type === 'convention_hall');
+    expect(halls.length).toBeGreaterThan(0);
+    for (const hall of halls) {
+      expect(hall.price.per).toBe('day');
+      expect(hall.terms.addOns).toContainEqual(
+        expect.objectContaining({ name: 'Banquet chair', unit: 'person', required: true }),
+      );
+    }
+  });
+
+  it('includes chairs for every other type of venue, so they are never a required extra', () => {
+    for (const listing of catalog.filter((l) => l.type !== 'convention_hall')) {
+      expect(listing.terms.addOns.filter((a) => a.required && a.unit === 'person')).toEqual([]);
+    }
+  });
+
+  it('states the terms on the page in the local language', () => {
+    const hall = catalog.find((l) => l.type === 'convention_hall' && l.country === 'id')!;
+    const page = renderListingPage(hall);
+    const chair = hall.terms.addOns.find((a) => a.name === 'Banquet chair')!;
+    expect(page).toContain(
+      `- Banquet chair: Rp ${chair.amountMinor.toLocaleString('de-DE')} per orang (wajib)`,
+    );
+    expect(page).toContain('Sudah termasuk pajak dan layanan');
+
+    const ballroom = catalog.find((l) => l.type === 'hotel_ballroom' && l.country === 'sg')!;
+    const english = renderListingPage(ballroom);
+    expect(english).toContain(`Minimum ${ballroom.terms.minPax} guests`);
+    expect(english).toContain('Excludes 20% tax and service');
+    expect(english).toContain('Included: Ballroom for the day');
+  });
+});
+
 describe('venue deposits', () => {
   it('lists a USD deposit on every page, some within the $200 auto-pay rule and some over it', () => {
     for (const listing of catalog) {
@@ -114,10 +160,7 @@ describe('catalog search client', () => {
         sourceUrls: [url],
         capacity:
           listing.capacity === null ? null : { value: listing.capacity, quote: capacityLine ?? '' },
-        price:
-          listing.price === null
-            ? null
-            : { ...listing.price, quote: priceText(listing.price, lang) },
+        price: { ...listing.price, quote: priceText(listing.price, lang) },
         cateringIncluded: listing.catering,
         cateringQuote: cateringLine,
         booking: listing.booking,

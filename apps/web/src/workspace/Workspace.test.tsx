@@ -92,6 +92,35 @@ describe('Workspace', () => {
     expect(within(chat).getByText('Viewing')).toBeInTheDocument();
   });
 
+  it('shows a one-day estimate and what the price covers for a seeded venue', async () => {
+    const seeded = {
+      ...hall,
+      price: { amountMinor: 30_000_000, currency: 'IDR', per: 'day', quote: 'Rp 30.000.000' },
+      terms: {
+        minPax: null,
+        minHours: null,
+        includes: ['Whole hall for the day, empty floor'],
+        addOns: [
+          { name: 'Banquet chair', amountMinor: 20_000, unit: 'person', required: true },
+          { name: 'Sound system', amountMinor: 4_000_000, unit: 'event', required: false },
+        ],
+        taxPercent: 0,
+      },
+    };
+    stubThread([scoutPart('s1', 'Jakarta', [seeded])]);
+    render(<Workspace />);
+    const canvas = screen.getByRole('region', { name: 'Results' });
+    await within(canvas).findByRole('heading', { name: 'Venues in Jakarta' });
+
+    // 30 people at Rp 20,000 a chair, on top of the hall.
+    expect(within(canvas).getAllByText('IDR 30,600,000').length).toBeGreaterThan(0);
+    expect(within(canvas).getByText('Estimate for 30 people, 1 day')).toBeInTheDocument();
+    expect(within(canvas).getByText('Whole venue hire')).toBeInTheDocument();
+    expect(within(canvas).getByText('Banquet chair x 30')).toBeInTheDocument();
+    expect(within(canvas).getByText('Banquet chair (required)')).toBeInTheDocument();
+    expect(within(canvas).getByText('Sound system (optional)')).toBeInTheDocument();
+  });
+
   it('switches the canvas to an earlier search picked in the chat', async () => {
     stubThread([scoutPart('s1', 'Bandung', [hall]), scoutPart('s2', 'Jakarta', [loft])]);
     render(<Workspace />);

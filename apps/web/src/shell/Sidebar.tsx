@@ -16,17 +16,29 @@ const nav: { to: string; label: string; icon: IconName }[] = [
   { to: '/claims', label: 'Claims', icon: 'claims' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const { session, signOut } = useSession();
   const { wallet, waiting } = useShellData();
   const days = daysUntil(EVENT.date);
 
   return (
     <aside className="shell-side">
-      <span className="brand">
-        <BrandMark />
-        <span className="shell-label">Quartermaster</span>
-      </span>
+      <div className="shell-top">
+        <span className="brand">
+          <BrandMark />
+          <span className="shell-label">Quartermaster</span>
+        </span>
+        <button
+          type="button"
+          className="shell-toggle"
+          aria-expanded={open}
+          aria-label={open ? 'Close sidebar' : 'Open sidebar'}
+          title={open ? 'Close sidebar' : 'Open sidebar'}
+          onClick={onToggle}
+        >
+          <Icon name={open ? 'sidebarClose' : 'sidebarOpen'} />
+        </button>
+      </div>
       <div className="shell-event shell-label">
         <strong>{EVENT.name}</strong>
         <span className="muted">

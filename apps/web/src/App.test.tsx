@@ -13,6 +13,7 @@ vi.mock('./chat/AgentChat', () => ({
 }));
 
 beforeEach(() => {
+  localStorage.clear();
   // Requests never settle: these tests check the first render only.
   vi.stubGlobal(
     'fetch',
@@ -99,7 +100,7 @@ describe('App', () => {
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
   });
 
-  it('collapses the sidebar to a rail on Plan, Money and Agent only', () => {
+  it('starts the sidebar as a rail on Plan, Money and Agent only', () => {
     const { container, unmount } = render(
       <MemoryRouter initialEntries={['/money']}>
         <App />
@@ -113,6 +114,50 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(home.container.querySelector('.shell')).not.toHaveClass('shell--rail');
+  });
+
+  it('opens and closes the sidebar from its button, and remembers it across screens', () => {
+    const { container, unmount } = render(
+      <MemoryRouter initialEntries={['/plan']}>
+        <App />
+      </MemoryRouter>,
+    );
+    const shell = container.querySelector('.shell');
+    fireEvent.click(screen.getByRole('button', { name: 'Open sidebar' }));
+    expect(shell).not.toHaveClass('shell--rail');
+    expect(screen.getByRole('button', { name: 'Close sidebar' })).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(screen.getByRole('link', { name: 'Money' }));
+    expect(shell).not.toHaveClass('shell--rail');
+    unmount();
+
+    const again = render(
+      <MemoryRouter initialEntries={['/money']}>
+        <App />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Close sidebar' }));
+    expect(again.container.querySelector('.shell')).toHaveClass('shell--rail');
+  });
+
+  it('closes the sidebar on the other screens too, and that choice carries to every screen', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/approvals']}>
+        <App />
+      </MemoryRouter>,
+    );
+    const shell = container.querySelector('.shell');
+    expect(shell).not.toHaveClass('shell--rail');
+    fireEvent.click(screen.getByRole('button', { name: 'Close sidebar' }));
+    expect(shell).toHaveClass('shell--rail');
+
+    fireEvent.click(screen.getByRole('link', { name: 'Rules' }));
+    expect(shell).toHaveClass('shell--rail');
+    expect(screen.getByRole('button', { name: 'Open sidebar' })).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open sidebar' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Plan' }));
+    expect(shell).not.toHaveClass('shell--rail');
   });
 
   it('renders sponsor reports without organizer navigation or the agent button', () => {

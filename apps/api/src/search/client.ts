@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { createCatalogSearchClient } from './venueCatalog.js';
 
 export const TAVILY_BASE_URL = 'https://api.tavily.com';
 
@@ -26,8 +25,6 @@ export interface SearchResult {
 // The only two operations an agent can reach. There is deliberately no "fetch this URL" method:
 // pages are read through the provider's extract API, so our server never requests arbitrary hosts.
 export interface SearchClient {
-  // Where results come from, so the agent and the chat describe it honestly. Absent means the web.
-  source?: 'catalog' | 'web';
   search(query: string): Promise<SearchResult[]>;
   extract(url: string): Promise<string>;
 }
@@ -48,6 +45,8 @@ const ExtractResponse = z.object({
   failed_results: z.array(z.object({ url: z.string(), error: z.string() })).default([]),
 });
 
+// The Tavily web client. Switched off for now: the venue scout only reads the seeded catalog, so
+// nothing outside the tests calls this.
 export function createSearchClient(options: SearchClientOptions): SearchClient {
   const baseUrl = options.baseUrl ?? TAVILY_BASE_URL;
   const fetchImpl = options.fetch ?? fetch;
@@ -101,13 +100,4 @@ export function createSearchClient(options: SearchClientOptions): SearchClient {
       return page.raw_content;
     },
   };
-}
-
-// VENUE_SEARCH=catalog (the default) serves the seeded demo venues, so the demo never depends on a
-// search API. VENUE_SEARCH=web uses Tavily, and is null when no key is set, so the agent simply has
-// no research tools instead of failing at boot.
-export function searchClientFromEnv(): SearchClient | null {
-  if ((process.env.VENUE_SEARCH ?? 'catalog') !== 'web') return createCatalogSearchClient();
-  const apiKey = process.env.TAVILY_API_KEY;
-  return apiKey ? createSearchClient({ apiKey }) : null;
 }
