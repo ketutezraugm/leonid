@@ -1,5 +1,6 @@
 import type { AgWidgetDefinition } from 'ag-studio-react';
 import { BudgetBurn } from './budget-burn';
+import { DeliveryRisk } from './delivery-risk';
 import { FundingThermometer } from './funding-thermometer';
 import { RulesHealth } from './rules-health';
 
@@ -7,6 +8,7 @@ import { RulesHealth } from './rules-health';
 export const FUNDING_THERMOMETER = 'funding-thermometer';
 export const BUDGET_BURN = 'budget-burn';
 export const RULES_HEALTH = 'rules-health';
+export const DELIVERY_RISK = 'delivery-risk';
 
 export const fundingThermometerDefinition: AgWidgetDefinition = {
   id: FUNDING_THERMOMETER,
@@ -82,6 +84,37 @@ export const rulesHealthDefinition: AgWidgetDefinition = {
       ],
     }),
   comp: RulesHealth,
+  defaultSize: { width: 480, height: 400 },
+  minSize: { width: 240, height: 200 },
+};
+
+// The item, its name and its delivery risk are required; the category, the two days and the days late add detail.
+export const deliveryRiskDefinition: AgWidgetDefinition = {
+  id: DELIVERY_RISK,
+  label: 'Delivery risk',
+  dataMapping: {
+    id: { type: 'field', supportedRoles: ['category'], required: true, intent: 'category' },
+    name: { type: 'field', supportedRoles: ['category'], required: true, intent: 'category' },
+    risk: { type: 'field', supportedRoles: ['category'], required: true, intent: 'category' },
+    category: { type: 'field', supportedRoles: ['category'], intent: 'category' },
+    expected: { type: 'field', supportedRoles: ['category'], intent: 'category' },
+    deadline: { type: 'field', supportedRoles: ['category'], intent: 'category' },
+    daysLate: { type: 'field', supportedRoles: ['numeric'], intent: 'value' },
+  },
+  form: (f) =>
+    f.createDefaults({
+      supportsCrossHighlight: false,
+      dataMappingItems: [
+        { key: 'id', label: 'Item' },
+        { key: 'name', label: 'Name' },
+        { key: 'risk', label: 'Delivery risk' },
+        { key: 'category', label: 'Category' },
+        { key: 'expected', label: 'Expected day' },
+        { key: 'deadline', label: 'Needed by' },
+        { key: 'daysLate', label: 'Days late' },
+      ],
+    }),
+  comp: DeliveryRisk,
   defaultSize: { width: 480, height: 400 },
   minSize: { width: 240, height: 200 },
 };

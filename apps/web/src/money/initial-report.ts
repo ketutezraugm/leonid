@@ -67,6 +67,21 @@ const overview: AgPageState = {
       },
       format: title('Rules health'),
     } as unknown as AnyWidgetState,
+    // Lists the ordered items, so it responds to a sponsor or a category selected in another widget. Its category
+    // is the budget category's, for the same reason as in the rules widget.
+    delivery: {
+      type: 'delivery-risk',
+      dataMapping: {
+        id: [{ id: 'deliveries.id' }],
+        name: [{ id: 'deliveries.name' }],
+        risk: [{ id: 'deliveries.risk' }],
+        category: [{ id: 'categories.category' }],
+        expected: [{ id: 'deliveries.expectedDay' }],
+        deadline: [{ id: 'deliveries.deadlineDay' }],
+        daysLate: [sum('deliveries.daysLate')],
+      },
+      format: title('Delivery risk'),
+    } as unknown as AnyWidgetState,
     payouts: {
       type: 'grid',
       dataMapping: {
@@ -88,6 +103,7 @@ const overview: AgPageState = {
     funding: at(0, 7, 12, 24),
     burn: at(12, 7, 12, 24),
     rules: at(0, 31, 12, 18),
+    delivery: at(12, 31, 12, 18),
     payouts: at(0, 49, 24, 18),
   },
 };

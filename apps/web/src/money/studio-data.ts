@@ -200,6 +200,8 @@ export function buildTables(data: CommandCenterData): StudioTable[] {
         category: d.category,
         expected: d.expectedDelivery,
         deadline: d.deadline,
+        expectedDay: d.expectedDelivery,
+        deadlineDay: d.deadline,
         daysLate: d.daysLate,
         risk: d.risk,
       })),
@@ -210,6 +212,10 @@ export function buildTables(data: CommandCenterData): StudioTable[] {
         ['category', 'Category', 'textFormat'],
         ['expected', 'Expected delivery', 'dateFormat'],
         ['deadline', 'Deadline', 'dateFormat'],
+        // The same days as plain text, for a widget that only shows them: Studio turns a date into a Date at
+        // local midnight, which reads a day early east of Greenwich.
+        ['expectedDay', 'Expected day', 'textFormat', true],
+        ['deadlineDay', 'Deadline day', 'textFormat', true],
         ['daysLate', 'Days late', 'integerFormat'],
         ['risk', 'Risk', 'textFormat'],
       ]),

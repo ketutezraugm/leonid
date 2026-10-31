@@ -7,6 +7,7 @@ import { quartermasterStudioTheme } from './studio-theme';
 import { reportState, startFrom } from './widgets/filters-changed';
 import {
   budgetBurnDefinition,
+  deliveryRiskDefinition,
   fundingThermometerDefinition,
   rulesHealthDefinition,
 } from './widgets/definitions';
@@ -19,6 +20,7 @@ const withCustomWidgets = <T extends { widgets: readonly unknown[] }>(defaults: 
     fundingThermometerDefinition,
     budgetBurnDefinition,
     rulesHealthDefinition,
+    deliveryRiskDefinition,
   ],
 });
 
