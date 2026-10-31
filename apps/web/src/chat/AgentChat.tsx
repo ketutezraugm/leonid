@@ -72,6 +72,9 @@ interface CanvasLink {
   onMessagesChange?: (messages: UIMessage[]) => void;
   viewingSearchId?: string | null;
   onViewSearch?: (id: string) => void;
+  // Viewing a search leaves this chat. The server stops a run when its chat goes away, so the
+  // link waits for the run to end.
+  viewLeavesChat?: boolean;
   // Lets the canvas send a message (a venue pick) through this chat. Null while a run is going.
   onSendChange?: (send: ((text: string) => void) | null) => void;
   // The open chat's id, so the canvas can ask the server about this chat (the venue deposit).
@@ -83,6 +86,7 @@ export function AgentChat({
   onMessagesChange,
   viewingSearchId = null,
   onViewSearch,
+  viewLeavesChat = false,
   onSendChange,
   onThreadChange,
 }: { variant?: 'panel' | 'rail' } & CanvasLink = {}) {
@@ -291,6 +295,7 @@ export function AgentChat({
               onMessagesChange={onMessagesChange}
               viewingSearchId={viewingSearchId}
               onViewSearch={onViewSearch}
+              viewLeavesChat={viewLeavesChat}
               onSendChange={onSendChange}
             />
           ) : (
@@ -314,6 +319,7 @@ function ChatPanel({
   onMessagesChange,
   viewingSearchId,
   onViewSearch,
+  viewLeavesChat = false,
   onSendChange,
 }: CanvasLink & {
   threadId: string;
@@ -478,6 +484,7 @@ function ChatPanel({
               onAnswer={send}
               viewingSearchId={viewingSearchId}
               onViewSearch={onViewSearch}
+              viewLocked={viewLeavesChat && busy}
               pickedVenue={venuePick?.name ?? null}
             />
           ))
@@ -520,9 +527,11 @@ function Message({
   onAnswer,
   viewingSearchId,
   onViewSearch,
+  viewLocked,
   pickedVenue,
 }: Pick<CanvasLink, 'viewingSearchId' | 'onViewSearch'> & {
   message: UIMessage;
+  viewLocked: boolean;
   pickedVenue: string | null;
   answerable: boolean;
   onAnswer: (text: string) => void;
@@ -570,6 +579,7 @@ function Message({
                 key={search.id}
                 search={search}
                 viewing={search.id === viewingSearchId}
+                locked={viewLocked}
                 picked={search.candidates.find((c) => c.name === pickedVenue)?.name ?? null}
                 onView={() => onViewSearch(search.id)}
               />
@@ -606,11 +616,13 @@ function Message({
 function VenueSearchCard({
   search,
   viewing,
+  locked,
   picked,
   onView,
 }: {
   search: VenueSearch;
   viewing: boolean;
+  locked: boolean;
   picked: string | null;
   onView: () => void;
 }) {
@@ -637,6 +649,8 @@ function VenueSearchCard({
       </div>
       {viewing ? (
         <span className="chat-search-badge">Viewing</span>
+      ) : locked ? (
+        <span className="chat-search-badge">Working…</span>
       ) : (
         <button type="button" onClick={onView}>
           View results

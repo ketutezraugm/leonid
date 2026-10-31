@@ -257,6 +257,50 @@ describe('AgentChat', () => {
     });
   });
 
+  it('holds View results in the drawer until the run ends, since leaving would stop it', async () => {
+    let finish: (reply: Response) => void = () => {};
+    const fetchMock = stubFetch({
+      thread: () =>
+        Response.json({
+          messages: [
+            {
+              id: 'a1',
+              role: 'assistant',
+              parts: [
+                {
+                  type: 'tool-delegate_to_venue_scout',
+                  toolCallId: 's1',
+                  state: 'output-available',
+                  input: { city: 'Singapore', headcount: 80 },
+                  output: { activity: [], candidates: [], summary: 'None.' },
+                },
+              ],
+            },
+          ],
+          checklist: [],
+        }),
+    });
+    const passThrough = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url, init) =>
+      url === '/api/chat' && init?.method === 'POST'
+        ? new Promise((resolve) => (finish = resolve))
+        : passThrough(url, init),
+    );
+    const onViewSearch = vi.fn();
+    render(<AgentChat onViewSearch={onViewSearch} viewLeavesChat />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'View results' }));
+    expect(onViewSearch).toHaveBeenCalledWith('s1');
+
+    type('Anything else?');
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    expect(await screen.findByText('Working…')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View results' })).not.toBeInTheDocument();
+
+    finish(sse(text('Done.')));
+    expect(await screen.findByRole('button', { name: 'View results' })).toBeInTheDocument();
+  });
+
   it('starts with the agent checklist closed and opens it on click', async () => {
     stubFetch({
       thread: () =>

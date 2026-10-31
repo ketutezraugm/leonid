@@ -1,0 +1,589 @@
+/*
+ * Shell additions (owner: P4): event block, icon rail, agent button, drawer, tabs, dialog, toasts.
+ * Values come only from tokens.css.
+ */
+
+:root {
+  --drawer-width: 440px;
+}
+
+a.btn {
+  text-decoration: none;
+}
+
+/* --- Browser surfaces: selection, caret, scrollbars and link underlines carry the palette too --- */
+::selection {
+  background: var(--color-data-soft);
+  color: var(--color-text);
+}
+
+html {
+  scrollbar-color: var(--color-control-edge) transparent;
+}
+
+input,
+textarea {
+  caret-color: var(--color-accent);
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Keyboard users jump past the sidebar to the screen. Hidden until focused. */
+.skip-link {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 60;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.shell-sheet:focus {
+  outline: none;
+}
+
+/* --- Sidebar: event block, icons, count, wallet status, foot --- */
+.shell-sheet {
+  /* room for the floating agent button so it never covers the last row */
+  padding-bottom: 96px;
+}
+
+.shell-event {
+  display: grid;
+  gap: 2px;
+  padding: 0 var(--space-2);
+}
+
+.shell-nav a {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.nav-count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-brass);
+  color: var(--color-on-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+}
+
+.shell-foot {
+  display: grid;
+  gap: 2px;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.shell-foot a,
+.shell-signout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 var(--space-2) 0 10px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  font: inherit;
+  color: var(--color-muted);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shell-foot a:hover,
+.shell-signout:hover {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+
+.shell-foot a.active {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.wallet-status {
+  font-size: var(--font-size-xs);
+}
+
+.wallet-status--active {
+  color: var(--color-status-done-text);
+}
+
+.wallet-status--revoked {
+  color: var(--color-status-blocked-text);
+}
+
+/* Agent workspace: the chat rail and results canvas fill the sheet edge to edge and scroll themselves. */
+.shell--agent {
+  height: 100dvh;
+  min-height: 0;
+}
+
+.shell--agent .shell-sheet {
+  height: calc(100dvh - 2 * var(--space-2));
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Where the workspace stacks chat over results, the page scrolls instead. */
+@media (max-width: 900px) {
+  .shell--agent {
+    height: auto;
+  }
+
+  .shell--agent .shell-sheet {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+/* Plan, Money and Agent: the sidebar collapses to an icon rail; hover or focus shows the labels over the sheet. */
+.shell--rail {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.shell--rail .shell-side {
+  width: 64px;
+  padding: var(--space-3) var(--space-2);
+  z-index: 5;
+}
+
+.shell--rail .shell-label {
+  display: none;
+}
+
+.shell--rail .brand,
+.shell--rail .shell-nav a,
+.shell--rail .shell-foot a {
+  justify-content: center;
+  padding: 0;
+}
+
+.shell--rail .shell-side:hover,
+.shell--rail .shell-side:focus-within {
+  width: var(--sidebar-width);
+  padding: var(--space-3);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-menu);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+}
+
+.shell--rail .shell-side:hover .shell-label,
+.shell--rail .shell-side:focus-within .shell-label {
+  display: inline;
+}
+
+.shell--rail .shell-side:hover .shell-event,
+.shell--rail .shell-side:focus-within .shell-event {
+  display: grid;
+}
+
+.shell--rail .shell-side:hover .brand,
+.shell--rail .shell-side:hover .shell-nav a,
+.shell--rail .shell-side:hover .shell-foot a,
+.shell--rail .shell-side:focus-within .brand,
+.shell--rail .shell-side:focus-within .shell-nav a,
+.shell--rail .shell-side:focus-within .shell-foot a {
+  justify-content: flex-start;
+  padding: 0 var(--space-2) 0 10px;
+}
+
+@media (max-width: 720px) {
+  .shell--rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell--rail .shell-side,
+  .shell--rail .shell-side:hover {
+    width: auto;
+    box-shadow: none;
+  }
+
+  .shell--rail .shell-label,
+  .shell--rail .shell-side:hover .shell-label {
+    display: inline;
+  }
+
+  .shell-event,
+  .shell-foot {
+    display: none;
+  }
+
+  .shell-sheet {
+    padding-bottom: 88px;
+  }
+
+  /* The nav strip scrolls sideways; a soft fade says there is more, without a scrollbar. */
+  .shell-nav {
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+  }
+
+  .shell-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* --- Agent button: a forest disc, floating at the bottom-right --- */
+.agent-button {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  box-shadow: var(--shadow-menu);
+  cursor: pointer;
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.agent-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.agent-button:hover {
+  background: var(--color-accent-strong);
+}
+
+.agent-button:active {
+  transform: scale(0.96);
+}
+
+/* Open: it slides left with the drawer and becomes the close button. */
+.agent-button--open {
+  transform: translateX(calc(-1 * (var(--drawer-width) + var(--space-2))));
+}
+
+.agent-button--open:active {
+  transform: translateX(calc(-1 * (var(--drawer-width) + var(--space-2)))) scale(0.96);
+}
+
+.agent-button-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-brass);
+  border: 2px solid var(--color-bg);
+}
+
+.agent-button-arc {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--color-brass);
+  animation: agent-spin 1.6s linear infinite;
+}
+
+@keyframes agent-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .agent-button {
+    right: var(--space-3);
+    bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .agent-button--open,
+  .agent-button--open:active {
+    transform: none;
+  }
+}
+
+/* --- Drawer --- */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(15, 26, 20, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms var(--ease-standard);
+}
+
+.drawer-scrim[data-open='true'] {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: var(--motion-base);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  width: min(var(--drawer-width), 100vw);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform 150ms var(--ease-standard),
+    visibility 0s linear 150ms;
+}
+
+.drawer[data-open='true'] {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    visibility 0s;
+}
+
+.drawer:focus {
+  outline: none;
+}
+
+.drawer-loading {
+  padding: var(--space-4);
+}
+
+/* P1's chat fills the drawer; its thread list opens on demand, as on a phone. */
+.drawer .chat {
+  flex: 1;
+  height: auto;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.drawer .chat-header {
+  padding-right: 72px; /* room beside the floating close button */
+}
+
+.drawer .chat-header {
+  min-height: 56px;
+  padding-left: var(--space-4);
+  border-bottom-color: var(--color-border);
+}
+
+.drawer .chat-header h2 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* P1's "Chats" button, dressed as our secondary button so it matches every other control. */
+.drawer .chat-toggle,
+.chat--rail .chat-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.drawer .chat-toggle:hover,
+.chat--rail .chat-toggle:hover {
+  background: var(--color-accent-soft);
+}
+
+.drawer .chat-sidebar {
+  display: none;
+  width: 100%;
+  border-right: 0;
+}
+
+.drawer .chat-body--list .chat-sidebar {
+  display: flex;
+}
+
+.drawer .chat-body--list .chat-main {
+  display: none;
+}
+
+/* In the drawer the empty state sits above the composer, left-aligned with an even inset, one prompt per row. */
+.drawer .chat-log {
+  padding: var(--space-4);
+}
+
+.drawer .chat-empty {
+  margin: auto 0 0;
+  text-align: left;
+}
+
+.drawer .chat-empty .muted {
+  margin: 0 0 var(--space-3);
+}
+
+.drawer .chat-suggestions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.drawer .chat-error {
+  padding: var(--space-2) var(--space-4);
+}
+
+.drawer .chat-form {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.drawer .chat-form textarea {
+  border-color: var(--color-control-edge);
+}
+
+@media (max-width: 720px) {
+  .drawer .chat-form textarea {
+    font-size: var(--font-size-md);
+  }
+}
+
+/* --- Tabs --- */
+.tabs {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+
+.tab {
+  min-height: 40px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+/* --- Dialog --- */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3);
+  background: rgba(15, 26, 20, 0.32);
+}
+
+.dialog {
+  display: grid;
+  gap: var(--space-3);
+  width: min(440px, 100%);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-menu);
+}
+
+.dialog-body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.dialog-body p {
+  margin: 0;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+}
+
+/* --- Toasts rise from the bottom --- */
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-4);
+  z-index: 50;
+  display: grid;
+  gap: var(--space-2);
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 2 * var(--space-3)));
+  pointer-events: none;
+}
+
+.toast {
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-text);
+  color: var(--color-surface);
+  box-shadow: var(--shadow-menu);
+  animation: toast-in var(--motion-base) var(--ease-standard);
+}
+
+.toast-error {
+  background: var(--color-status-blocked-text);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-button-arc,
+  .toast {
+    animation: none;
+  }
+}
