@@ -1,8 +1,11 @@
 import { z } from 'zod';
-import { toPayPalApiError } from './errors.js';
+import { PayPalTimeoutError, toPayPalApiError } from './errors.js';
 
 // Sandbox only: there are no live PayPal keys anywhere in this project.
 export const PAYPAL_SANDBOX_BASE_URL = 'https://api-m.sandbox.paypal.com';
+
+// Without a deadline a slow PayPal holds the caller's database connection (and the invoice lock) open for minutes.
+export const PAYPAL_TIMEOUT_MS = 30_000;
 
 // Refresh a minute early so a token never expires mid-request.
 const TOKEN_REFRESH_MARGIN_MS = 60_000;
@@ -22,6 +25,7 @@ export interface PayPalClientOptions {
   baseUrl?: string;
   fetch?: typeof fetch;
   now?: () => number;
+  timeoutMs?: number; // per PayPal call, response body included
 }
 
 export interface PayPalRequest<T> {
@@ -50,16 +54,28 @@ export function createPayPalClient(options: PayPalClientOptions): PayPalClient {
   let cached: { token: string; refreshAt: number } | undefined;
   let inFlight: Promise<string> | undefined;
 
+  const timeoutMs = options.timeoutMs ?? PAYPAL_TIMEOUT_MS;
+
+  // One deadline for the whole exchange, body included. Rethrown as PayPalTimeoutError so a caller can tell
+  // "PayPal never answered" (outcome unknown) from "PayPal said no".
+  async function call(method: string, path: string, init: RequestInit): Promise<{ res: Response; body: unknown }> {
+    try {
+      const res = await fetchImpl(`${baseUrl}${path}`, { ...init, method, signal: AbortSignal.timeout(timeoutMs) });
+      return { res, body: await readJson(res) };
+    } catch (err) {
+      if ((err as { name?: string } | null)?.name === 'TimeoutError') throw new PayPalTimeoutError(method, path, timeoutMs);
+      throw err;
+    }
+  }
+
   async function fetchToken(): Promise<string> {
-    const res = await fetchImpl(`${baseUrl}/v1/oauth2/token`, {
-      method: 'POST',
+    const { res, body } = await call('POST', '/v1/oauth2/token', {
       headers: {
         Authorization: `Basic ${basicAuth}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: 'grant_type=client_credentials',
     });
-    const body = await readJson(res);
     if (!res.ok) throw toPayPalApiError(res.status, body, res.headers.get('paypal-debug-id'));
     const parsed = TokenResponse.parse(body);
     cached = {
@@ -91,12 +107,10 @@ export function createPayPalClient(options: PayPalClientOptions): PayPalClient {
       });
     }
 
-    const res = await fetchImpl(`${baseUrl}${req.path}`, {
-      method: req.method,
+    const { res, body } = await call(req.method, req.path, {
       headers,
       body: req.body === undefined ? undefined : JSON.stringify(req.body),
     });
-    const body = await readJson(res);
     if (!res.ok) {
       if (res.status === 401) cached = undefined;
       throw toPayPalApiError(res.status, body, res.headers.get('paypal-debug-id'));

@@ -35,6 +35,16 @@ export class PayPalApiError extends Error {
   }
 }
 
+// PayPal did not answer in time. Unlike PayPalApiError this says nothing about what PayPal did: a charge or capture
+// may have gone through. Callers must not treat it as "failed"; the executor leaves such a capture 'capturing', and a
+// retry with the same PayPal-Request-Id returns the original result instead of charging twice.
+export class PayPalTimeoutError extends Error {
+  constructor(method: string, path: string, timeoutMs: number) {
+    super(`PayPal did not answer ${method} ${path} within ${timeoutMs} ms`);
+    this.name = 'PayPalTimeoutError';
+  }
+}
+
 export function toPayPalApiError(
   status: number,
   body: unknown,
