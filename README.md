@@ -69,7 +69,7 @@ Delivery risk is the fourth custom widget: the ordered items against their deadl
 
 **Cross-filtering.** A click on a sponsor or a budget category filters the widgets that list individual rows: the payouts ledger, rules health and delivery risk. The funding, budget and KPI widgets ignore other widgets' selections on purpose, because a category total is not a sponsor's and a query that joins one through the other can inflate a sum. Studio's fan-out check is set to refuse such a query (`options.fanout.execute: 'prevent'`). Studio does not tell a custom widget that the filters changed, so `CommandCenter` passes `onStateUpdated` to `apps/web/src/money/widgets/filters-changed.ts`, which makes the row-listing widgets fetch again.
 
-Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.md). The licence key is read from `VITE_AG_STUDIO_LICENSE` and is not committed.
+The Stage 2 write-up, with how the cross-filtering works and what is still sample: [`docs/p3/stage-2.md`](docs/p3/stage-2.md). Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.md). The licence key is read from `VITE_AG_STUDIO_LICENSE` and is not committed.
 
 ### Bryntum
 

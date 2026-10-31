@@ -91,6 +91,8 @@ Run `/reload-plugins`, then `/onboard-context-matic`, then the prompts in `docs/
 
 ## Stage 2 polish noted from the first render
 
+**Done in Stage 2** (see [`stage-2.md`](stage-2.md)): the `$` symbol, the filter relations on sponsor and category, and the Rules health and Delivery risk widgets. Chart colours now come from the tokens through the custom widgets; Studio's own chart palette is left as it is. The list below is kept as it was written.
+
 - Money values show no currency symbol (`3,000.00`): switch the money fields to a USD format.
 - Charts use Studio's default palette, not our tokens: add a chart palette to the tokens and the theme.
 - No cross-filtering yet ("No filters available"): define relations on `sponsorId` and `category`, and add filter widgets.
