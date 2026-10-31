@@ -11,6 +11,7 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import type { VenueAddOn } from '@quartermaster/shared';
 import { VenueListing } from '../src/search/venueListing.js';
 
 const DEFAULT_SEED = 20261029;
@@ -18,7 +19,7 @@ const VENUES_PER_AREA = 3;
 
 type Country = VenueListing['country'];
 type VenueType = VenueListing['type'];
-type Currency = NonNullable<VenueListing['price']>['currency'];
+type Currency = VenueListing['price']['currency'];
 
 const CITIES: { country: Country; city: string; areas: string[] }[] = [
   {
@@ -85,18 +86,63 @@ const NAMES: Record<VenueType, { id: string[]; en: string[] }> = {
   },
 };
 
-// Capacity range and how each type usually prices, per currency (minor units).
+// Price ranges in minor units, per currency.
+type Prices = Record<Currency, [number, number]>;
+
+interface AddOnSpec {
+  name: string;
+  unit: VenueAddOn['unit'];
+  required: boolean;
+  price: Prices;
+}
+
+const EXTRA_HOUR: AddOnSpec = {
+  name: 'Extra hour',
+  unit: 'hour',
+  required: false,
+  price: { IDR: [1_500_000, 4_000_000], MYR: [50_000, 150_000], SGD: [60_000, 200_000] },
+};
+const EXTRA_MIC: AddOnSpec = {
+  name: 'Extra microphone',
+  unit: 'event',
+  required: false,
+  price: { IDR: [100_000, 300_000], MYR: [5_000, 15_000], SGD: [5_000, 15_000] },
+};
+const STREAMING: AddOnSpec = {
+  name: 'Live streaming crew',
+  unit: 'event',
+  required: false,
+  price: { IDR: [3_000_000, 8_000_000], MYR: [120_000, 350_000], SGD: [150_000, 450_000] },
+};
+const CLEANING: AddOnSpec = {
+  name: 'Cleaning fee',
+  unit: 'event',
+  required: true,
+  price: { IDR: [300_000, 1_000_000], MYR: [10_000, 40_000], SGD: [15_000, 50_000] },
+};
+const CHAIR_PRICES: Prices = { IDR: [15_000, 35_000], MYR: [800, 2_000], SGD: [600, 1_800] };
+
+// Capacity range and how each type usually charges. Hotels, meeting rooms and restaurants sell a
+// per-person package with a minimum headcount, and furniture comes with it. Coworking floors,
+// auditoriums and rooftops hire out the whole space. Convention halls hire out an empty floor, so
+// chairs are a required add-on per person.
 const TYPES: Record<
   VenueType,
   {
     capacity: [number, number];
-    per: NonNullable<VenueListing['price']>['per'];
-    price: Record<Currency, [number, number]>;
+    per: VenueListing['price']['per'];
+    price: Prices;
     // USD cents. Small rooms stay under the $200 auto-pay rule; big venues go to the treasurer.
     deposit: [number, number];
     catering: VenueListing['catering'][];
     amenities: string[];
     blurb: { id: string; en: string };
+    minPax?: [number, number];
+    minHours?: number;
+    includes: string[];
+    addOns: AddOnSpec[];
+    // Whether tax and service are added on top ("++"), or the price already includes them.
+    taxed: boolean;
   }
 > = {
   hotel_ballroom: {
@@ -110,6 +156,15 @@ const TYPES: Record<
       id: 'Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon.',
       en: 'Hotel ballroom with full-day meeting packages, suited to conferences and hackathons.',
     },
+    minPax: [50, 150],
+    includes: [
+      'Ballroom for the day',
+      'Banquet chairs and tables',
+      'Projector and screen',
+      'Stage',
+    ],
+    addOns: [EXTRA_HOUR, STREAMING],
+    taxed: true,
   },
   meeting_room: {
     capacity: [20, 120],
@@ -122,6 +177,10 @@ const TYPES: Record<
       id: 'Ruang meeting dengan paket half day dan full day, termasuk coffee break.',
       en: 'Meeting rooms with half-day and full-day packages.',
     },
+    minPax: [10, 20],
+    includes: ['Room for the day', 'Chairs and tables', 'Projector', 'Whiteboard'],
+    addOns: [EXTRA_HOUR, EXTRA_MIC],
+    taxed: true,
   },
   coworking: {
     capacity: [40, 200],
@@ -134,6 +193,18 @@ const TYPES: Record<
       id: 'Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas.',
       en: 'Event space inside a coworking floor, popular with meetups, workshops and community hackathons.',
     },
+    minHours: 4,
+    includes: ['Whole event floor', 'Chairs and tables for the full capacity', 'Wi-Fi'],
+    addOns: [
+      CLEANING,
+      {
+        name: 'After-hours staff',
+        unit: 'hour',
+        required: false,
+        price: { IDR: [150_000, 400_000], MYR: [5_000, 15_000], SGD: [6_000, 20_000] },
+      },
+    ],
+    taxed: false,
   },
   auditorium: {
     capacity: [100, 500],
@@ -146,6 +217,9 @@ const TYPES: Record<
       id: 'Auditorium dengan kursi bertingkat untuk keynote dan demo day.',
       en: 'Tiered auditorium for keynotes and demo days.',
     },
+    includes: ['Whole auditorium for the day', 'Fixed seats', 'Stage', 'Sound system'],
+    addOns: [CLEANING, EXTRA_MIC, STREAMING],
+    taxed: false,
   },
   rooftop: {
     capacity: [50, 250],
@@ -162,6 +236,12 @@ const TYPES: Record<
       id: 'Rooftop untuk networking malam dan after party.',
       en: 'Rooftop for evening networking and after-parties.',
     },
+    includes: ['Whole rooftop for 6 hours', 'Cocktail tables and stools', 'Sound system'],
+    addOns: [
+      EXTRA_HOUR,
+      { name: 'Banquet chair', unit: 'person', required: false, price: CHAIR_PRICES },
+    ],
+    taxed: true,
   },
   restaurant: {
     capacity: [20, 100],
@@ -174,6 +254,18 @@ const TYPES: Record<
       id: 'Ruang privat restoran untuk meetup kecil dan makan malam sponsor.',
       en: 'Private dining room for small meetups and sponsor dinners.',
     },
+    minPax: [10, 20],
+    includes: ['Private room', 'Set menu', 'Chairs and tables'],
+    addOns: [
+      {
+        name: 'Projector and screen',
+        unit: 'event',
+        required: false,
+        price: { IDR: [300_000, 800_000], MYR: [10_000, 30_000], SGD: [12_000, 35_000] },
+      },
+      EXTRA_HOUR,
+    ],
+    taxed: true,
   },
   convention_hall: {
     capacity: [300, 1500],
@@ -184,14 +276,40 @@ const TYPES: Record<
       SGD: [1_500_000, 5_000_000],
     },
     deposit: [40_000, 80_000],
-    catering: ['no', 'unknown', 'yes'],
-    amenities: ['Loading dock', 'Booth space', 'Stage', 'Sound system', 'Parking', 'Generator'],
+    catering: ['no', 'unknown'],
+    amenities: ['Loading dock', 'Booth space', 'Parking', 'Generator', 'Wi-Fi', 'Freight lift'],
     blurb: {
       id: 'Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta.',
       en: 'Large hall for expos, big conferences and events with hundreds of attendees.',
     },
+    includes: ['Whole hall for the day, empty floor', 'Basic lighting', 'Air conditioning'],
+    addOns: [
+      { name: 'Banquet chair', unit: 'person', required: true, price: CHAIR_PRICES },
+      {
+        name: 'Cleaning and security',
+        unit: 'event',
+        required: true,
+        price: { IDR: [3_000_000, 8_000_000], MYR: [100_000, 300_000], SGD: [150_000, 400_000] },
+      },
+      {
+        name: 'Stage and backdrop',
+        unit: 'event',
+        required: false,
+        price: { IDR: [5_000_000, 15_000_000], MYR: [200_000, 600_000], SGD: [250_000, 800_000] },
+      },
+      {
+        name: 'Sound system',
+        unit: 'event',
+        required: false,
+        price: { IDR: [4_000_000, 12_000_000], MYR: [150_000, 500_000], SGD: [200_000, 700_000] },
+      },
+    ],
+    taxed: false,
   },
 };
+
+// Tax and service on a "++" price, roughly what venues in each country add. Sample data.
+const TAX_PERCENT: Record<Country, number> = { id: 21, my: 18, sg: 20 };
 
 const CURRENCY: Record<Country, Currency> = { id: 'IDR', my: 'MYR', sg: 'SGD' };
 
@@ -250,12 +368,19 @@ export function generateVenues(seed: number): VenueListing[] {
           city,
           area,
           type,
-          // A few venues leave capacity or price off the page, as real ones do.
+          // A few venues leave capacity off the page, as real ones do.
           capacity: rand() < 0.1 ? null : between(...spec.capacity, 10),
-          price:
-            rand() < 0.2
-              ? null
-              : { amountMinor: between(priceLo, priceHi, step), currency, per: spec.per },
+          price: { amountMinor: between(priceLo, priceHi, step), currency, per: spec.per },
+          terms: {
+            minPax: spec.minPax ? between(...spec.minPax, 10) : null,
+            minHours: spec.minHours ?? null,
+            includes: spec.includes,
+            addOns: spec.addOns.map(({ price, ...addOn }) => ({
+              ...addOn,
+              amountMinor: between(...price[currency], step),
+            })),
+            taxPercent: spec.taxed ? TAX_PERCENT[country] : 0,
+          },
           // Whole dollars in steps of $10.
           deposit: { amountMinor: between(...spec.deposit, 1_000), currency: 'USD' },
           catering: pick(spec.catering),

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { VenueTerms } from '@quartermaster/shared';
 
 // One demo venue in data/venues.json. Kept apart from the catalog so the generator script can
 // validate rows without importing the file it is about to write.
@@ -18,14 +19,14 @@ export const VenueListing = z.object({
     'convention_hall',
   ]),
   capacity: z.number().int().positive().nullable(),
-  price: z
-    .object({
-      // Minor units: whole rupiah for IDR, sen for MYR, cents for SGD.
-      amountMinor: z.number().int().positive(),
-      currency: z.enum(['IDR', 'MYR', 'SGD']),
-      per: z.enum(['pax', 'package', 'hour', 'day']),
-    })
-    .nullable(),
+  price: z.object({
+    // Minor units: whole rupiah for IDR, sen for MYR, cents for SGD.
+    amountMinor: z.number().int().positive(),
+    currency: z.enum(['IDR', 'MYR', 'SGD']),
+    per: z.enum(['pax', 'package', 'hour', 'day']),
+  }),
+  // How the price works: minimums, what it covers and what costs extra.
+  terms: VenueTerms,
   // The deposit that holds the date, paid with PayPal. Always USD: PayPal cannot charge IDR, and
   // takes MYR only between Malaysian accounts, so the event budget's currency is used instead.
   deposit: z.object({

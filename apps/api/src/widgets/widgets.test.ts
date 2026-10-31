@@ -17,6 +17,7 @@ const NOW = new Date('2026-11-02T10:00:00Z');
 let db: Db;
 let eventId: string;
 let id: Record<'harbor' | 'lumen' | 'pixel', string>;
+let pledge: Record<'harbor' | 'lumen' | 'pixel', number>;
 
 beforeAll(async () => {
   db = await createTestDb();
@@ -28,6 +29,12 @@ beforeEach(async () => {
   const rows = await db.select().from(sponsors);
   const by = (name: string) => rows.find((r) => r.name === name)!.id;
   id = { harbor: by('Harbor Cloud'), lumen: by('Lumen Labs'), pixel: by('Pixel Foundry') };
+  const pledgeOf = (name: string) => rows.find((r) => r.name === name)!.pledged;
+  pledge = {
+    harbor: pledgeOf('Harbor Cloud'),
+    lumen: pledgeOf('Lumen Labs'),
+    pixel: pledgeOf('Pixel Foundry'),
+  };
 });
 
 let seq = 0;
@@ -66,31 +73,36 @@ describe('funding thermometer', () => {
     expect(data.currency).toBe('USD');
     expect(data.asOf).toBe('2026-11-02T10:00:00.000Z');
     expect(data.sponsors.map((s) => [s.name, s.pledged, s.invoiced, s.cleared])).toEqual([
-      ['Harbor Cloud', 350_000, 0, 0],
-      ['Lumen Labs', 200_000, 0, 0],
-      ['Pixel Foundry', 100_000, 0, 0],
+      // The seed's pledges, pinned to P4's mockups ($3,000 / $2,500 / $2,500): they add up to the $8,000 budget.
+      ['Harbor Cloud', 300_000, 0, 0],
+      ['Lumen Labs', 250_000, 0, 0],
+      ['Pixel Foundry', 250_000, 0, 0],
     ]);
-    expect(data.totals).toEqual({ pledged: 650_000, invoiced: 0, cleared: 0 });
+    expect(data.totals).toEqual({ pledged: 800_000, invoiced: 0, cleared: 0 });
   });
 
   it('counts an invoiced sponsor as invoiced but not cleared, and a paid one as both', async () => {
     await setStatus(id.harbor, 'invoiced');
     await setStatus(id.lumen, 'paid');
-    await income(id.lumen, 200_000);
+    await income(id.lumen, pledge.lumen);
 
     const data = await funding();
 
-    expect(row(data, id.harbor)).toMatchObject({ invoiced: 350_000, cleared: 0 });
-    expect(row(data, id.lumen)).toMatchObject({ invoiced: 200_000, cleared: 200_000 });
+    expect(row(data, id.harbor)).toMatchObject({ invoiced: pledge.harbor, cleared: 0 });
+    expect(row(data, id.lumen)).toMatchObject({ invoiced: pledge.lumen, cleared: pledge.lumen });
     expect(row(data, id.pixel)).toMatchObject({ invoiced: 0, cleared: 0 });
-    expect(data.totals).toEqual({ pledged: 650_000, invoiced: 550_000, cleared: 200_000 });
+    expect(data.totals).toEqual({
+      pledged: pledge.harbor + pledge.lumen + pledge.pixel,
+      invoiced: pledge.harbor + pledge.lumen,
+      cleared: pledge.lumen,
+    });
   });
 
   it('takes refunds off cleared money, and never goes below zero', async () => {
     await setStatus(id.harbor, 'paid');
-    await income(id.harbor, 350_000);
+    await income(id.harbor, pledge.harbor);
     await reversal(id.harbor, 50_000);
-    expect(row(await funding(), id.harbor).cleared).toBe(300_000);
+    expect(row(await funding(), id.harbor).cleared).toBe(pledge.harbor - 50_000);
 
     await reversal(id.harbor, 400_000);
     expect(row(await funding(), id.harbor).cleared).toBe(0);
@@ -108,23 +120,23 @@ describe('funding thermometer', () => {
   });
 
   it('adds up to the same total as clearedIncome when all income is sponsor money', async () => {
-    await income(id.harbor, 350_000);
+    await income(id.harbor, pledge.harbor);
     await income(id.lumen, 120_000);
     await reversal(id.lumen, 20_000);
 
     const data = await funding();
 
     expect(data.totals.cleared).toBe(await clearedIncome(db, eventId, 'USD'));
-    expect(data.totals.cleared).toBe(450_000);
+    expect(data.totals.cleared).toBe(pledge.harbor + 100_000);
   });
 
   it('narrows to one sponsor, rows and totals together', async () => {
-    await income(id.harbor, 350_000);
+    await income(id.harbor, pledge.harbor);
 
     const data = await funding({ sponsorId: id.harbor });
 
     expect(data.sponsors).toHaveLength(1);
-    expect(data.totals).toEqual({ pledged: 350_000, invoiced: 0, cleared: 350_000 });
+    expect(data.totals).toEqual({ pledged: pledge.harbor, invoiced: 0, cleared: pledge.harbor });
   });
 
   it('answers an unknown sponsor with an empty widget, and an unknown event with nothing', async () => {
@@ -276,14 +288,14 @@ describe('widget routes', () => {
 
   it('serves the funding thermometer as live data in the shared shape', async () => {
     await setStatus(id.harbor, 'paid');
-    await income(id.harbor, 350_000);
+    await income(id.harbor, pledge.harbor);
 
     const res = await request(appWith()).get(`/api/widgets/funding?eventId=${eventId}`).set(TOKEN);
 
     expect(res.status).toBe(200);
     const parsed = FundingThermometerResponse.parse(res.body);
     expect(parsed.source).toBe('live');
-    expect(parsed.data.totals.cleared).toBe(350_000);
+    expect(parsed.data.totals.cleared).toBe(pledge.harbor);
   });
 
   it('applies the sponsor filter from the query string', async () => {

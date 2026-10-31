@@ -244,6 +244,29 @@ export type ChatThreadPatchRequest = z.infer<typeof ChatThreadPatchRequest>;
 // read; the server drops any figure whose quote is not on such a page. All of it is unverified
 // until the organizer confirms with the venue.
 
+// How a seeded venue charges, copied from its listing by code and never by the model.
+export const VenueAddOn = z.object({
+  name: z.string().min(1).max(80),
+  // Same currency as the venue's price. "person" scales with the headcount.
+  amountMinor: z.number().int().positive(),
+  unit: z.enum(['person', 'hour', 'event']),
+  // Required add-ons are part of the real cost (chairs in an empty hall); the rest are extras.
+  required: z.boolean(),
+});
+export type VenueAddOn = z.infer<typeof VenueAddOn>;
+
+export const VenueTerms = z.object({
+  // Per-person packages bill at least this many people.
+  minPax: z.number().int().positive().nullable(),
+  // Hourly hire bills at least this many hours.
+  minHours: z.number().int().positive().nullable(),
+  includes: z.array(z.string().min(1).max(120)).max(8),
+  addOns: z.array(VenueAddOn).max(8),
+  // Tax and service added on top of the price. 0 means the price already includes them.
+  taxPercent: z.number().int().min(0).max(30),
+});
+export type VenueTerms = z.infer<typeof VenueTerms>;
+
 export const VenueCandidate = z.object({
   name: z.string().trim().min(1).max(120),
   area: z.string().trim().max(120).optional(),
@@ -263,6 +286,8 @@ export const VenueCandidate = z.object({
   booking: z.enum(['whatsapp', 'phone', 'website', 'unknown']),
   contact: z.string().max(200).optional(),
   notes: z.string().max(500).optional(),
+  // Set by the server for seeded venues; absent on older results.
+  terms: VenueTerms.optional(),
 });
 export type VenueCandidate = z.infer<typeof VenueCandidate>;
 
@@ -339,3 +364,4 @@ export type SpendOutcome = z.infer<typeof SpendOutcome>;
 // POST /api/venue-deposit/:threadId (treasurer).
 export const VenueDepositPayResponse = z.object({ deposit: VenueDeposit, outcome: SpendOutcome });
 export type VenueDepositPayResponse = z.infer<typeof VenueDepositPayResponse>;
+export * from './spends.js';

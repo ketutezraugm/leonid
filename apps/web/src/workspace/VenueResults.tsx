@@ -1,14 +1,18 @@
 import { useMemo, useState } from 'react';
-import type { VenueCandidate, VenuePick } from '@quartermaster/shared';
+import type { VenueCandidate, VenuePick, VenueTerms } from '@quartermaster/shared';
 import type { VenueSearch } from '../chat/parts';
 import { formatMoney } from '../ui/money';
 import {
+  addOnUnitLabel,
+  chargeFacts,
   filterVenues,
   fits,
   noFilters,
   perLabel,
   safeLinks,
   sortVenues,
+  venueEstimate,
+  type VenueEstimate,
   type VenueFilters,
   type VenueSort,
 } from './venues';
@@ -20,9 +24,12 @@ const bookingLabels: Record<VenueCandidate['booking'], string> = {
   unknown: 'Unknown',
 };
 
-function priceText(venue: VenueCandidate): string | null {
+function priceText(venue: VenueCandidate, headcount: number | null): string | null {
   if (!venue.price) return null;
-  return `${formatMoney(venue.price.amountMinor, venue.price.currency)} ${perLabel[venue.price.per]}`;
+  const estimate = venueEstimate(venue, headcount);
+  return estimate
+    ? `${formatMoney(estimate.total, venue.price.currency)} est. total`
+    : `${formatMoney(venue.price.amountMinor, venue.price.currency)} ${perLabel[venue.price.per]}`;
 }
 
 const isPicked = (venue: VenueCandidate, pick: VenuePick | null) =>
@@ -56,7 +63,7 @@ export function VenueResults({
     const best = top('best');
     return {
       best: best?.name ?? '',
-      cheapest: (cheapest && priceText(cheapest)) ?? 'No prices listed',
+      cheapest: (cheapest && priceText(cheapest, headcount)) ?? 'No prices listed',
       roomiest: roomiest?.capacity ? `${roomiest.capacity.value} people` : 'No capacity listed',
     };
   }, [candidates, headcount]);
@@ -92,8 +99,8 @@ export function VenueResults({
       )}
 
       <p className="results-note">
-        Every price and capacity is copied word for word from a venue&apos;s own web page and is
-        unverified. Confirm with the venue before you commit; many only quote on WhatsApp.
+        Prices and capacities come from the demo venue listings, which are sample data. Totals are
+        one-day estimates; confirm with the venue before you commit.
       </p>
 
       {running ? (
@@ -286,6 +293,7 @@ function VenueCard({
 }) {
   const fit = fits(venue, headcount);
   const links = safeLinks(venue.sourceUrls);
+  const estimate = venueEstimate(venue, headcount);
   const quotes = [
     venue.capacity && { label: 'Capacity', text: venue.capacity.quote },
     venue.price && { label: 'Price', text: venue.price.quote },
@@ -323,8 +331,14 @@ function VenueCard({
               ? 'Booking method unknown'
               : `Book by ${bookingLabels[venue.booking]}`}
           </li>
+          {chargeFacts(venue).map((fact) => (
+            <li key={fact}>{fact}</li>
+          ))}
         </ul>
         {venue.notes && <p className="venue-notes">{venue.notes}</p>}
+        {venue.terms && venue.price && (
+          <VenueCosts terms={venue.terms} currency={venue.price.currency} estimate={estimate} />
+        )}
         {quotes.length > 0 && (
           <details className="venue-quotes">
             <summary>What the page says</summary>
@@ -340,7 +354,16 @@ function VenueCard({
         )}
       </div>
       <div className="venue-price">
-        {venue.price ? (
+        {venue.price && estimate ? (
+          <>
+            <strong>{formatMoney(estimate.total, venue.price.currency)}</strong>
+            <span className="muted">Estimate for {headcount} people, 1 day</span>
+            <span className="muted">
+              {formatMoney(venue.price.amountMinor, venue.price.currency)}{' '}
+              {perLabel[venue.price.per]}
+            </span>
+          </>
+        ) : venue.price ? (
           <>
             <strong>{formatMoney(venue.price.amountMinor, venue.price.currency)}</strong>
             <span className="muted">{perLabel[venue.price.per]}</span>
@@ -384,5 +407,67 @@ function VenueCard({
         )}
       </div>
     </article>
+  );
+}
+
+function VenueCosts({
+  terms,
+  currency,
+  estimate,
+}: {
+  terms: VenueTerms;
+  currency: string;
+  estimate: VenueEstimate | null;
+}) {
+  return (
+    <details className="venue-quotes venue-costs">
+      <summary>What the price covers</summary>
+      <dl>
+        <div>
+          <dt>Included</dt>
+          <dd>{terms.includes.join(', ')}</dd>
+        </div>
+        <div>
+          <dt>Tax</dt>
+          <dd>
+            {terms.taxPercent > 0 ? `${terms.taxPercent}% added on top` : 'Included in the price'}
+          </dd>
+        </div>
+      </dl>
+      {estimate && (
+        <>
+          <h4>One-day estimate</h4>
+          <ul>
+            {estimate.lines.map((line) => (
+              <li key={line.label}>
+                <span>{line.label}</span>
+                <span>{formatMoney(line.amountMinor, currency)}</span>
+              </li>
+            ))}
+            <li className="venue-costs-total">
+              <span>Total</span>
+              <span>{formatMoney(estimate.total, currency)}</span>
+            </li>
+          </ul>
+        </>
+      )}
+      {terms.addOns.length > 0 && (
+        <>
+          <h4>Add-ons</h4>
+          <ul>
+            {terms.addOns.map((addOn) => (
+              <li key={addOn.name}>
+                <span>
+                  {addOn.name} ({addOn.required ? 'required' : 'optional'})
+                </span>
+                <span>
+                  {formatMoney(addOn.amountMinor, currency)} {addOnUnitLabel[addOn.unit]}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </details>
   );
 }

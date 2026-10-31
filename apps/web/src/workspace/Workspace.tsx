@@ -7,8 +7,9 @@ import { VenueDepositPanel } from './VenueDeposit';
 import { VenueResults } from './VenueResults';
 import './workspace.css';
 
-// The agent workspace: the chat is the left rail and drives everything; the canvas shows what the
-// agent found, like a search results page. The canvas never starts work on its own.
+// The agent workspace: the chat is the right rail, across from the app sidebar, and drives
+// everything; the canvas shows what the agent found, like a search results page. The canvas never
+// starts work on its own.
 export function Workspace({ idle }: { idle?: ReactNode }) {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -76,7 +77,7 @@ function CanvasIdle({ children }: { children?: ReactNode }) {
       <p className="canvas-idle-eyebrow">Results</p>
       <h2>What the agent finds shows up here</h2>
       <p className="muted">
-        Ask in the chat on the left. When the agent searches for venues you get every option side by
+        Ask in the chat. When the agent searches for venues you get every option side by
         side, with the price, the capacity and the page each fact came from, so you can sort, filter
         and compare before you decide.
       </p>

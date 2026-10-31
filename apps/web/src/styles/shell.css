@@ -64,6 +64,36 @@ a:hover {
   padding-bottom: 96px;
 }
 
+.shell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  min-height: var(--control-height);
+}
+
+.shell-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.shell-toggle:hover {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+
 .shell-event {
   display: grid;
   gap: 2px;
@@ -166,7 +196,7 @@ a:hover {
   }
 }
 
-/* Plan, Money and Agent: the sidebar collapses to an icon rail; hover or focus shows the labels over the sheet. */
+/* The closed sidebar: an icon rail, on any screen. Plan, Money and Agent start this way. */
 .shell--rail {
   grid-template-columns: 64px minmax(0, 1fr);
 }
@@ -174,7 +204,11 @@ a:hover {
 .shell--rail .shell-side {
   width: 64px;
   padding: var(--space-3) var(--space-2);
-  z-index: 5;
+}
+
+.shell--rail .shell-top {
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .shell--rail .shell-label {
@@ -188,52 +222,43 @@ a:hover {
   padding: 0;
 }
 
-.shell--rail .shell-side:hover,
-.shell--rail .shell-side:focus-within {
-  width: var(--sidebar-width);
-  padding: var(--space-3);
-  background: var(--color-bg);
-  box-shadow: var(--shadow-menu);
-  border-radius: 0 var(--radius-card) var(--radius-card) 0;
-}
-
-.shell--rail .shell-side:hover .shell-label,
-.shell--rail .shell-side:focus-within .shell-label {
-  display: inline;
-}
-
-.shell--rail .shell-side:hover .shell-event,
-.shell--rail .shell-side:focus-within .shell-event {
-  display: grid;
-}
-
-.shell--rail .shell-side:hover .brand,
-.shell--rail .shell-side:hover .shell-nav a,
-.shell--rail .shell-side:hover .shell-foot a,
-.shell--rail .shell-side:focus-within .brand,
-.shell--rail .shell-side:focus-within .shell-nav a,
-.shell--rail .shell-side:focus-within .shell-foot a {
-  justify-content: flex-start;
-  padding: 0 var(--space-2) 0 10px;
-}
-
 @media (max-width: 720px) {
   .shell--rail {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .shell--rail .shell-side,
-  .shell--rail .shell-side:hover {
+  /* Phones have the top bar on every screen, which has nothing to close, so the rail styles step aside. */
+  .shell--rail .shell-side {
     width: auto;
-    box-shadow: none;
+    padding: var(--space-2) var(--space-3) 0;
   }
 
-  .shell--rail .shell-label,
-  .shell--rail .shell-side:hover .shell-label {
+  .shell--rail .shell-label {
     display: inline;
   }
 
+  .shell-top,
+  .shell--rail .shell-top {
+    flex-direction: row;
+    min-height: 0;
+  }
+
+  .shell--rail .brand {
+    justify-content: flex-start;
+    padding: var(--space-1) 0;
+  }
+
+  .shell--rail .shell-nav a {
+    justify-content: flex-start;
+    padding: 0 var(--space-2) 0 10px;
+  }
+
+  .shell-toggle {
+    display: none;
+  }
+
   .shell-event,
+  .shell--rail .shell-event,
   .shell-foot {
     display: none;
   }

@@ -9,6 +9,7 @@ import {
 } from '@quartermaster/shared';
 import type { Db } from '../db/client.js';
 import { getOrCreateThread, saveMessages } from '../db/mandates.js';
+import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { createExecutor } from '../payments/executor.js';
 import {
@@ -82,9 +83,9 @@ beforeEach(async () => {
   db = await createTestDb();
 });
 
-async function seedThread(messages: UIMessage[]) {
+async function seedThread(messages: UIMessage[], eventId: string | null = null) {
   const id = crypto.randomUUID();
-  await getOrCreateThread(db, id, null);
+  await getOrCreateThread(db, id, eventId);
   await saveMessages(db, id, messages);
   return id;
 }
@@ -131,10 +132,11 @@ async function build({ wallet: connected = true } = {}) {
   const wallet = createMemoryWalletStore();
   if (connected) await wallet.activate({ paymentTokenId: 'pt_1' });
   const approvals = createMemoryApprovals();
+  const audit = createMemoryAudit();
   const executor = createExecutor({
     client,
     check: stubCheck,
-    audit: createMemoryAudit(),
+    audit,
     wallet,
     approvals,
     references: createMemoryReferences(),
@@ -149,7 +151,7 @@ async function build({ wallet: connected = true } = {}) {
       payments: () => ({ client, wallet, executor, approvals }),
     }),
   );
-  return { app, calls, approvals };
+  return { app, calls, approvals, audit };
 }
 
 describe('venue deposit route', () => {
@@ -211,6 +213,17 @@ describe('venue deposit route', () => {
     await request(app).post(`/api/venue-deposit/${id}`).set(treasurer).expect(200);
     expect(calls).toHaveLength(2);
     expect(calls[1]?.requestId).toBe(calls[0]?.requestId);
+  });
+
+  it("records the chat's event on the spend, so the deposit shows up under that event", async () => {
+    const { app, audit } = await build();
+    const { id: eventId } = await seedDemoEvent(db);
+    const id = await seedThread(
+      thread([small], { name: small.name, sourceUrl: listingUrl(small) }),
+      eventId,
+    );
+    await request(app).post(`/api/venue-deposit/${id}`).set(treasurer).expect(200);
+    expect(audit.rows[0]?.input).toMatchObject({ eventId });
   });
 
   it('sends a deposit over the rules to the treasurer as a PayPal order to approve', async () => {

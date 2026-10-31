@@ -4,11 +4,12 @@ import { VenueCandidate } from '@quartermaster/shared';
 import { auditedExecute, type AgentContext } from './context.js';
 import { createResearchTools } from './tools/research.js';
 import type { SearchClient } from '../search/client.js';
+import { findListing, priceLine } from '../search/venueCatalog.js';
 
 export const VENUE_SCOUT_MAX_STEPS = 10;
 
 const instructions = `You are the venue scout for a community tech event.
-Find 2 to 3 venue candidates that fit the headcount, using web_search and read_page, then call report_venues once.
+Find 2 to 3 venue candidates that fit the headcount, using search_venues and read_page, then call report_venues once.
 
 Rules:
 - Only report a price, capacity or catering fact if a page you read states it. Copy the exact words into its quote field.
@@ -62,7 +63,22 @@ export function verifyCandidate(
   };
 }
 
-// Exactly web_search, read_page and a write-only report. No DB handle, no PayPal, no raw HTTP.
+// For a seeded venue the listing decides the price, so the number on screen never depends on the
+// model's arithmetic: it reads "Rp 370.000" as 37000000 or 37000 "minor units" often enough to lose
+// the price or show a wrong one. A candidate naming a different venue than its page gets nothing.
+export function withListingPrice(candidate: VenueCandidate): VenueCandidate {
+  const listing = candidate.sourceUrls
+    .map((url) => findListing(url))
+    .find((l) => l?.name === candidate.name);
+  if (!listing) return candidate;
+  return {
+    ...candidate,
+    price: { ...listing.price, quote: priceLine(listing) },
+    terms: listing.terms,
+  };
+}
+
+// Exactly search_venues, read_page and a write-only report. No DB handle, no PayPal, no raw HTTP.
 export function createVenueScout(ctx: AgentContext, search: SearchClient) {
   const research = createResearchTools(ctx, search, 'venue_scout');
   const reported: VenueCandidate[] = [];
@@ -75,13 +91,17 @@ export function createVenueScout(ctx: AgentContext, search: SearchClient) {
       report_venues: tool({
         description: 'Report the venue candidates you found. Call once, at the end.',
         inputSchema: z.object({
-          candidates: z.array(VenueCandidate).min(1).max(3),
+          candidates: z
+            .array(VenueCandidate.omit({ terms: true }))
+            .min(1)
+            .max(3),
           reason: z.string().max(300).optional(),
         }),
         execute: auditedExecute(ctx, 'venue_scout', 'report_venues', async ({ candidates }) => {
           const verified = candidates
             .map((c) => verifyCandidate(c, research.pagesRead))
-            .filter((c): c is VenueCandidate => c !== null);
+            .filter((c): c is VenueCandidate => c !== null)
+            .map(withListingPrice);
           reported.splice(0, reported.length, ...verified);
           return { accepted: verified.length, dropped: candidates.length - verified.length };
         }),

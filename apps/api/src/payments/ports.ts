@@ -10,6 +10,10 @@ export interface Spend {
   reason: string; // the agent's reasoning summary, shown on the Approvals screen
   category?: string;
   vendor?: string;
+  // The event this spend belongs to. Optional so existing callers keep working; it lands in the audit row's input,
+  // which the rules-health widget reads to scope its counts per event. Not part of the retry fingerprint on purpose,
+  // so a retry that adds it is not refused as a different spend. Callers that know their event should set it.
+  eventId?: string;
 }
 
 // Same shape as money-safety.md: { decision, reasons, ruleIds }.
