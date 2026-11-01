@@ -6,7 +6,7 @@ import { NeedsYou } from '../home/NeedsYou';
 import { RecentSpends } from '../home/RecentSpends';
 import { RunwayStrip } from '../home/RunwayStrip';
 import { useFetch } from '../shell/api';
-import { daysUntil, EVENT, formatEventDate } from '../shell/event';
+import { daysUntil, formatEventDate, useEvent, useEventPath, withEvent } from '../shell/event';
 import { BudgetBar, unlockedToSpend } from '../ui/BudgetBar';
 import { formatMoney } from '../ui/money';
 import { PageHeader } from '../ui/PageHeader';
@@ -16,10 +16,12 @@ import { StatusBadge } from '../ui/StatusBadge';
 // plan follow. Waiting approvals and recent spends are live; the budget and alerts are sample data until P1's
 // budget endpoint and the delivery feed exist, and each says so.
 export function EventHome() {
-  const approvals = useFetch('/api/approvals', ApprovalsResponse);
+  const event = useEvent();
+  const path = useEventPath();
+  const approvals = useFetch(withEvent('/api/approvals', event), ApprovalsResponse);
   const waiting = approvals.kind === 'ready' ? waitingItems(approvals.data.approvals) : [];
   const budget = SAMPLE_BUDGET;
-  const days = daysUntil(EVENT.date);
+  const days = daysUntil(event.date);
 
   return (
     <section className="home">
@@ -27,7 +29,7 @@ export function EventHome() {
         title="Event home"
         description={
           <>
-            <span className="countdown num">{days} days</span> to {EVENT.name} on {formatEventDate(EVENT.date)},
+            <span className="countdown num">{days} days</span> to {event.name} on {formatEventDate(event.date)},
             2027.
           </>
         }
@@ -61,7 +63,7 @@ export function EventHome() {
               <li key={alert.id}>
                 <StatusBadge status={alert.tone} label={alert.tone === 'risk' ? 'At risk' : 'Not paid'} />
                 <p>{alert.text}</p>
-                <Link to={alert.to}>{alert.to === '/plan' ? 'Open the plan' : 'Open Money'}</Link>
+                <Link to={path(alert.to)}>{alert.to === '/plan' ? 'Open the plan' : 'Open Money'}</Link>
               </li>
             ))}
           </ul>

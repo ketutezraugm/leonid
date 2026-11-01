@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEventPath } from '../shell/event';
 import { demoTasks, EVENT_DAY } from '../plan/demoPlan';
 import { StatusBadge, type Status } from '../ui/StatusBadge';
 
@@ -31,6 +32,7 @@ function shortDate(iso: string): string {
 }
 
 export function RunwayStrip() {
+  const path = useEventPath();
   const bars = demoTasks.filter((t) => Number(t.duration) > 0);
   const flagged = bars.filter((t) => t.status === 'blocked' || t.status === 'risk');
   const next = bars.filter((t) => t.status !== 'done').slice(0, 2);
@@ -44,7 +46,7 @@ export function RunwayStrip() {
           {' · '}
           Next: {next.map((t) => String(t.name)).join(', ')}
         </p>
-        <Link to="/plan">Open the plan</Link>
+        <Link to={path('plan')}>Open the plan</Link>
       </div>
 
       <div className="runway-track" aria-hidden="true">

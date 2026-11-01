@@ -4,6 +4,7 @@ import { AgentButton } from '../ui/AgentButton';
 import { Drawer } from '../ui/Drawer';
 import { useToast } from '../ui/Toast';
 import { ShellDataProvider } from './data';
+import { useEventPath } from './event';
 import { clearReturnPath, peekReturnPath } from './returnPath';
 import { useSession } from './session';
 import { Sidebar } from './Sidebar';
@@ -14,7 +15,7 @@ const AgentChat = lazy(() => import('../chat/AgentChat').then((m) => ({ default:
 
 // Plan, Money and Agent need the full width: the sidebar starts as an icon rail there and open elsewhere,
 // until the person picks a state with its button.
-const WIDE_ROUTES = ['/plan', '/money', '/agent'];
+const WIDE_SCREENS = ['plan', 'money', 'agent'];
 
 // PayPal sends the browser back to /?wallet=… and /?login=… (return paths to confirm with P2).
 const returnMessages: Record<string, { kind: 'success' | 'error'; text: string }> = {
@@ -35,10 +36,13 @@ export function OrganizerLayout() {
   const [everOpened, setEverOpened] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
   const button = useRef<HTMLButtonElement>(null);
-  const wide = WIDE_ROUTES.includes(pathname);
+  const path = useEventPath();
+  // The screen inside the event: /events/:eventId/plan → "plan".
+  const screen = pathname.match(/^\/events\/[^/]+\/([^/]+)/)?.[1] ?? '';
+  const wide = WIDE_SCREENS.includes(screen);
   const rail = !(sidebarOpen ?? !wide);
   // The workspace has its own chat rail, so a second chat on the same thread would only fight it.
-  const onAgent = pathname === '/agent';
+  const onAgent = screen === 'agent';
 
   const toggle = useCallback((next: boolean) => {
     setOpen(next);
@@ -53,8 +57,8 @@ export function OrganizerLayout() {
 
   const openWorkspace = useCallback(() => {
     toggle(false);
-    navigate('/agent');
-  }, [toggle, navigate]);
+    navigate(path('agent'));
+  }, [toggle, navigate, path]);
 
   // "/" opens the agent from anywhere except while typing.
   useEffect(() => {

@@ -38,6 +38,7 @@
   --color-brass: #a4812e;
   --color-brass-text: #7d6020; /* brass as words, 5.9:1 on white */
   --color-brass-soft: #f7f2e6; /* the one surface that says "this needs you"; brass-text on it 5.4:1 */
+  --color-brass-on-dark: #d9b968; /* brass as words on forest (the landing hero); 6.5:1 on --color-accent */
   --color-hold: #d1d8d3; /* money that exists but cannot be spent: invoiced, pledged */
 
   /* --- Status colors ---
@@ -72,6 +73,7 @@
   --font-size-lg: 18px;
   --font-size-xl: 24px; /* page title */
   --font-size-2xl: 30px; /* the one headline figure per screen */
+  --font-size-display: clamp(44px, 6.2vw, 76px); /* the landing hero headline only */
   --font-weight-normal: 400;
   --font-weight-medium: 500; /* labels, active nav, badges */
   --font-weight-semibold: 600; /* headings */

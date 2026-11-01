@@ -1,0 +1,287 @@
+/*
+ * Multiple events (owner: P4): the sidebar's event switcher and the All events page.
+ * Values come only from tokens.css.
+ */
+
+/* --- The switcher: the sidebar's event block, as a button --- */
+.event-switch {
+  position: relative;
+}
+
+.event-switch-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  background: none;
+  font: inherit;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.event-switch-button:hover,
+.event-switch-button[aria-expanded='true'] {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.event-switch-text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.event-switch-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-switch-text .muted {
+  font-size: var(--font-size-xs);
+}
+
+.event-switch-chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-muted);
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+.event-switch-button[aria-expanded='true'] .event-switch-chevron {
+  transform: rotate(180deg);
+}
+
+/* In the icon rail the block is the event's first letter on a brass-edged tile. */
+.event-initial {
+  display: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid var(--color-brass);
+  border-radius: var(--radius);
+  background: var(--color-brass-soft);
+  color: var(--color-brass-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.shell--rail .event-initial {
+  display: grid;
+}
+
+.shell--rail .event-switch-button {
+  justify-content: center;
+  padding: var(--space-1);
+}
+
+.shell--rail .shell-side:hover .event-initial,
+.shell--rail .shell-side:focus-within .event-initial {
+  display: none;
+}
+
+.shell--rail .shell-side:hover .event-switch-button,
+.shell--rail .shell-side:focus-within .event-switch-button {
+  justify-content: flex-start;
+  padding: var(--space-2);
+}
+
+.event-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 15;
+  display: grid;
+  gap: var(--space-1);
+  width: max(100%, 260px);
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-menu);
+  animation: event-menu-in var(--motion-base) var(--ease-standard);
+}
+
+@keyframes event-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.event-menu-title {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+}
+
+.event-menu ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-menu a {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.event-menu a:hover {
+  background: var(--color-surface-sunken);
+}
+
+.event-menu a[aria-current='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.event-menu-name {
+  font-weight: var(--font-weight-medium);
+}
+
+.event-menu a .muted {
+  font-size: var(--font-size-xs);
+}
+
+.event-menu-foot {
+  display: grid;
+  gap: 2px;
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.event-menu-foot a {
+  display: block;
+  font-weight: var(--font-weight-medium);
+}
+
+@media (max-width: 720px) {
+  /* A short screen (All events with one card) must not stretch the top bar: the sheet takes the rest. */
+  .shell {
+    grid-template-rows: auto 1fr;
+    align-content: start;
+  }
+
+  .event-menu {
+    width: min(320px, calc(100vw - 2 * var(--space-3)));
+  }
+}
+
+/* --- All events: a list to scan, nearest date first --- */
+.events {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.event-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-3);
+  height: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.event-card:hover {
+  border-color: var(--color-accent);
+}
+
+.event-card-name {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.event-card-meta {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.event-card-days {
+  align-self: end;
+  margin-top: var(--space-3);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  color: var(--color-brass-text);
+}
+
+.event-card-days--over {
+  font-size: var(--font-size-md);
+  color: var(--color-muted);
+}
+
+.event-card-open {
+  display: inline-flex;
+  align-items: center;
+  align-self: end;
+  gap: 2px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent);
+}
+
+.event-card-open svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+.event-card:hover .event-card-open svg {
+  transform: translateX(2px);
+}
+
+.past-events summary {
+  padding: var(--space-2) 0;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.past-events .event-cards {
+  margin-top: var(--space-2);
+}
+
+.events-note {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-menu {
+    animation: none;
+  }
+}

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { ApprovalItem } from '@quartermaster/shared';
 import type { FetchState } from '../shell/api';
+import { useEventPath } from '../shell/event';
 import { Button } from '../ui/Button';
 import { formatMoney } from '../ui/money';
 
@@ -15,6 +16,7 @@ export function NeedsYou({
   waiting: ApprovalItem[];
   onRetry: () => void;
 }) {
+  const path = useEventPath();
   if (state === 'loading') {
     return (
       <section className="needs needs--quiet" aria-label="Needs you" aria-busy="true">
@@ -32,7 +34,7 @@ export function NeedsYou({
         <p className="muted">Something may be waiting on you. Check again, or open Approvals.</p>
         <div className="btn-row">
           <Button onClick={onRetry}>Try again</Button>
-          <Link to="/approvals" className="btn btn-secondary">
+          <Link to={path('approvals')} className="btn btn-secondary">
             Open Approvals
           </Link>
         </div>
@@ -64,7 +66,7 @@ export function NeedsYou({
       </p>
       {oldest.reasons[0] && <p className="needs-reason">{oldest.reasons[0]}</p>}
       <div className="btn-row">
-        <Link to="/approvals" className="btn btn-primary">
+        <Link to={path('approvals')} className="btn btn-primary">
           Review in Approvals
         </Link>
       </div>

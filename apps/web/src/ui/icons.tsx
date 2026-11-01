@@ -1,6 +1,7 @@
 // Nav icons for the sidebar, open or collapsed to its rail. One stroke style, drawn on a 24px grid, no brand marks.
 const paths: Record<string, string> = {
   home: 'M4 11l8-6.5 8 6.5M6 10v9h12v-9',
+  events: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
   agent: 'M5 4.5h14a2 2 0 012 2V15a2 2 0 01-2 2h-6.5L8 20.5V17H5a2 2 0 01-2-2V6.5a2 2 0 012-2zM8 9h8M8 12.5h5',
   plan: 'M4 7h9M4 12h14M4 17h7M15 5v4M19 15v4',
   money: 'M5 6h14v12H5zM5 10h14M9 14h3',

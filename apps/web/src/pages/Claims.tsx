@@ -21,7 +21,7 @@ export function Claims() {
             </li>
           ))}
         </ul>
-        <p className="muted">PayPal is the default payout. Venmo is only offered once its sandbox test passes.</p>
+        <p className="muted">Claims are paid back to your PayPal account.</p>
       </section>
     </section>
   );

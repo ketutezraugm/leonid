@@ -1,0 +1,789 @@
+/*
+ * Landing page (owner: P4), layout D: a full-bleed forest hero, then calm white sections.
+ * The hero is the brand slot; every value comes from tokens.css. Persuade-mode type is larger than the app's.
+ */
+
+.landing {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.lp-wrap {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding-inline: clamp(var(--space-3), 5vw, var(--space-6));
+}
+
+.landing h1,
+.landing h2,
+.landing h3 {
+  text-wrap: balance;
+}
+
+.landing h2 {
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.lp-sub {
+  max-width: 52ch;
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-md);
+  color: var(--color-muted);
+}
+
+.lp-center {
+  text-align: center;
+}
+
+.lp-center .lp-sub {
+  margin-inline: auto;
+}
+
+.lp-section {
+  padding-block: clamp(var(--space-5), 7vw, 72px);
+  border-top: 1px solid var(--color-border);
+}
+
+.lp-tint {
+  background: var(--color-bg);
+}
+
+/* --- Buttons on forest, and the larger landing size --- */
+.btn.lp-btn-light {
+  background: var(--color-surface);
+  color: var(--color-accent);
+}
+
+.btn.lp-btn-light:hover {
+  background: var(--color-accent-soft);
+}
+
+.btn.lp-btn-ghost {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-on-accent);
+  text-decoration: none;
+}
+
+.btn.lp-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.btn.lp-btn-lg {
+  min-height: 48px;
+  padding-inline: 22px;
+  font-size: var(--font-size-md);
+}
+
+/* --- Hero --- */
+.lp-hero {
+  background: var(--color-accent);
+  color: var(--color-accent-soft);
+  overflow: hidden;
+}
+
+.lp-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+}
+
+.lp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-accent);
+}
+
+.lp-brand .brand-mark {
+  width: 26px;
+  height: 26px;
+  color: var(--color-brass-on-dark);
+}
+
+.lp-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-weight: var(--font-weight-medium);
+}
+
+.lp-nav a:not(.btn) {
+  color: var(--color-data-soft);
+  text-decoration: none;
+}
+
+.lp-nav a:not(.btn):hover {
+  color: var(--color-on-accent);
+}
+
+.lp-hero a:focus-visible,
+.lp-hero button:focus-visible {
+  outline-color: var(--color-brass-on-dark);
+}
+
+.lp-hero-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: end;
+  padding-top: clamp(var(--space-5), 8vw, 88px);
+}
+
+.lp-hero h1 {
+  max-width: 11ch;
+  margin: 0;
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-semibold);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  color: var(--color-on-accent);
+}
+
+.lp-hero h1 span {
+  color: var(--color-brass-on-dark);
+}
+
+.lp-lede {
+  max-width: 46ch;
+  margin: var(--space-4) 0 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-data-soft);
+}
+
+.lp-problem {
+  max-width: 46ch;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-status-blocked-soft);
+  color: var(--color-status-blocked-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.lp-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.lp-ctas--center {
+  justify-content: center;
+}
+
+.lp-fine {
+  margin: var(--space-3) 0 var(--space-6);
+  font-size: var(--font-size-sm);
+  color: var(--color-data-soft);
+}
+
+/* The hero visual: the product's own proof, cropped by the hero's bottom edge. The brand motif replaces it. */
+.lp-proof {
+  align-self: end;
+  margin: 0 0 calc(-1 * var(--space-3));
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  box-shadow: var(--shadow-menu);
+}
+
+.lp-proof-head {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.lp-proof-head strong {
+  color: var(--color-text);
+}
+
+.lp-proof-fig {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.lp-proof-cap {
+  margin: -8px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.lp-decisions {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-rule);
+}
+
+.lp-decisions li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.lp-decisions li:last-child {
+  border-bottom: 0;
+}
+
+.lp-decisions b {
+  display: block;
+  font-weight: var(--font-weight-medium);
+}
+
+.lp-decisions small {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+/* --- Built with --- */
+.lp-built {
+  padding-block: var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.lp-built .lp-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+}
+
+.lp-built strong {
+  color: var(--color-text);
+}
+
+/* --- In one view --- */
+.lp-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-menu);
+}
+
+/* --- Feature rows --- */
+.lp-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(var(--space-4), 6vw, 72px);
+  align-items: center;
+}
+
+.lp-feature--flip > :first-child {
+  order: 2;
+}
+
+.lp-points {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-muted);
+}
+
+.lp-points li {
+  display: flex;
+  gap: 10px;
+}
+
+.lp-points li::before {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 2px;
+  margin-top: 11px;
+  background: var(--color-brass);
+}
+
+.lp-piece {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-menu);
+}
+
+.lp-piece-label {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.lp-piece-fig {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.lp-piece-fig--sm {
+  font-size: var(--font-size-xl);
+}
+
+.lp-rule {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.lp-rule code {
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.lp-appr {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.lp-piece > .badge {
+  justify-self: start;
+}
+
+/* The PayPal button, drawn: the real one is rendered by PayPal's own script in the app. */
+.lp-paypal {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  border-radius: var(--radius);
+  background: #ffc439;
+  color: #111;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.lp-gantt {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.lp-grow {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.lp-track {
+  position: relative;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-rule);
+}
+
+.lp-track i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-sm);
+}
+
+.lp-bar-progress {
+  background: var(--color-data);
+}
+
+.lp-bar-pending {
+  background: var(--color-status-pending);
+}
+
+.lp-bar-blocked {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-status-blocked) 0 3px,
+    var(--color-status-blocked-soft) 3px 6px
+  );
+}
+
+.lp-bar-event {
+  background: var(--color-brass);
+}
+
+/* --- Pays people back: a feature list beside a phone --- */
+.lp-phonefeat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: clamp(var(--space-4), 6vw, 72px);
+  align-items: center;
+}
+
+.lp-flist {
+  display: grid;
+  gap: 4px;
+  margin-top: var(--space-4);
+}
+
+.lp-fitem {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.lp-fitem:hover {
+  background: var(--color-bg);
+}
+
+.lp-fitem[aria-selected='true'] {
+  background: var(--color-brass-soft);
+  color: var(--color-text);
+  box-shadow: inset 3px 0 0 var(--color-brass);
+}
+
+.lp-fitem span {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.lp-phone {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  height: 460px;
+  padding: var(--space-4);
+  border: 8px solid var(--color-text);
+  border-radius: 36px;
+  background: var(--color-bg);
+}
+
+.lp-phone-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.lp-phone-btn {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+/* --- Try it --- */
+.lp-tries {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-try {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.lp-try h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.lp-try p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.lp-try-n {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brass-text);
+}
+
+.lp-link {
+  justify-self: start;
+  margin-top: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.lp-link:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lp-link:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* --- How it works --- */
+.lp-steps {
+  max-width: 820px;
+  margin: var(--space-5) auto 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  border-top: 1px solid var(--color-border);
+}
+
+.lp-steps li {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lp-step-n {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brass-text);
+}
+
+.lp-steps h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.lp-steps p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+}
+
+/* --- Credibility --- */
+.lp-dark {
+  padding-block: clamp(var(--space-5), 7vw, 72px);
+  background: var(--color-accent-strong);
+  color: var(--color-data-soft);
+}
+
+.lp-dark h2 {
+  max-width: 18ch;
+  color: var(--color-on-accent);
+}
+
+.lp-dark .lp-sub {
+  color: var(--color-data-soft);
+}
+
+.lp-proofs {
+  margin: var(--space-5) 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.lp-proofs > div {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: var(--space-4);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.lp-proofs dt {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-brass-on-dark);
+}
+
+.lp-proofs dd {
+  margin: 0;
+}
+
+.lp-proofs b {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-accent);
+}
+
+/* --- FAQ --- */
+.lp-faq {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.lp-q {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lp-q summary {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  list-style: none;
+}
+
+.lp-q summary::-webkit-details-marker {
+  display: none;
+}
+
+.lp-q summary::after {
+  content: '+';
+  color: var(--color-muted);
+}
+
+.lp-q[open] summary::after {
+  content: '–';
+}
+
+.lp-q p {
+  margin: 0 0 var(--space-3);
+  color: var(--color-muted);
+}
+
+/* --- Closing line and the wordmark footer --- */
+.lp-final h2 {
+  max-width: 20ch;
+  margin-inline: auto;
+  font-size: clamp(28px, 4vw, 44px);
+}
+
+.lp-footer {
+  padding-top: var(--space-5);
+  background: var(--color-accent);
+  color: var(--color-data-soft);
+  overflow: hidden;
+}
+
+.lp-cols {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.lp-cols b {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--color-on-accent);
+}
+
+.lp-cols p {
+  margin: 0;
+  max-width: 36ch;
+}
+
+.lp-cols a {
+  display: block;
+  color: var(--color-data-soft);
+  line-height: 1.9;
+}
+
+.lp-cols a:hover {
+  color: var(--color-on-accent);
+}
+
+.lp-footer a:focus-visible {
+  outline-color: var(--color-brass-on-dark);
+}
+
+.lp-wordmark {
+  margin: var(--space-5) 0 0;
+  font-size: clamp(56px, 13vw, 190px);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+  color: rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* --- Tablet and phone --- */
+@media (max-width: 900px) {
+  .lp-hero-body,
+  .lp-feature,
+  .lp-phonefeat,
+  .lp-faq {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lp-feature--flip > :first-child {
+    order: 0;
+  }
+
+  .lp-phone {
+    width: min(320px, 100%);
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .lp-nav a:not(.btn) {
+    display: none;
+  }
+
+  .lp-ctas .btn,
+  .lp-ctas button {
+    width: 100%;
+  }
+
+  .lp-tries {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lp-rule,
+  .lp-proofs > div,
+  .lp-cols {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .lp-cols {
+    gap: var(--space-4);
+  }
+
+  .lp-steps li {
+    grid-template-columns: 44px 1fr;
+  }
+}
