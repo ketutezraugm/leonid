@@ -79,9 +79,8 @@ export function Settings() {
 
       <Card title="Events">
         <p>
-          {events.length === 1 ? `You run one event, ${events[0]!.name}.` : `You run ${events.length} events.`} Each
-          keeps its own budget, plan, approvals, rules and claims. The treasury and the agent wallet below are shared
-          by all of them.
+          {events.length === 1 ? `You run one event, ${events[0]!.name}.` : `You run ${events.length} events.`} The
+          treasury and the agent wallet below are shared by all of them.
         </p>
         <Link to="/events">All events</Link>
       </Card>

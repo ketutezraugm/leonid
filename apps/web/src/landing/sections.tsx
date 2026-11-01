@@ -4,7 +4,7 @@ import { BrandMark } from '../ui/BrandMark';
 import { BudgetBar, unlockedToSpend, type BudgetFigures } from '../ui/BudgetBar';
 import { formatMoney } from '../ui/money';
 import { StatusBadge } from '../ui/StatusBadge';
-import { BRAND, LINKS } from '../brand';
+import { BRAND, LANDING, LINKS } from '../brand';
 
 // The demo event's figures, as the demo shows them (cleared $3,000 − committed $1,860 = $1,140 unlocked).
 const DEMO_BUDGET: BudgetFigures = {
@@ -306,7 +306,7 @@ export function PaysPeople() {
 
 // --- Try it in 3 minutes: three cards that open the demo at its strongest moments.
 const TRIES = [
-  { n: 1, title: 'Approve a cart over your rule', text: 'The $420 prize cart waits for you. See why, then approve in PayPal.', to: '/approvals' },
+  { n: 1, title: 'See what waits for your approval', text: 'Spends over your limit wait here. See why, then approve in PayPal.', to: '/approvals' },
   { n: 2, title: 'Watch the plan wait for a sponsor', text: 'The swag order stays blocked until its sponsor’s invoice is paid.', to: '/plan' },
   { n: 3, title: 'Stop the agent in one click', text: 'Revoke its wallet; PayPal refuses the next payment, in every event.', to: '/settings' },
 ];
@@ -406,7 +406,9 @@ const FAQ = [
   { q: 'Is this real money?', a: 'No. It runs on the PayPal sandbox; nothing real is charged or paid.' },
   { q: 'Can the agent spend without me?', a: 'Only inside rules you confirmed. A spend over a rule waits for your approval in PayPal, and a spend that breaks a rule is blocked.' },
   { q: 'What happens if I revoke the wallet?', a: 'The saved PayPal payment token is deleted, so PayPal refuses the agent’s next charge. You can connect a new wallet later.' },
-  { q: 'Can I run more than one event?', a: 'Yes. Each event keeps its own budget, plan, approvals, rules and claims, and they share one treasury and one agent wallet.' },
+  ...(LANDING.showMultiEvent
+    ? [{ q: 'Can I run more than one event?', a: 'Yes. Each event keeps its own budget, plan, approvals, rules and claims, and they share one treasury and one agent wallet.' }]
+    : []),
   { q: 'Which PayPal products does it use?', a: 'Log in with PayPal, Invoicing for sponsors, Orders and the PayPal button for approvals, the Vault for the agent’s wallet, and Payouts for people.' },
 ];
 

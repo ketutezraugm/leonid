@@ -16,4 +16,6 @@ export const LINKS = {
 export const LANDING = {
   /** "Pays people back from a phone": claims, prize payouts, speaker reimbursements (F16, F17: Upgrade tier). */
   showPayouts: true,
+  /** "Can I run more than one event?": stays off until approvals and rules are scoped per event on the server. */
+  showMultiEvent: false,
 } as const;

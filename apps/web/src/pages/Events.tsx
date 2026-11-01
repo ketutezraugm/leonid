@@ -15,7 +15,7 @@ export function Events() {
     <section className="events">
       <PageHeader
         title="Your events"
-        description="Each event keeps its own budget, plan, approvals, rules and claims."
+        description="Open an event to see its budget, plan and approvals."
         actions={
           <Link to="/setup" className="btn btn-primary">
             New event

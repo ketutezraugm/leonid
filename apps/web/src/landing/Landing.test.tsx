@@ -97,6 +97,12 @@ describe('Landing page', () => {
     expect(second.open).toBe(false);
   });
 
+  it('does not promise several events until the server scopes them', () => {
+    renderLanding();
+    expect(LANDING.showMultiEvent).toBe(false);
+    expect(screen.queryByText('Can I run more than one event?')).not.toBeInTheDocument();
+  });
+
   it('shows what it pays while that section is switched on, and changes the phone with the item', () => {
     renderLanding();
     expect(LANDING.showPayouts).toBe(true);

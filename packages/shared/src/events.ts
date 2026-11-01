@@ -3,7 +3,8 @@ import { CurrencyCode, IsoDate } from './common.js';
 
 // Quartermaster runs several events (decided Oct 31). GET /api/events lists the signed-in organiser's events;
 // POST /api/events creates one (the setup flow). Every event-scoped endpoint takes ?eventId=<id>; when it is
-// missing the server uses the seeded demo event, so a client that does not send it yet keeps working.
+// missing, a read uses the seeded demo event, so a client that does not send it yet keeps working. Nothing that
+// moves money falls back: a spend with no event is blocked by the rules check.
 // Shared by every event: the treasury PayPal account (its money is tracked per event in the ledger) and the
 // agent wallet, so the kill switch stops the agent in all of them.
 export const EventSummary = z.object({
