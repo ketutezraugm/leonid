@@ -1,6 +1,6 @@
 import type { PayPalClient } from '../paypal/client.js';
 import { getPayPalClient, isPayPalAppConfigured } from '../paypal/client.js';
-import { getDb } from '../db/client.js';
+import { getDb, type Db } from '../db/client.js';
 import { createDbApprovals, createDbAudit, createDbReferences, createDbWalletStore } from './db.js';
 import { createExecutor, type Executor } from './executor.js';
 import {
@@ -11,7 +11,14 @@ import {
   type ApprovalView,
   type WalletStore,
 } from './memory.js';
+import { createRulesCheck } from './rulesCheck.js';
+import type { CheckSpend } from './ports.js';
 import { stubCheck } from './stub-check.js';
+
+// The real rules engine and funds-gated budget whenever there is a database to read the budget from. The stand-in
+// ("nothing over $200") only serves local runs without DATABASE_URL, where there is no ledger to gate on.
+// Note the real check blocks every spend while the ledger holds no cleared income: a sponsor must have paid first.
+export const pickCheck = (db: Db | undefined): CheckSpend => (db ? createRulesCheck(db) : stubCheck);
 
 export interface PaymentsContext {
   client: PayPalClient; // Procurement app
@@ -43,8 +50,7 @@ export function getPayments(): PaymentsContext {
     const approvals = db ? createDbApprovals(db) : createMemoryApprovals();
     const executor = createExecutor({
       client,
-      // ponytail: swap for an adapter around the rules engine's check() when P1's rules/ lands
-      check: stubCheck,
+      check: pickCheck(db),
       audit: db ? createDbAudit(db) : createMemoryAudit(),
       wallet,
       approvals,
