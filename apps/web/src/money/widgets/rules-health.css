@@ -1,0 +1,201 @@
+/* Rules health. Colours come from the design tokens (the status colours for allowed, sent to approval and
+   blocked); the fallbacks only keep it readable on a branch that predates them. Meaning never rests on colour
+   alone: every decision is written out, and the dot is decoration. */
+.qm-rules {
+  --qm-done: var(--color-status-done, #2e7d32);
+  --qm-risk: var(--color-status-risk, #b26a00);
+  --qm-blocked: var(--color-status-blocked, #c4242a);
+  --qm-text: var(--color-text, #0f1a14);
+  --qm-muted: var(--color-muted, #56625b);
+  --qm-border: var(--color-border, #e1e6e2);
+  --qm-focus: var(--color-accent, #1f3a2c);
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 4px 2px;
+  overflow: auto;
+  color: var(--qm-text);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 14px;
+}
+
+.qm-rules__note {
+  margin: 0;
+  padding: 16px;
+  color: var(--color-muted, #56625b);
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.qm-rules__counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qm-rules__count {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--qm-border);
+  border-radius: 6px;
+}
+
+.qm-rules__number {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.qm-rules__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--qm-muted);
+  font-size: 12px;
+}
+
+.qm-rules__dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--qm-muted);
+}
+
+.qm-rules [data-tone='done'] .qm-rules__dot,
+.qm-rules__dot[data-tone='done'] {
+  background: var(--qm-done);
+}
+
+.qm-rules [data-tone='risk'] .qm-rules__dot,
+.qm-rules__dot[data-tone='risk'] {
+  background: var(--qm-risk);
+}
+
+.qm-rules [data-tone='blocked'] .qm-rules__dot,
+.qm-rules__dot[data-tone='blocked'] {
+  background: var(--qm-blocked);
+}
+
+.qm-rules__scope {
+  margin: 0;
+  color: var(--qm-muted);
+  font-size: 12px;
+}
+
+.qm-rules__warn {
+  margin: 0;
+  color: var(--qm-blocked);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.qm-rules__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A check is two lines: what was decided and about what, then why. Rows with a category are buttons that
+   filter the other widgets by it; rows without one are plain text. */
+.qm-rules__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head date'
+    'why why';
+  align-items: baseline;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+button.qm-rules__row {
+  cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+
+button.qm-rules__row:hover {
+  background: var(--color-surface-sunken, #e8ede9);
+}
+
+button.qm-rules__row:focus-visible {
+  outline: 2px solid var(--qm-focus);
+  outline-offset: 2px;
+}
+
+.qm-rules__row[aria-pressed='true'] {
+  border-color: var(--qm-focus);
+  background: var(--color-accent-soft, #e1e9e3);
+}
+
+.qm-rules__row[data-dimmed='true'] {
+  opacity: 0.5;
+}
+
+.qm-rules__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  grid-area: head;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.qm-rules__decision {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.qm-rules__amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.qm-rules__category {
+  color: var(--qm-muted);
+  text-transform: capitalize;
+}
+
+.qm-rules__date {
+  grid-area: date;
+  color: var(--qm-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.qm-rules__why {
+  grid-area: why;
+  color: var(--qm-muted);
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.qm-rules__row {
+    transition: none;
+  }
+}

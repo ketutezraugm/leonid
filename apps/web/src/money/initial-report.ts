@@ -14,10 +14,16 @@ type AnyWidgetState = NonNullable<NonNullable<AgPageState['widgets']>[string]>;
 const title = (text: string) => ({ title: { enabled: true, text } });
 const sum = (id: string) => ({ id, aggregation: 'sum' as const });
 
+// Sponsors and budget categories both relate to the rows they filter (payouts, rule checks, deliveries), which
+// would let a click on a sponsor reach the category totals through those rows, or the other way round, and a
+// category total is not a sponsor's. So the event-level widgets ignore other widgets' selections; only the
+// widgets that list individual rows respond to them.
+const eventLevel = { crossFilter: 'none' as const };
+
 const kpi = (text: string, value: ReturnType<typeof sum>) => ({
   type: 'value' as const,
   dataMapping: { value: [value] },
-  format: title(text),
+  format: { ...title(text), ...eventLevel },
 });
 
 const overview: AgPageState = {
@@ -34,7 +40,7 @@ const overview: AgPageState = {
         invoiced: [sum('sponsors.invoiced')],
         cleared: [sum('sponsors.cleared')],
       },
-      format: title('Funding: pledged, invoiced and cleared'),
+      format: { ...title('Funding: pledged, invoiced and cleared'), ...eventLevel },
     } as unknown as AnyWidgetState,
     burn: {
       type: 'budget-burn',
@@ -44,7 +50,37 @@ const overview: AgPageState = {
         spent: [sum('categories.spent')],
         committed: [sum('categories.committed')],
       },
-      format: title('Budget burn by category'),
+      format: { ...title('Budget burn by category'), ...eventLevel },
+    } as unknown as AnyWidgetState,
+    // Lists the checks themselves, so it responds to a sponsor or a category selected in another widget. Its
+    // category is the budget category's, not the rules table's own column: a click then filters from the
+    // category down to every table that lists rows, instead of leaking up through one of them.
+    rules: {
+      type: 'rules-health',
+      dataMapping: {
+        id: [{ id: 'rules.id' }],
+        decision: [{ id: 'rules.decision' }],
+        reasons: [{ id: 'rules.reasons' }],
+        category: [{ id: 'categories.category' }],
+        amount: [sum('rules.amount')],
+        date: [{ id: 'rules.day' }],
+      },
+      format: title('Rules health'),
+    } as unknown as AnyWidgetState,
+    // Lists the ordered items, so it responds to a sponsor or a category selected in another widget. Its category
+    // is the budget category's, for the same reason as in the rules widget.
+    delivery: {
+      type: 'delivery-risk',
+      dataMapping: {
+        id: [{ id: 'deliveries.id' }],
+        name: [{ id: 'deliveries.name' }],
+        risk: [{ id: 'deliveries.risk' }],
+        category: [{ id: 'categories.category' }],
+        expected: [{ id: 'deliveries.expectedDay' }],
+        deadline: [{ id: 'deliveries.deadlineDay' }],
+        daysLate: [sum('deliveries.daysLate')],
+      },
+      format: title('Delivery risk'),
     } as unknown as AnyWidgetState,
     payouts: {
       type: 'grid',
@@ -66,7 +102,9 @@ const overview: AgPageState = {
     'kpi-committed': at(16, 0, 8, 7),
     funding: at(0, 7, 12, 24),
     burn: at(12, 7, 12, 24),
-    payouts: at(0, 31, 24, 18),
+    rules: at(0, 31, 12, 18),
+    delivery: at(12, 31, 12, 18),
+    payouts: at(0, 49, 24, 18),
   },
 };
 

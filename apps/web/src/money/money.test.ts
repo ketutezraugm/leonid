@@ -8,7 +8,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { commandCenterReport } from './initial-report';
 import { sampleCommandCenterData as sample } from './sample-data';
-import { buildTables } from './studio-data';
+import { buildStudioData, buildTables, RELATIONSHIPS } from './studio-data';
 
 describe('sample data', () => {
   it('matches the shared widget schemas', () => {
@@ -84,11 +84,73 @@ describe('studio data', () => {
     for (const id of referenced) expect(known, id).toContain(id);
   });
 
+  it('relates sponsors and categories to the tables they filter, by fields that exist', () => {
+    const field = (tableId: string, fieldId: string) =>
+      tables.find((t) => t.id === tableId)?.fields.find((f) => f.id === fieldId);
+    expect(RELATIONSHIPS.map((r) => r.id)).toHaveLength(6);
+    for (const rel of RELATIONSHIPS) {
+      expect(field(rel.source.tableId, rel.source.fieldId), `${rel.id} source`).toBeDefined();
+      expect(field(rel.target.tableId, rel.target.fieldId), `${rel.id} target`).toBeDefined();
+    }
+  });
+
+  it('gives the "one" side of every relationship unique keys, or a click would filter too much', () => {
+    for (const rel of RELATIONSHIPS) {
+      const rows = tables.find((t) => t.id === rel.source.tableId)?.data ?? [];
+      const keys = rows.map((r) => r[rel.source.fieldId]);
+      expect(new Set(keys).size, rel.id).toBe(keys.length);
+    }
+  });
+
+  it('only points payouts, rule checks and deliveries at sponsors and categories that exist', () => {
+    const known = (tableId: string, fieldId: string) =>
+      new Set(tables.find((t) => t.id === tableId)?.data.map((r) => r[fieldId]));
+    for (const rel of RELATIONSHIPS) {
+      const valid = known(rel.source.tableId, rel.source.fieldId);
+      const rows = tables.find((t) => t.id === rel.target.tableId)?.data ?? [];
+      for (const row of rows) {
+        const value = row[rel.target.fieldId];
+        // A claim or a sponsor-less spend has no sponsor, which is allowed; a made-up one is not.
+        if (value !== null) expect(valid, `${rel.id}: ${String(value)}`).toContain(value);
+      }
+    }
+  });
+
+  it('shows money fields with the currency symbol', () => {
+    const money = tables.flatMap((s) => s.fields).filter((f) => f.format === 'currencyFormat');
+    expect(money.length).toBeGreaterThan(5);
+    for (const field of money) {
+      const formatter = (field.formatOptions as { format: Intl.NumberFormat }).format;
+      expect(formatter.format(3000), field.id).toBe('$3,000.00');
+    }
+  });
+
   it('places every widget on the canvas', () => {
     for (const page of commandCenterReport.pages) {
       expect(Object.keys(page.widgetLayout ?? {}).sort()).toEqual(
         Object.keys(page.widgets ?? {}).sort(),
       );
     }
+  });
+});
+
+describe('cross-filtering', () => {
+  const widgets = commandCenterReport.pages[0]?.widgets ?? {};
+  const crossFilterOf = (id: string) =>
+    (widgets[id]?.format as { crossFilter?: string } | undefined)?.crossFilter;
+
+  it('keeps the event-level widgets from changing with other widgets’ selections', () => {
+    // A sponsor and a category both reach the rows they filter, so without this a click on a sponsor would
+    // change the category totals (and the other way round) through those rows.
+    for (const id of ['kpi-cleared', 'kpi-outstanding', 'kpi-committed', 'funding', 'burn'])
+      expect(crossFilterOf(id), id).toBe('none');
+  });
+
+  it('lets the widgets that list individual rows respond to a sponsor or a category', () => {
+    expect(crossFilterOf('payouts')).toBeUndefined();
+  });
+
+  it('refuses a query that would inflate a sum instead of running it', () => {
+    expect(buildStudioData(sample).options?.fanout).toEqual({ execute: 'prevent' });
   });
 });

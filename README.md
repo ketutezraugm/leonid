@@ -41,23 +41,35 @@ _TODO: list each capability with a link to its code path._
 
 ### AG Studio
 
-The Money screen is an AG Studio command center, themed from `apps/web/src/styles/tokens.css`. Its data sources are built from the shared widget shapes (`packages/shared/src/widgets.ts`); for now they read sample data and will switch to ledger-backed API endpoints.
+The Money screen is an AG Studio command center, themed from `apps/web/src/styles/tokens.css`. Its data sources are built from the shared widget shapes (`packages/shared/src/widgets.ts`); they are filled from the treasurer-only endpoints `GET /api/widgets/*`. The funding thermometer and rules health are live, from the ledger and the audit log. Budget burn, delivery risk and the payouts ledger are labelled sample until P1's funds-gated budget, P4's orders and F17's payouts exist. A line above the widgets says which is which. If the endpoints cannot be reached (not signed in, no server), the page shows its own sample as a whole and says why, because live sponsor ids would not match sample rows and the cross-filtering would break.
 
-| What                                                        | Code                                   |
-| ----------------------------------------------------------- | -------------------------------------- |
-| Studio wiring, lazy-loaded                                  | `apps/web/src/money/CommandCenter.tsx` |
-| Theme from design tokens                                    | `apps/web/src/money/studio-theme.ts`   |
-| Data sources from the shared shapes                         | `apps/web/src/money/studio-data.ts`    |
-| Default report (KPIs, funding, budget burn, payouts ledger) | `apps/web/src/money/initial-report.ts` |
-| Custom widgets: funding thermometer, budget burn            | `apps/web/src/money/widgets/`          |
+| What                                                                          | Code                                            |
+| ----------------------------------------------------------------------------- | ----------------------------------------------- |
+| Studio wiring, lazy-loaded                                                    | `apps/web/src/money/CommandCenter.tsx`          |
+| Theme from design tokens                                                      | `apps/web/src/money/studio-theme.ts`            |
+| Data sources from the shared shapes                                           | `apps/web/src/money/studio-data.ts`             |
+| Default report (KPIs, funding, budget burn, payouts ledger)                   | `apps/web/src/money/initial-report.ts`          |
+| Widget endpoints, in the shared shapes                                        | `apps/api/src/routes/widgets.ts`                |
+| Data hook: fetch, label the source, fall back                                 | `apps/web/src/money/use-command-center-data.ts` |
+| Custom widgets: funding thermometer, budget burn, rules health, delivery risk | `apps/web/src/money/widgets/`                   |
 
-![Money command center](docs/p3/screenshots/money-stage-0.png)
+![Money command center, with sample data](docs/p3/screenshots/command-center.png)
 
 Budget burn is a custom widget: for each budget category it shows what was spent (captured) and committed (approved, not yet captured) against the category's cap. A category over its cap says so in words and gets a line at the cap. Clicking a category cross-filters the widgets that share its table. Its numbers are still sample data until the funds-gated budget lands.
 
 ![Budget burn widget](docs/p3/screenshots/budget-burn.png)
 
-Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.md). The licence key is read from `VITE_AG_STUDIO_LICENSE` and is not committed.
+Rules health is a third custom widget: how many recent spends the rules allowed, sent to the treasurer or blocked, with each check's amount, category and reasons. A check that has no reasons is labelled, and one with a decision it does not recognise is reported instead of counted.
+
+![Rules health widget](docs/p3/screenshots/rules-health.png)
+
+Delivery risk is the fourth custom widget: the ordered items against their deadlines, most urgent first, with how many are late, at risk, on track or without a delivery date yet. An item with no date says so; it is never shown as arriving on its deadline.
+
+![Delivery risk widget](docs/p3/screenshots/delivery-risk.png)
+
+**Cross-filtering.** A click on a sponsor or a budget category filters the widgets that list individual rows: the payouts ledger, rules health and delivery risk. The funding, budget and KPI widgets ignore other widgets' selections on purpose, because a category total is not a sponsor's and a query that joins one through the other can inflate a sum. Studio's fan-out check is set to refuse such a query (`options.fanout.execute: 'prevent'`). Studio does not tell a custom widget that the filters changed, so `CommandCenter` passes `onStateUpdated` to `apps/web/src/money/widgets/filters-changed.ts`, which makes the row-listing widgets fetch again.
+
+The Stage 2 write-up, with how the cross-filtering works and what is still sample: [`docs/p3/stage-2.md`](docs/p3/stage-2.md). Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.md). The licence key is read from `VITE_AG_STUDIO_LICENSE` and is not committed.
 
 ### Bryntum
 

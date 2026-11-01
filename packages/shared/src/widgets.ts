@@ -129,3 +129,6 @@ export type BudgetBurnResponse = z.infer<typeof BudgetBurnResponse>;
 
 export const DeliveryRiskResponse = widgetResponse(DeliveryRiskData);
 export type DeliveryRiskResponse = z.infer<typeof DeliveryRiskResponse>;
+
+export const PayoutsLedgerResponse = widgetResponse(PayoutsLedgerData);
+export type PayoutsLedgerResponse = z.infer<typeof PayoutsLedgerResponse>;

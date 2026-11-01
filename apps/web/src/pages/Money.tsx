@@ -18,7 +18,7 @@ export function Money() {
     <section>
       <PageHeader
         title="Money"
-        description="Sample data for now: the widgets switch to the live ledger endpoints once webhooks land."
+        description="Where the event's money came from and where it went. The line above the widgets says which numbers are live and which are still sample."
       />
       <Tabs items={tabs} selected={tab} onSelect={setTab} label="Money views" />
       <TabPanel>
@@ -29,14 +29,14 @@ export function Money() {
         )}
         {tab === 'sponsors' && (
           <PageState kind="empty" title="Sponsors and invoices">
-            Each sponsor’s tier, amount, contact email and invoice status will list here with one action per row.
-            It needs the sponsor list endpoint from P3.
+            Each sponsor’s tier, amount, contact email and invoice status will list here with one
+            action per row. It needs the sponsor list endpoint from P3.
           </PageState>
         )}
         {tab === 'audit' && (
           <PageState kind="empty" title="Audit log">
-            Every agent action with its rule result, reason and PayPal ID will list here. It needs the audit entries
-            endpoint from P1.
+            Every agent action with its rule result, reason and PayPal ID will list here. It needs
+            the audit entries endpoint from P1.
           </PageState>
         )}
       </TabPanel>

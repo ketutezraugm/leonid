@@ -19,8 +19,46 @@ export type CommandCenterData = {
 // [id, name, format, hide?]
 type FieldSpec = [id: string, name: string, format: AgFormat, hide?: boolean];
 
-const fields = (specs: FieldSpec[]): AgFieldDefinition[] =>
-  specs.map(([id, name, format, hide]) => ({ id, name, format, ...(hide && { hide }) }));
+// Studio's currency format shows no symbol until it is given a formatter, so every money field gets one.
+const currencyOptions = (currency: string) => ({
+  format: new Intl.NumberFormat('en-US', { style: 'currency', currency }),
+});
+
+const fieldsFor =
+  (currency: string) =>
+  (specs: FieldSpec[]): AgFieldDefinition[] =>
+    specs.map(([id, name, format, hide]) => ({
+      id,
+      name,
+      format,
+      ...(hide && { hide }),
+      ...(format === 'currencyFormat' && { formatOptions: currencyOptions(currency) }),
+    }));
+
+// Only join relationships: Studio's calendar bindings name no table or field to relate.
+type Relationship = Extract<
+  NonNullable<AgDataSourcesDefinition['relationships']>[number],
+  { target: { tableId: string } }
+>;
+
+const link = (id: string, from: [string, string], to: [string, string]): Relationship => ({
+  id,
+  source: { tableId: from[0], fieldId: from[1] },
+  target: { tableId: to[0], fieldId: to[1] },
+  type: 'one-to-many',
+});
+
+// A sponsor or a budget category is the "one" side; payouts, rule checks and deliveries are the many. This
+// is what lets a click on a sponsor or a category in one widget filter every widget on those tables. The
+// ids are hidden fields: they join tables but are not offered as something to chart.
+export const RELATIONSHIPS: Relationship[] = [
+  link('sponsor-payouts', ['sponsors', 'id'], ['payouts', 'sponsorId']),
+  link('sponsor-rules', ['sponsors', 'id'], ['rules', 'sponsorId']),
+  link('sponsor-deliveries', ['sponsors', 'id'], ['deliveries', 'sponsorId']),
+  link('category-payouts', ['categories', 'category'], ['payouts', 'category']),
+  link('category-rules', ['categories', 'category'], ['rules', 'category']),
+  link('category-deliveries', ['categories', 'category'], ['deliveries', 'category']),
+];
 
 // The contract carries integer cents; Studio's currency format expects dollars. This is the only place that converts.
 const dollars = (cents: number) => cents / 100;
@@ -39,10 +77,16 @@ export function buildStudioData(data: CommandCenterData): AgDataSourcesDefinitio
       'Money for one community event, from PayPal webhooks recorded in the ledger. Amounts are USD dollars. ' +
       'Cleared means PayPal confirmed the money; pledged and invoiced are not spendable until they clear.',
     sources: buildTables(data),
+    relationships: RELATIONSHIPS,
+    // A query that would join rows into a bigger sum is refused, not run: on a money dashboard an error is
+    // better than a number that is quietly too high. Widgets built later, by hand or by the dashboard agent,
+    // get the same protection.
+    options: { fanout: { execute: 'prevent' } },
   };
 }
 
 export function buildTables(data: CommandCenterData): StudioTable[] {
+  const fields = fieldsFor(data.funding.currency);
   return [
     {
       id: 'sponsors',
@@ -120,8 +164,10 @@ export function buildTables(data: CommandCenterData): StudioTable[] {
       data: data.rules.recent.map((r) => ({
         id: r.auditId,
         date: r.at.slice(0, 10),
+        day: r.at.slice(0, 10),
         actor: r.actor,
         action: r.action,
+        sponsorId: r.sponsorId,
         category: r.category,
         amount: r.amount === null ? null : dollars(r.amount),
         decision: r.result.decision,
@@ -130,8 +176,12 @@ export function buildTables(data: CommandCenterData): StudioTable[] {
       fields: fields([
         ['id', 'Audit ID', 'textFormat', true],
         ['date', 'Date', 'dateFormat'],
+        // The same day as plain text: a widget that only shows it avoids Studio turning it into a Date, which
+        // reads a day early east of Greenwich. It sorts correctly as text.
+        ['day', 'Day', 'textFormat', true],
         ['actor', 'Actor', 'textFormat'],
         ['action', 'Action', 'textFormat'],
+        ['sponsorId', 'Sponsor ID', 'textFormat', true],
         ['category', 'Category', 'textFormat'],
         ['amount', 'Amount', 'currencyFormat'],
         ['decision', 'Decision', 'textFormat'],
@@ -146,18 +196,26 @@ export function buildTables(data: CommandCenterData): StudioTable[] {
       data: data.delivery.items.map((d) => ({
         id: d.orderId,
         name: d.name,
+        sponsorId: d.sponsorId,
         category: d.category,
         expected: d.expectedDelivery,
         deadline: d.deadline,
+        expectedDay: d.expectedDelivery,
+        deadlineDay: d.deadline,
         daysLate: d.daysLate,
         risk: d.risk,
       })),
       fields: fields([
         ['id', 'Order ID', 'textFormat', true],
         ['name', 'Item', 'textFormat'],
+        ['sponsorId', 'Sponsor ID', 'textFormat', true],
         ['category', 'Category', 'textFormat'],
         ['expected', 'Expected delivery', 'dateFormat'],
         ['deadline', 'Deadline', 'dateFormat'],
+        // The same days as plain text, for a widget that only shows them: Studio turns a date into a Date at
+        // local midnight, which reads a day early east of Greenwich.
+        ['expectedDay', 'Expected day', 'textFormat', true],
+        ['deadlineDay', 'Deadline day', 'textFormat', true],
         ['daysLate', 'Days late', 'integerFormat'],
         ['risk', 'Risk', 'textFormat'],
       ]),
