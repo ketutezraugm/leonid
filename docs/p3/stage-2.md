@@ -2,12 +2,12 @@
 
 Owner: P3. Source: PRD §8 (AG Studio widgets) and the Stage 2 plan. Reader: the team (P1, P2, P4) and P3.
 
-**Status (2026-10-31): the Nov 3 gate, "four custom widgets work with cross-filtering", is met on sample data, checked in the real AG Studio.** What is not done is marked. The first two rows below are merged into `development`; the rest is on the branches listed after the table and is not merged yet.
+**Status (2026-11-01): the Nov 3 gate, "four custom widgets work with cross-filtering", is met on sample data, checked in the real AG Studio.** What is not done is marked.
 
 | Part of Stage 2 | State |
 | --- | --- |
 | Funding thermometer (custom) | Done and merged. Numbers are live, from the ledger. |
-| Budget burn (custom) | Done and merged. Numbers are **sample** until P1's funds-gated budget exists. |
+| Budget burn (custom) | Done and merged. Numbers are **sample** until it reads P1's funds-gated budget, merged in #46. |
 | Rules health (custom) | Done. Reads the audit log's `spend.check` rows, so it is live as soon as spends are checked. |
 | Delivery risk (custom) | Done. Numbers are **sample** until P4's orders and tracking exist. |
 | Payouts ledger (grid) | Done. Rows are **sample** until F17's payouts table exists. |
@@ -18,15 +18,14 @@ Owner: P3. Source: PRD §8 (AG Studio widgets) and the Stage 2 plan. Reader: the
 
 ## Branches
 
-Stacked in this order; each is one PR to `development`.
+Stacked in this order, so each PR contains the ones above it. #50 carries all of them to `development`.
 
 | Branch | What it adds |
 | --- | --- |
-| `p3/command-center-filters` | The relationships between tables, the event-level opt-out, the fan-out policy, the currency symbol |
-| `p3/rules-health-widget` | The widget, the hook that tells it the filters changed, plain-text days |
-| `p3/delivery-risk-widget` | The widget |
-| `p3/widgets-payouts-api` | `GET /api/widgets/payouts`, and the endpoints taking an optional `eventId` |
-| `p3/command-center-live-data` | The web reads the endpoints, labels the source, falls back |
+| `p3/command-center-filters` (#51) | The relationships between tables, the event-level opt-out, the fan-out policy, the currency symbol |
+| `p3/widgets-payouts-api` (#48) | The rules health widget, the hook that tells it the filters changed, plain-text days, the delivery risk widget, `GET /api/widgets/payouts`, and the endpoints taking an optional `eventId` |
+| `p3/command-center-live-data` (#49) | The web reads the endpoints, labels the source, falls back |
+| `p3/stage-2-docs` (#50) | This write-up |
 
 Merged earlier: the live funding and rules-health endpoints (#36), the sample budget-burn and delivery-risk endpoints, and the funding thermometer and budget burn widgets (#41).
 
@@ -68,8 +67,7 @@ Unit tests for each piece (web 263, API widget tests 71, shared 33), plus, in a 
 
 | Who | What is needed | Why |
 | --- | --- | --- |
-| P1 | The funds-gated budget (F10): committed spend and category caps | Budget burn can only be real once this exists; its sample is labelled until then |
-| P1 | `check()` writing `spend.check` audit rows with the amount and category | Rules health lists what the audit log holds; today only P2's stub check writes them |
+| P3 | Budget burn reading the funds-gated budget (F10, merged in #46) | Its sample is labelled until then |
 | P4 | The Event endpoint, so `useEvent()` has an id | The web can then pass an event id; it works without one for the demo event |
 | P4 | Orders and tracking (F18) | Delivery risk is sample until then |
 | P2 | Staging deployed from `development`, with a treasurer login | The widgets are treasurer-only, so a signed-out visitor sees the labelled sample |
