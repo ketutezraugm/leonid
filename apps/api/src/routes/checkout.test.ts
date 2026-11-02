@@ -22,12 +22,12 @@ beforeEach(async () => {
 });
 
 interface Behaviour {
-  order?: { status: string; customId?: string };
+  order?: { status: string; customId?: string; value?: string; referenceId?: string };
   capture?: () => Response;
   create?: () => Response;
 }
 
-function build(b: Behaviour = {}, limiterMax = 100) {
+function build(b: Behaviour = {}, limiterMax = 100, captureMax = 100) {
   const calls: { key: string; requestId: string | null; body: { purchase_units: { custom_id?: string; amount: { currency_code: string; value: string } }[] } | null }[] = [];
   const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
     const path = new URL(String(url)).pathname;
@@ -39,7 +39,7 @@ function build(b: Behaviour = {}, limiterMax = 100) {
     }
     if (key === 'GET /v2/checkout/orders/ORD-1') {
       const o = b.order ?? { status: 'APPROVED', customId: `qm:${eventId}:ticket` };
-      return json(200, { id: 'ORD-1', status: o.status, purchase_units: [{ custom_id: o.customId, amount: { currency_code: 'USD', value: '25.00' } }], links: [] });
+      return json(200, { id: 'ORD-1', status: o.status, purchase_units: [{ reference_id: o.referenceId ?? 'ticket-abc', custom_id: o.customId, amount: { currency_code: 'USD', value: o.value ?? '25.00' } }], links: [] });
     }
     if (key === 'POST /v2/checkout/orders/ORD-1/capture') {
       return (b.capture ?? (() => json(201, { id: 'ORD-1', status: 'COMPLETED', purchase_units: [{ payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED' }] } }] })))();
@@ -49,7 +49,7 @@ function build(b: Behaviour = {}, limiterMax = 100) {
   const client = createPayPalClient({ app: 'treasury', clientId: 'i', clientSecret: 's', fetch });
   const app = express();
   app.use(express.json());
-  app.use('/api/checkout', checkoutRouter({ env, client: () => client, db: () => db, limiter: createRateLimiter({ max: limiterMax, windowMs: 60_000 }) }));
+  app.use('/api/checkout', checkoutRouter({ env, client: () => client, db: () => db, limiter: createRateLimiter({ max: limiterMax, windowMs: 60_000 }), captureLimiter: createRateLimiter({ max: captureMax, windowMs: 60_000 }) }));
   return { app, calls };
 }
 const paypalPosts = (calls: ReturnType<typeof build>['calls'], pathEnd: string) => calls.filter((c) => c.key.startsWith('POST') && c.key.endsWith(pathEnd));
@@ -149,6 +149,31 @@ describe('POST /api/checkout/:eventId/orders/:orderId/capture', () => {
       await request(app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(404);
       expect(paypalPosts(calls, '/capture')).toHaveLength(0);
     }
+  });
+
+  it('does not capture an order that carries the tag but is not what this route would create', async () => {
+    const mine = `qm:${eventId}:ticket`;
+    const cases = [
+      { status: 'APPROVED', customId: mine, value: '1.00' }, // not the ticket price
+      { status: 'APPROVED', customId: mine, referenceId: 'cart-1' }, // not our reference
+      { status: 'APPROVED', customId: `qm:${eventId}:donation`, value: '0.50', referenceId: 'donation-x' }, // under the donation minimum
+      { status: 'APPROVED', customId: `${mine}:${crypto.randomUUID()}` }, // a sponsor payment, not a checkout
+    ];
+    for (const order of cases) {
+      const { app, calls } = build({ order });
+      await request(app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(404);
+      expect(paypalPosts(calls, '/capture')).toHaveLength(0);
+    }
+    // a donation in range does pass
+    const ok = build({ order: { status: 'APPROVED', customId: `qm:${eventId}:donation`, value: '75.50', referenceId: 'donation-x' } });
+    await request(ok.app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(200);
+  });
+
+  it('does not let creating orders use up the allowance for collecting approved ones', async () => {
+    const { app } = build({}, 1, 5);
+    await request(app).post(`/api/checkout/${eventId}/orders`).send({ kind: 'ticket' }).expect(201);
+    await request(app).post(`/api/checkout/${eventId}/orders`).send({ kind: 'ticket' }).expect(429);
+    await request(app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(200);
   });
 
   it('does not capture an order the buyer has not approved', async () => {

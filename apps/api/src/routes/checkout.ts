@@ -15,7 +15,8 @@ import { getEvent } from '../db/events.js';
 import { getPayPalClient, isPayPalAppConfigured, type PayPalClient } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { captureIncomeOrder } from '../paypal/income.js';
-import { createOrder, getOrder } from '../paypal/orders.js';
+import { fromPayPalMoney } from '../paypal/money.js';
+import { createOrder, getOrder, type PayPalOrder } from '../paypal/orders.js';
 import { buildCaptureTag, parseCaptureTag } from '../webhooks/handlers/capture-completed.js';
 import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
@@ -23,7 +24,24 @@ export interface CheckoutRouterOptions {
   env?: NodeJS.ProcessEnv;
   client?: () => PayPalClient;
   db?: () => Db;
-  limiter?: RateLimiter;
+  limiter?: RateLimiter; // creating orders
+  captureLimiter?: RateLimiter; // collecting approved ones
+}
+
+// What this route itself would have created for the event: our reference id, no sponsor, and the amount we set (a ticket's
+// price, or a donation within the limits) in the event's currency. An order that merely carries the tag is not enough.
+function isOurOrder(
+  order: PayPalOrder,
+  tag: NonNullable<ReturnType<typeof parseCaptureTag>>,
+  event: { id: string; currency: string; ticketPrice: number | null },
+) {
+  const unit = order.purchase_units?.[0];
+  const paid = unit?.amount ? fromPayPalMoney(unit.amount) : undefined;
+  if (tag.eventId !== event.id || tag.sponsorId || !paid || paid.currency !== event.currency) return false;
+  if (!unit?.reference_id?.startsWith(`${tag.source}-`)) return false;
+  return tag.source === 'ticket'
+    ? event.ticketPrice !== null && paid.amountMinor === event.ticketPrice
+    : paid.amountMinor >= DONATION_MIN_MINOR && paid.amountMinor <= DONATION_MAX_MINOR;
 }
 
 const fail = (res: Response, status: number, error: string) => void res.status(status).json({ error } satisfies ApiError);
@@ -38,7 +56,10 @@ export function checkoutRouter(options: CheckoutRouterOptions = {}) {
   const env = options.env ?? process.env;
   const db = options.db ?? getDb;
   const treasury = options.client ?? (() => getPayPalClient('treasury'));
-  const limiter = options.limiter ?? createRateLimiter({ max: 30, windowMs: 10 * 60_000 });
+  // Per client IP. Generous, because a whole venue can share one wifi address; capture has its own, larger allowance so a
+  // buyer who already approved in PayPal is never turned away because of how many orders others created.
+  const limiter = options.limiter ?? createRateLimiter({ max: 60, windowMs: 10 * 60_000 });
+  const captureLimiter = options.captureLimiter ?? createRateLimiter({ max: 120, windowMs: 10 * 60_000 });
   const router = Router();
 
   const configured = () => Boolean(options.client) || isPayPalAppConfigured('treasury', env);
@@ -105,14 +126,14 @@ export function checkoutRouter(options: CheckoutRouterOptions = {}) {
   router.post(
     '/:eventId/orders/:orderId/capture',
     forEvent(async (req, res, event) => {
-      if (!limiter.take(req)) return fail(res, 429, 'Too many requests. Wait a few minutes and try again.');
+      if (!captureLimiter.take(req)) return fail(res, 429, 'Too many requests. Wait a few minutes and try again.');
       const orderId = String(req.params.orderId);
       if (!/^[A-Za-z0-9-]{1,64}$/.test(orderId)) return fail(res, 404, 'Order not found');
       const client = treasury();
       const order = await getOrder(client, orderId);
       // Only this event's own orders: the tag we put in custom_id when we created it. Anything else looks like no order.
       const tag = parseCaptureTag(order.purchase_units?.[0]?.custom_id);
-      if (tag?.eventId !== event.id) return fail(res, 404, 'Order not found');
+      if (!tag || !isOurOrder(order, tag, event)) return fail(res, 404, 'Order not found');
       if (order.status === 'COMPLETED') return void res.json({ status: 'paid' } satisfies CheckoutCaptureResponse); // a double click
       if (order.status !== 'APPROVED') return fail(res, 409, 'This payment was not approved in PayPal.');
       const { captureStatus } = await captureIncomeOrder(client, orderId);
