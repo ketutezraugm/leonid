@@ -33,7 +33,7 @@ export function buildCaptureTag(eventId: string, source: CaptureIncomeSource, sp
   return `qm:${eventId}:${source}${sponsorId ? `:${sponsorId}` : ''}`;
 }
 
-function parseCaptureTag(customId: string | undefined) {
+export function parseCaptureTag(customId: string | undefined) {
   const match = customId ? TAG.exec(customId) : null;
   if (!match) return null;
   const eventId = z.uuid().safeParse(match[1]);

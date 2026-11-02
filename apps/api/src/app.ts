@@ -5,6 +5,7 @@ import express from 'express';
 import type { HealthResponse } from '@quartermaster/shared';
 import { approvalsRouter } from './routes/approvals.js';
 import { authRouter } from './routes/auth.js';
+import { checkoutRouter } from './routes/checkout.js';
 import { chatRouter } from './routes/chat.js';
 import { demoRouter } from './routes/demo.js';
 import { invoicesRouter } from './routes/invoices.js';
@@ -33,6 +34,7 @@ export function createApp() {
 
   app.use('/api/auth', authRouter());
   app.use('/api/chat', chatRouter);
+  app.use('/api/checkout', checkoutRouter());
   app.use('/api/demo', demoRouter());
   app.use('/api/spends', spendsRouter());
   app.use('/api/treasury', treasuryRouter());
