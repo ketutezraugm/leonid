@@ -60,6 +60,8 @@ The branches did not all merge cleanly. The ledger migration was first numbered 
 
 Both routes need the `x-treasurer-token` header. With no `TREASURER_TOKEN` configured they answer 503, so they fail closed. This is an interim guard: Log in with PayPal sessions (F1, PR #16) are coming and will replace it.
 
+`GET /api/sponsors[?eventId=]` lists the event's sponsors (`SponsorsResponse`: name, tier, pledged, currency, status, `paypalInvoiceId`) for the Money screen's "Sponsors and invoices" tab; with no `eventId` it is the seeded demo event. `GET /api/sponsors/:sponsorId/draft` and `POST .../send` accept an optional `?eventId=`; if it is not the sponsor's event, they answer 404 `sponsor_not_found` and send nothing.
+
 `GET /api/sponsors/:sponsorId/draft` returns `{ sponsor, event, draft }`. The draft is the shared `InvoiceDraft`, with amounts in cents. Nothing is sent.
 
 `POST /api/sponsors/:sponsorId/send` takes `{ draft, recipientEmail }` and returns `{ paypalInvoiceId, invoiceNumber, recipientViewUrl, resumed }`. The treasurer may edit the draft's note and items, but the total must still equal the pledge.
