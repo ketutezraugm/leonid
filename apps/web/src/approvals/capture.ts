@@ -30,9 +30,11 @@ export function refusalMessage(reason: string | undefined): string {
       return "The agent can't buy anything until you connect a wallet.";
     case 'not_approved':
       return 'PayPal has not recorded your approval yet. Approve in the PayPal window first.';
-    case 'killed':
-    case 'revoked':
+    // PayPal refused the charge, which after the kill switch means the vault token is gone.
+    case 'paypal_refused':
       return 'The agent wallet is revoked, so this spend is refused.';
+    case 'payer_mismatch':
+      return 'A different PayPal account approved it. Approve with the treasury account.';
     default:
       return 'The payment was refused. Nothing was charged.';
   }
