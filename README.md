@@ -25,12 +25,15 @@ Other commands: `pnpm build`, `pnpm start` (serves the built web app from the AP
 
 ## PayPal capabilities used
 
-_TODO: list each capability with a link to its code path._
-
 | Capability                                                                                                                                    | Code                                                                                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | OAuth client credentials (per app, cached token)                                                                                              | [`apps/api/src/paypal/client.ts`](apps/api/src/paypal/client.ts)                                                                                                                                               |
 | Orders v2: create order, show order                                                                                                           | [`apps/api/src/paypal/orders.ts`](apps/api/src/paypal/orders.ts)                                                                                                                                               |
+| Log in with PayPal (OpenID Connect: authorize, code exchange, userinfo) for the treasurer; only members of an allowlist get a session (F1) | [`apps/api/src/auth/`](apps/api/src/auth/), [`apps/api/src/routes/auth.ts`](apps/api/src/routes/auth.ts) |
+| Vault v3: setup token, payment token for the agent wallet, and deleting the token as the kill switch (F13, F15) | [`apps/api/src/paypal/vault.ts`](apps/api/src/paypal/vault.ts), [`apps/api/src/routes/wallet.ts`](apps/api/src/routes/wallet.ts), `revokeWallet` in [`apps/api/src/payments/executor.ts`](apps/api/src/payments/executor.ts) |
+| Orders v2, automatic payment: charge the saved wallet with `vault_id`, only after the rules engine says allow (F13) | [`apps/api/src/paypal/spend.ts`](apps/api/src/paypal/spend.ts) (imported only by the executor; ESLint enforces it), [`apps/api/src/payments/executor.ts`](apps/api/src/payments/executor.ts) |
+| Orders v2, supervised payment: an order the treasurer approves with PayPal's button, captured only after PayPal reports it APPROVED for the exact amount (F14) | [`apps/api/src/payments/executor.ts`](apps/api/src/payments/executor.ts), [`apps/api/src/routes/approvals.ts`](apps/api/src/routes/approvals.ts), [`apps/api/src/webhooks/orderApproved.ts`](apps/api/src/webhooks/orderApproved.ts) (`CHECKOUT.ORDER.APPROVED` backup), [`apps/web/src/approvals/`](apps/web/src/approvals/) |
+| Reporting: Treasury account balances for the wallet card (F2) | [`apps/api/src/paypal/balances.ts`](apps/api/src/paypal/balances.ts), [`apps/api/src/routes/treasury.ts`](apps/api/src/routes/treasury.ts) |
 | Sandbox negative testing (`PayPal-Mock-Response`)                                                                                             | [`apps/api/src/paypal/client.ts`](apps/api/src/paypal/client.ts), [`apps/api/scripts/paypal-smoke.ts`](apps/api/scripts/paypal-smoke.ts) (`pnpm --filter @quartermaster/api paypal:smoke`)                     |
 | Invoicing v2: create, send, show, search by reference (sponsor invoices, F4)                                                                  | [`apps/api/src/paypal/invoicing.ts`](apps/api/src/paypal/invoicing.ts), [`apps/api/src/invoices/send.ts`](apps/api/src/invoices/send.ts), [`apps/api/src/routes/invoices.ts`](apps/api/src/routes/invoices.ts) |
 | Webhook events into the ledger: `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.REVERSED` | [`apps/api/src/webhooks/handlers/`](apps/api/src/webhooks/handlers/), [`apps/api/src/db/ledger.ts`](apps/api/src/db/ledger.ts)                                                                                 |
@@ -101,7 +104,16 @@ Differs from the PRD: the database is Supabase Postgres instead of Render Postgr
 
 ### Render
 
-_TODO (P2)_
+The app is one Render web service: the Express API also serves the built web app, so there is a single URL. Postgres is Supabase, not Render Postgres.
+
+- **Blueprint:** [`render.yaml`](render.yaml) declares the service (Node 22, health check `/api/health`, build with pnpm, `pnpm start`). Every secret is `sync: false`: its name is in the file and the value is entered in the Render dashboard, never committed. The same names are in [`.env.example`](.env.example).
+- **Migrations:** `pnpm --filter @quartermaster/api db:migrate` runs as the pre-deploy command, so a failed migration stops the deploy before the new version takes traffic.
+- **Staging:** `quartermaster-staging` deploys automatically from the `development` branch on Render's free plan (it sleeps after 15 minutes without traffic, so the first request can take about a minute). Every PayPal beat described below was rehearsed there against the PayPal sandbox. Production is a second service from `main`, to be added to this section when it is live.
+- **Webhooks:** each PayPal app has its own webhook, delivered to `/api/webhooks/paypal/:app` on the service URL. Every event is verified with PayPal's `verify-webhook-signature` before any handler runs (`PAYPAL_WEBHOOK_VERIFY=true`). Handlers act on `INVOICING.INVOICE.PAID` and `PAYMENT.CAPTURE.COMPLETED` (ledger income), `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED` (income reversals), and `CHECKOUT.ORDER.APPROVED` (backup capture of a treasurer-approved order); the ledger writes are idempotent on the PayPal capture or invoice id because PayPal retries deliveries.
+- **One instance only:** the funds check and the spend it writes are serialized in-process, so the service must not be scaled past one instance.
+- **Demo switches are off by default:** `DEMO_LOGIN` (one-click treasurer session for judges without PayPal access) and `DEMO_SPEND` (a sandbox spend button for rehearsals). In production `DEMO_LOGIN` needs a second flag, `DEMO_LOGIN_ALLOW_PRODUCTION`, and the server logs a loud warning while it is on.
+
+What was proven on staging with the real sandbox: a $140 swag spend paid automatically from the saved wallet; a $420 spend stopped for approval and was captured after the treasurer approved it in PayPal's popup; after the kill switch deleted the vault token, a further spend was refused and PayPal itself answered `404 TOKEN_NOT_FOUND` for the deleted token. The rules in that run are a hard-coded list ([`apps/api/src/rules/demoRules.ts`](apps/api/src/rules/demoRules.ts)); the rules compiler (F8) is not built yet.
 
 ### APIMatic
 
