@@ -31,3 +31,10 @@ Run with `pnpm --filter @quartermaster/api gate2:check`, then `-- --finish <appr
 - Audit: `spend.check` rows for both spends with the decision, outcome and PayPal id, event id on each.
 - Quirk repeated: the PayPal checkout page reloads after approving a manually opened link, though the order is approved.
 - Not covered: the screens (Approvals button, Settings, revoke) against real PayPal; production.
+
+## Screens against real PayPal (2026-11-02, staging at 8e55b7e, run by Ezra)
+With the merged frontend (landing page, event shell), logged in with PayPal as the allowlisted sandbox Personal account in a normal browser window.
+- Settings, Connect wallet: approved at PayPal, returned signed in, wallet active.
+- A $420 spend was created with the demo route; Approvals showed it with the rule reason. Approve with PayPal opened the popup; after approving, the item turned paid with no reload of the PayPal page. Capture 4VU28739WM5938909; the audit actor is the logged-in treasurer (treasurer:paypal:<PayPal user id>), so the browser path ran, not the ops token or the webhook.
+- Settings, Revoke agent wallet: wallet revoked; a spend afterwards refused (409 no_wallet); PayPal answers 404 TOKEN_NOT_FOUND for the deleted token.
+- Found: the sidebar's Approvals count stays at 1 after the payment until the page is reloaded. The shell data has refreshApprovals(), but ApprovalDetail calls it only from its Done and Refresh buttons, not after a successful capture or decline. Reported to P4.

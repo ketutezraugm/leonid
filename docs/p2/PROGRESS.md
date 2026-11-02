@@ -6,7 +6,8 @@ Status as of Mon Nov 2, 2026. Written for the team (Harfi, Jose, Abel) and their
 
 - **Gate 1 is done** (Oct 29): staging verified a real PayPal webhook event.
 - **Gate 2 (Tue Nov 3), API side, is proven on staging** (https://quartermaster-staging.onrender.com, branch `development` at `8e55b7e`) with Harfi's real `check()`: login, wallet connect, $140 auto-pay, $420 approval and capture, kill switch. Evidence below.
-- **Not yet proven:** the screens against real PayPal (Abel's session), and a production service from `main`.
+- **The screens are proven against real PayPal too** (Nov 2, run by Ezra on staging with the merged frontend): connect the wallet, Approve with PayPal, revoke. Evidence below.
+- **Not yet:** a production service from `main`.
 
 ## Gate 2 evidence (staging, Nov 2)
 
@@ -19,9 +20,12 @@ Status as of Mon Nov 2, 2026. Written for the team (Harfi, Jose, Abel) and their
 | F15 kill switch | Revoke returned 200; a spend afterwards was refused (409 `no_wallet`); PayPal answers `404 TOKEN_NOT_FOUND` for the deleted token |
 | Audit | `spend.check` rows with decision and outcome for each beat, and the PayPal ids, readable at `GET /api/spends/recent` |
 | Seed | Re-run on staging: pledges $3,000 / $2,500 / $2,500 |
+| Screens: connect wallet | Settings, Connect wallet, approved at PayPal, back signed in with the wallet active |
+| Screens: Approve with PayPal | The SDK button with our orders worked: the $420 item turned paid; capture `4VU28739WM5938909`, audit actor `treasurer:paypal:<PayPal user id>` (a real login, not the ops token) |
+| Screens: revoke | Settings, Revoke agent wallet; a spend afterwards was refused (409 `no_wallet`); PayPal answers `404 TOKEN_NOT_FOUND` for the token |
 | Funds gate | Harbor Cloud's $3,000 invoice was paid (INVOICING.INVOICE.PAID webhook, one ledger row), which is what lets the real check allow spends |
 
-**Say this plainly in the report:** the rules are a hard-coded list (`rules/demoRules.ts`) until the rules compiler (F8) and the rules table land. "Rules confirmed by the treasurer" is not done. The screens are not yet proven against real PayPal, and there is no production service yet.
+**Say this plainly in the report:** the rules are a hard-coded list (`rules/demoRules.ts`) until the rules compiler (F8) and the rules table land. "Rules confirmed by the treasurer" is not done. There is no production service yet, and one screen detail is open: the sidebar's Approvals count stays until the page is reloaded after a payment (P4).
 
 ## Merged since the last update
 
@@ -29,7 +33,7 @@ Every P2 PR is merged: webhook delivery log, DB-backed wallet/approvals/audit, F
 
 ## What is left
 
-1. **Abel's session** against real PayPal: connect the wallet, Approve with PayPal (the SDK button with our orders), revoke in Settings.
+1. **P4:** the sidebar's Approvals count should drop as soon as a payment or decline succeeds, not only after a reload. In `ApprovalDetail.tsx`, call the shell's `refreshApprovals()` (from `useShellData`) after a successful capture and after a decline, without clearing the selection, so the paid confirmation stays visible.
 2. **Production:** a paid Render service from `main`, billing alert at $35, its own webhooks and Log in with PayPal return URL. Open question for Harfi: its own Supabase database, or shared?
 3. **After the gate (P2):** write `failed`, not `error`, when PayPal definitely refuses (4xx except 408/409, never "order already captured"); `event_id` on approvals and spend references, with capture, decline and spend refusing without an event, and the event id in each PayPal order's `custom_id`; a rate limit on the demo login; a reset for the shared judges' demo (needs a token pool and a decision on the budget: each run uses about $560 of the $3,000).
 4. **Turn `DEMO_SPEND` off** on Render after the rehearsal.
