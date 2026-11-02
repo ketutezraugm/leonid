@@ -22,3 +22,12 @@
 - Webhook: a simulator event `PAYMENT.CAPTURE.COMPLETED` v2.0 to the Treasury URL was verified and answered 200 on staging (Oct 29). Real events signed with the actual webhook id are not seen yet.
 - `GET /v1/reporting/balances` on the Treasury app: 200, USD 5,211.57; `as_of_time` is the end of the previous reporting window; a currency with no balance returns no `balances` key.
 - Log in with PayPal: the APIMatic plugin does not cover Identity. Not yet tried against a real login.
+
+## Gate 2 rehearsal with the real rules (2026-11-02, staging at 8e55b7e)
+Run with `pnpm --filter @quartermaster/api gate2:check`, then `-- --finish <approvalId>`, against staging with the seeded event.
+- $140 swag from the approved vendor: allowed ("within the rules and the unlocked budget"), auto-paid, capture 22G915942B0287409.
+- $420 prize cart: needs approval ("over the 200.00 USD approval threshold"), charged nothing, PayPal order PAYER_ACTION_REQUIRED. After the treasurer approved at PayPal the order read APPROVED; capture 74724507DE504441U; the approval is paid.
+- Kill switch: revoke 200; a spend afterwards refused with 409 no_wallet; `GET /v3/vault/payment-tokens/{id}` answers 404 TOKEN_NOT_FOUND.
+- Audit: `spend.check` rows for both spends with the decision, outcome and PayPal id, event id on each.
+- Quirk repeated: the PayPal checkout page reloads after approving a manually opened link, though the order is approved.
+- Not covered: the screens (Approvals button, Settings, revoke) against real PayPal; production.

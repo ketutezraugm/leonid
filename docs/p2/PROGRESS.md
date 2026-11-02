@@ -1,49 +1,44 @@
 # P2 progress (Ezra): PayPal buy side and infra
 
-Status as of Thu Oct 29, 2026. Written for the team (Harfi, Jose, Abel) and their coding agents. No secrets in this file. Plan: [PLAN.md](PLAN.md). Sandbox test results: [RESULTS.md](RESULTS.md).
+Status as of Mon Nov 2, 2026. Written for the team (Harfi, Jose, Abel) and their coding agents. No secrets in this file. Plan: [PLAN.md](PLAN.md). Sandbox test results: [RESULTS.md](RESULTS.md). How to rerun the rehearsal: [GATE2-REHEARSAL.md](GATE2-REHEARSAL.md).
 
 ## Where we are
 
-- **Gate 1 is done.** The webhook listener on staging verified a real PayPal simulator event (`PAYMENT.CAPTURE.COMPLETED`) against PayPal and answered 200. Staging runs from `development` at https://quartermaster-staging.onrender.com.
-- **Gate 2 (Tue Nov 3):** the P2 backend is written and in open PRs. What blocks Gate 2 now is review/merge, Harfi's `check()`, something that calls `requestSpend`, and the web pieces.
+- **Gate 1 is done** (Oct 29): staging verified a real PayPal webhook event.
+- **Gate 2 (Tue Nov 3), API side, is proven on staging** (https://quartermaster-staging.onrender.com, branch `development` at `8e55b7e`) with Harfi's real `check()`: login, wallet connect, $140 auto-pay, $420 approval and capture, kill switch. Evidence below.
+- **Not yet proven:** the screens against real PayPal (Abel's session), and a production service from `main`.
 
-## Open PRs (all target `development`, all waiting for Harfi to review and merge)
+## Gate 2 evidence (staging, Nov 2)
 
-| PR | Branch | What | Notes |
-| --- | --- | --- | --- |
-| #14 | `p2/webhook-recent` | `GET /api/webhooks/paypal/recent`, a delivery log for the treasurer | lets us see real webhook deliveries on staging |
-| #15 | `p2/db-adapters` | wallet, approvals, audit rows and spend reference ids stored in the database | **run migration 0003 on Supabase first**; adds `outcome`/`detail` to `audit_log` |
-| #16 | `p2/f1-login` | F1 Log in with PayPal for the treasurer, signed-cookie sessions, `TREASURER_ALLOWLIST` | not yet tried against real PayPal |
-| #17 | `p2/apimatic-readme` | README APIMatic log | docs only |
-| #18 | `p2/f2-treasury` | F2 `GET /api/treasury` balances | adds `TreasuryResponse` to `packages/shared` |
-| #19 | `p2/order-approved` | `CHECKOUT.ORDER.APPROVED` backup capture | **stacked on #15, merge #15 first** |
+| Beat | Result |
+| --- | --- |
+| F1 Log in with PayPal | `?login=ok`, session works (Oct 29). userinfo path `/v1/identity/openidconnect/userinfo?schema=openid` verified |
+| F2 treasury | `GET /api/treasury` returns balances with an as-of time; shown in Settings |
+| F13 wallet | Connected as a sandbox Personal payer; $140 auto-paid with the saved wallet (capture `22G915942B0287409`). Decision from the real rules: "within the rules and the unlocked budget" |
+| F14 approval | $420 opened an approval and charged nothing ("over the 200.00 USD approval threshold"). Approved at PayPal, captured through the API (capture `74724507DE504441U`), approval marked paid |
+| F15 kill switch | Revoke returned 200; a spend afterwards was refused (409 `no_wallet`); PayPal answers `404 TOKEN_NOT_FOUND` for the deleted token |
+| Audit | `spend.check` rows with decision and outcome for each beat, and the PayPal ids, readable at `GET /api/spends/recent` |
+| Seed | Re-run on staging: pledges $3,000 / $2,500 / $2,500 |
+| Funds gate | Harbor Cloud's $3,000 invoice was paid (INVOICING.INVOICE.PAID webhook, one ledger row), which is what lets the real check allow spends |
 
-Merge order suggested: #14, #15, #16, #17, #18, #19.
+**Say this plainly in the report:** the rules are a hard-coded list (`rules/demoRules.ts`) until the rules compiler (F8) and the rules table land. "Rules confirmed by the treasurer" is not done. The screens are not yet proven against real PayPal, and there is no production service yet.
 
-## Done and proven live on the sandbox
+## Merged since the last update
 
-- Vault wallet connect, automatic payment of $10 (F13), a spend over $200 turned into a PayPal order approved in the popup and then captured (F14), kill switch deleting the token and PayPal refusing the next charge with 403 (F15). Nine of nine checks passed on Oct 28.
-- Webhook signature check against real PayPal (simulator event, Gate 1).
-- `GET /v1/reporting/balances` through the new route: 401 without the treasurer token, 200 with it, response matches the shared schema. The Treasury balance was USD 5,211.57 on Oct 29.
+Every P2 PR is merged: webhook delivery log, DB-backed wallet/approvals/audit, F1 login, F2 treasury, the `CHECKOUT.ORDER.APPROVED` backup capture, shared session/wallet/approval types, the demo spend route and `gate2:check`, a 30 s timeout on PayPal calls with an optional `eventId` on `Spend`, `GET /api/spends/recent`, revoking the Supabase API roles' grants (applied to staging by hand), and wiring the real rules check into the payments context.
 
-## What is left for P2 (Gate 2)
+## What is left
 
-1. First real "Log in with PayPal" on staging after #16 merges. Two things are unverified: the userinfo path (`/v1/identity/openidconnect/userinfo?schema=openid`, fallback `/v1/identity/oauth2/userinfo?schema=paypalv1.1`) and whether the sandbox returns `user_id` and `email_verified`.
-2. Web: login and demo-login buttons, wallet card with balance, "as of", connect and kill-switch on Event home, and the Approvals page with the PayPal SDK v6 button. Files to agree with Abel first.
-3. Shared contract PR for session, wallet and approvals responses (only the treasury response exists, in #18).
-4. Wire Harfi's real `check()` in place of `stubCheck` (adapter in `apps/api/src/payments/context.ts`).
-5. Paid production Render service from `main`, billing alert at $35.
-6. Rehearsal on `development` with Harfi on Tue Nov 3: $140 auto-pays, $420 opens an approval, kill switch makes PayPal refuse.
-
-## What P2 needs from others
-
-- **Harfi:** merge the PRs above; run migration 0003 on Supabase before #15 deploys; land `check()` in `apps/api/src/rules/` returning `{ decision, reasons, ruleIds }`, currency-aware and with a per-day cap; provide the procurement agent tool that calls `executor.requestSpend` with a stable `referenceId` per cart. **Today nothing outside the tests calls `requestSpend`, so the $140 and $420 beats cannot run on staging.** If the tool is late, P2 adds a small treasurer-only demo route behind a flag that is off by default. Promote `development` to `main` after the rehearsal.
-- **Jose:** register handlers for `INVOICING.INVOICE.PAID` (only when fully paid) and `PAYMENT.CAPTURE.COMPLETED` that write the ledger, with `registerHandler(...)` from `apps/api/src/webhooks/registry.ts`, and add `INVOICING.INVOICE.PAID` to the Treasury webhook in the PayPal dashboard. Unlocked budget counts only ledger income.
-- **Abel:** which files in `apps/web` P2 may edit (`EventHome.tsx`, `Approvals.tsx`, new folders `src/approvals/` and `src/wallet/`), and the design tokens to use for the wallet card.
+1. **Abel's session** against real PayPal: connect the wallet, Approve with PayPal (the SDK button with our orders), revoke in Settings.
+2. **Production:** a paid Render service from `main`, billing alert at $35, its own webhooks and Log in with PayPal return URL. Open question for Harfi: its own Supabase database, or shared?
+3. **After the gate (P2):** write `failed`, not `error`, when PayPal definitely refuses (4xx except 408/409, never "order already captured"); `event_id` on approvals and spend references, with capture, decline and spend refusing without an event, and the event id in each PayPal order's `custom_id`; a rate limit on the demo login; a reset for the shared judges' demo (needs a token pool and a decision on the budget: each run uses about $560 of the $3,000).
+4. **Turn `DEMO_SPEND` off** on Render after the rehearsal.
 
 ## Things to know
 
-- PayPal's reporting balance lags (it shows when it was last refreshed). Display it with "as of"; the funds-gated budget uses webhook-confirmed ledger income, not this number.
-- If the webhook backup in #19 captures an approved order first, the browser's `POST /api/approvals/:id/capture` answers 409 although the money moved. The Approvals page should treat "already paid" as success.
-- The APIMatic Context Plugin has no coverage of PayPal Identity, so F1 is not attributed to it. See the README APIMatic section (#17) for what was queried and what the plugin answered.
-- Env vars added for F1: `SESSION_SECRET` (32+ characters), `TREASURER_ALLOWLIST`, `DEMO_LOGIN`. Names are in `.env.example`; values are set in the Render dashboard, never in git.
+- PayPal's reporting balance lags; Settings shows it with an as-of time. The funds-gated budget uses ledger income, not this number.
+- The checkout page for a manually opened approval link keeps reloading after you approve, though the order is approved. PayPal's SDK button (the Approvals page) does not use that page.
+- The staging database has no Drizzle migrations table: new migrations are applied by hand there.
+- The real check blocks every spend that names no event and every spend while no sponsor money has cleared.
+- Render can briefly run old and new code together during a deploy: no spends until the new deploy is Live and the old one is deactivated.
+- The APIMatic Context Plugin has no coverage of PayPal Identity, so F1 is not attributed to it; see the README APIMatic section for what was queried.
