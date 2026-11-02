@@ -6,7 +6,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { writeAudit } from '../db/audit.js';
 import type { Db } from '../db/client.js';
 import { clearedIncome, recordLedgerEntry } from '../db/ledger.js';
-import { sponsors } from '../db/schema.js';
+import { events, sponsors } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { widgetsRouter } from '../routes/widgets.js';
@@ -170,7 +170,40 @@ const spendCheck = (
     reason: 'agent reasoning',
   });
 
+const health = async (filter = {}, forEvent = eventId) =>
+  (await getRulesHealth(db, forEvent, filter, NOW))!;
+
+const otherEvent = async () => {
+  const [event] = await db
+    .insert(events)
+    .values({
+      name: 'Side Event',
+      date: new Date('2027-05-01T09:00:00Z'),
+      headcount: 50,
+      budgetTotal: 100_000,
+      currency: 'USD',
+    })
+    .returning();
+  return event!.id;
+};
+
 describe('rules health', () => {
+  it('shows only the checks that carried the event, and the demo event also gets checks with none', async () => {
+    const side = await otherEvent();
+    await spendCheck('allow', { amountMinor: 1, currency: 'USD', eventId: side });
+    await spendCheck('block', { amountMinor: 2, currency: 'USD', eventId });
+    await spendCheck('needs_approval', { amountMinor: 3, currency: 'USD' });
+
+    expect((await health({}, side)).counts).toEqual({ allow: 1, needsApproval: 0, block: 0 });
+    expect((await health({}, eventId)).counts).toEqual({ allow: 0, needsApproval: 1, block: 1 });
+  });
+
+  it('answers nothing for an event that does not exist', async () => {
+    expect(
+      await getRulesHealth(db, '00000000-0000-4000-8000-000000000000', {}, NOW),
+    ).toBeUndefined();
+  });
+
   it('counts allowed, sent to approval and blocked, and lists the latest with their reasons', async () => {
     await spendCheck('allow', { amountMinor: 14_000, currency: 'USD', category: 'swag' });
     await spendCheck('needs_approval', {
@@ -181,7 +214,7 @@ describe('rules health', () => {
     await spendCheck('block', { amountMinor: 90_000, currency: 'USD', category: 'swag' });
     await spendCheck('allow', { amountMinor: 500, currency: 'USD', category: 'food' });
 
-    const data = await getRulesHealth(db, {}, NOW);
+    const data = await health();
 
     expect(data.counts).toEqual({ allow: 2, needsApproval: 1, block: 1 });
     expect(data.recent).toHaveLength(4);
@@ -201,7 +234,7 @@ describe('rules health', () => {
     await new Promise((r) => setTimeout(r, 15));
     await spendCheck('block', { amountMinor: 2, currency: 'USD' });
 
-    expect((await getRulesHealth(db, {}, NOW)).recent.map((e) => e.amount)).toEqual([2, 1]);
+    expect((await health()).recent.map((e) => e.amount)).toEqual([2, 1]);
   });
 
   it('counts only spend.check rows that carry a readable decision', async () => {
@@ -228,7 +261,7 @@ describe('rules health', () => {
       reason: 'no decision recorded',
     });
 
-    const data = await getRulesHealth(db, {}, NOW);
+    const data = await health();
 
     expect(data.counts).toEqual({ allow: 1, needsApproval: 0, block: 0 });
     expect(data.recent).toHaveLength(1);
@@ -237,7 +270,7 @@ describe('rules health', () => {
   it('shows a decision with an unusable input rather than dropping it', async () => {
     await spendCheck('block', { amountMinor: -5, currency: 'dollars' });
 
-    const [entry] = (await getRulesHealth(db, {}, NOW)).recent;
+    const [entry] = (await health()).recent;
 
     expect(entry).toMatchObject({ amount: null, currency: null, category: null });
   });
@@ -247,7 +280,7 @@ describe('rules health', () => {
     await spendCheck('block', { amountMinor: 2, currency: 'USD', category: 'swag' });
     await spendCheck('needs_approval', { amountMinor: 3, currency: 'USD', category: 'prizes' });
 
-    const data = await getRulesHealth(db, { category: 'swag' }, NOW);
+    const data = await health({ category: 'swag' });
 
     expect(data.counts).toEqual({ allow: 1, needsApproval: 0, block: 1 });
     expect(data.recent.every((e) => e.category === 'swag')).toBe(true);
@@ -255,13 +288,13 @@ describe('rules health', () => {
 
   it('ignores the sponsor filter, because a spend has no sponsor', async () => {
     await spendCheck('allow');
-    expect((await getRulesHealth(db, { sponsorId: id.harbor }, NOW)).counts.allow).toBe(1);
+    expect((await health({ sponsorId: id.harbor })).counts.allow).toBe(1);
   });
 
   it('lists only the latest decisions but counts all of them', async () => {
     for (let i = 0; i < RULES_HEALTH_RECENT + 5; i++) await spendCheck('allow');
 
-    const data = await getRulesHealth(db, {}, NOW);
+    const data = await health();
 
     expect(data.recent).toHaveLength(RULES_HEALTH_RECENT);
     expect(data.counts.allow).toBe(RULES_HEALTH_RECENT + 5);
@@ -352,6 +385,32 @@ describe('widget routes', () => {
       source: 'live',
       data: { counts: { allow: 1, needsApproval: 0, block: 0 } },
     });
+  });
+
+  it('scopes rules health to the event in the query, and answers 404 to one that does not exist', async () => {
+    const side = await otherEvent();
+    await spendCheck('allow', { amountMinor: 1, currency: 'USD', eventId: side });
+    await spendCheck('block', { amountMinor: 2, currency: 'USD', eventId });
+
+    const forSide = await request(appWith())
+      .get(`/api/widgets/rules-health?eventId=${side}`)
+      .set(TOKEN);
+    const forDemo = await request(appWith()).get('/api/widgets/rules-health').set(TOKEN);
+    const unknown = await request(appWith())
+      .get('/api/widgets/rules-health?eventId=00000000-0000-4000-8000-000000000000')
+      .set(TOKEN);
+
+    expect(RulesHealthResponse.parse(forSide.body).data.counts).toEqual({
+      allow: 1,
+      needsApproval: 0,
+      block: 0,
+    });
+    expect(RulesHealthResponse.parse(forDemo.body).data.counts).toEqual({
+      allow: 0,
+      needsApproval: 0,
+      block: 1,
+    });
+    expect(unknown.status).toBe(404);
   });
 
   it('answers 500 without leaking the error when the database fails', async () => {

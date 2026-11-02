@@ -89,7 +89,7 @@ describe('useCommandCenterData', () => {
     });
   });
 
-  it('sends the event id to the endpoints that take one, and not to rules health', async () => {
+  it('sends the event id to all five endpoints, rules health included', async () => {
     const fetchMock = serve();
 
     await ready('0b1d0b3e-6d9b-4a8e-9d2e-111111111111');
@@ -97,8 +97,10 @@ describe('useCommandCenterData', () => {
     const urls = fetchMock.mock.calls.map(([url]) => String(url));
     expect(
       urls.filter((u) => u.includes('eventId=0b1d0b3e-6d9b-4a8e-9d2e-111111111111')),
-    ).toHaveLength(4);
-    expect(urls.find((u) => u.includes('rules-health'))).toBe('/api/widgets/rules-health');
+    ).toHaveLength(5);
+    expect(urls.find((u) => u.includes('rules-health'))).toBe(
+      '/api/widgets/rules-health?eventId=0b1d0b3e-6d9b-4a8e-9d2e-111111111111',
+    );
   });
 
   it('asks again when the event changes', async () => {

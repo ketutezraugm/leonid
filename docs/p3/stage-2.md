@@ -45,7 +45,7 @@ Studio does not tell a custom widget that another widget changed the filters. It
 - **A missing cap.** Studio sums a missing cap to zero, so a $0 cap cannot be told from no cap. Budget burn reads both as "no cap", because a false "over the cap" alarm is worse than a missed one.
 - **Data mapping.** Hidden fields (`hide: true`) can be mapped into a custom widget, which is what lets a widget keep one row per check.
 - **All or nothing.** The web asks all five endpoints, and if any fails it shows its own sample *as a whole* and says why. Live sponsor ids would not match sample rows, so a half-live page would silently break the cross-filtering.
-- **No event id yet.** `useEvent()` returns `id: null` until the Event endpoint exists, so the widget endpoints take an optional `eventId` and default to the seeded demo event. A bad id is still a 400 and an unknown one a 404.
+- **The event id.** `useEvent()` returns `id: null` until the Event endpoint exists, so the widget endpoints take an optional `eventId` and default to the seeded demo event. A bad id is still a 400 and an unknown one a 404. The command center passes the current event's id to all five endpoints and reloads when the event changes. Rules health reads only the `spend.check` rows whose input carried that event's id; a check with no event id (from before spends carried one) is shown under the demo event only.
 
 ## What was checked, and how
 

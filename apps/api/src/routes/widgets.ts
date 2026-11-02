@@ -31,7 +31,7 @@ const EventQuery = WidgetFilter.extend({ eventId: z.uuid().optional() });
 // answers { source, data }: 'live' for numbers from our own ledger and audit log, 'sample' while the
 // owner's data does not exist yet.
 //   GET /funding[?eventId=…&sponsorId=…]   pledged, invoiced and cleared per sponsor
-//   GET /rules-health[?category=…]         allowed, sent to approval and blocked, with reasons
+//   GET /rules-health[?eventId=…&category=…]   allowed, sent to approval and blocked, with reasons
 //   GET /budget-burn[?eventId=…&category=…]    SAMPLE until P1's funds-gated budget exists
 //   GET /delivery-risk[?eventId=…&sponsorId=…&category=…]   SAMPLE until P4's orders and tracking exist
 //   GET /payouts[?eventId=…&sponsorId=…&category=…]   SAMPLE until F17's payouts exist
@@ -89,8 +89,13 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
   router.get(
     '/rules-health',
     guard,
-    handle(WidgetFilter, async (filter, res, { db, now }) => {
-      const data = await getRulesHealth(db, filter, now);
+    handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
+      const id = await eventIdOf(db, eventId);
+      const data = id ? await getRulesHealth(db, id, filter, now) : undefined;
+      if (!data) {
+        res.status(404).json({ error: 'No such event' });
+        return;
+      }
       res.json(RulesHealthResponse.parse({ source: 'live', data }));
     }),
   );

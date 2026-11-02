@@ -55,15 +55,14 @@ export async function loadCommandCenter(
   eventId?: string | null,
 ): Promise<{ data: CommandCenterData; origins: Record<WidgetName, Origin> }> {
   const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : '';
-  const get = <T>(path: string, parser: { parse(value: unknown): T }, withEvent = true) =>
-    getJson(`/api/widgets/${path}${withEvent ? query : ''}`, parser);
+  const get = <T>(path: string, parser: { parse(value: unknown): T }) =>
+    getJson(`/api/widgets/${path}${query}`, parser);
 
   const [funding, budget, payouts, rules, delivery] = await Promise.all([
     get('funding', FundingThermometerResponse),
     get('budget-burn', BudgetBurnResponse),
     get('payouts', PayoutsLedgerResponse),
-    // Rules health is not about one event's tables yet, so it takes no event id.
-    get('rules-health', RulesHealthResponse, false),
+    get('rules-health', RulesHealthResponse),
     get('delivery-risk', DeliveryRiskResponse),
   ]);
   return {

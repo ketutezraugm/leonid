@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { AgStudio, AgStudioProvider } from 'ag-studio-react';
 import './command-center.css';
+import { useEvent } from '../shell/event';
 import { commandCenterReport } from './initial-report';
 import { describeSources, type SourceNote } from './sources';
 import { buildStudioData, type CommandCenterData } from './studio-data';
@@ -58,7 +59,14 @@ function Studio({ source, note }: { source: CommandCenterData; note: SourceNote 
 // Default export so the Money page can lazy-load it: AG Studio is a large bundle. The numbers come from the
 // widget endpoints; if they cannot be fetched the page shows its sample, and says so above the widgets.
 export default function CommandCenter() {
-  const state = useCommandCenterData();
+  const event = useEvent();
+  // Keyed by the event, so switching events starts from "loading" instead of showing the last event's numbers
+  // while the new ones load.
+  return <EventCommandCenter key={event.id ?? event.routeId} eventId={event.id} />;
+}
+
+function EventCommandCenter({ eventId }: { eventId: string | null }) {
+  const state = useCommandCenterData(eventId);
   if (state.status === 'loading') return <p className="muted">Loading the command center…</p>;
   return <Studio source={state.data} note={describeSources(state.origins, state.problem)} />;
 }
