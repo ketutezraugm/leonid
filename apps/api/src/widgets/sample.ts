@@ -1,5 +1,4 @@
 import {
-  BudgetBurnData,
   DeliveryRiskData,
   PayoutsLedgerData,
   type DeliveryRisk,
@@ -10,54 +9,14 @@ import {
 import type { Db } from '../db/client.js';
 import { getEvent, listSponsors } from '../db/events.js';
 
-// SAMPLE data for the two command-center widgets whose real inputs do not exist yet. Every response built
-// here is served with source 'sample', so the command center must label it. Nothing in this file reads
-// money from the ledger on purpose: mixing real cleared income with a made-up commitment would produce an
-// "unlocked budget" that looks real and is not.
-//   - budget burn  waits on P1's funds-gated budget (committed spend and per-category caps)
-//   - delivery risk waits on P4's orders and tracking
+// SAMPLE data for the command-center widgets whose real inputs do not exist yet. Every response built
+// here is served with source 'sample', so the command center must label it.
+//   - delivery risk  waits on P4's orders and tracking
+//   - payouts ledger waits on F17's payouts table
 // When the real data lands, replace the function behind the same endpoint and flip the source to 'live'.
 
 const DAY_MS = 86_400_000;
 const dayNumber = (isoDate: string) => Date.parse(`${isoDate}T00:00:00Z`) / DAY_MS;
-
-// The same numbers as P4's mockups, so the screens and this sample agree: cleared $3,000.00, committed
-// $1,860.00, unlocked $1,140.00, and category caps that add up to the $8,000.00 budget.
-const SAMPLE_CLEARED_INCOME = 300_000;
-const SAMPLE_CATEGORIES = [
-  { category: 'venue', cap: 250_000, spent: 130_000, committed: 0 },
-  { category: 'swag', cap: 150_000, spent: 14_000, committed: 0 },
-  { category: 'prizes', cap: 200_000, spent: 0, committed: 42_000 },
-  { category: 'food', cap: 100_000, spent: 0, committed: 0 },
-  { category: 'av', cap: 60_000, spent: 0, committed: 0 },
-  { category: 'travel', cap: 40_000, spent: 0, committed: 0 },
-];
-
-// Budget burn for one event. The event's own facts (currency, date, days to go) are real; every money
-// figure is sample. The totals stay event-wide whatever the filter says, because unlocked budget is one
-// number for the whole event; only the category list narrows. A sponsor filter means nothing here.
-// Returns undefined when the event does not exist.
-export async function getBudgetBurnSample(
-  db: Db,
-  eventId: string,
-  filter: WidgetFilter = {},
-  now: Date = new Date(),
-): Promise<BudgetBurnData | undefined> {
-  const event = await getEvent(db, eventId);
-  if (!event) return undefined;
-  const eventDate = event.date.toISOString().slice(0, 10);
-  const committed = SAMPLE_CATEGORIES.reduce((sum, c) => sum + c.spent + c.committed, 0);
-  return BudgetBurnData.parse({
-    asOf: now.toISOString(),
-    currency: event.currency,
-    eventDate,
-    daysToEvent: dayNumber(eventDate) - Math.floor(now.getTime() / DAY_MS),
-    clearedIncome: SAMPLE_CLEARED_INCOME,
-    committed,
-    unlocked: SAMPLE_CLEARED_INCOME - committed,
-    categories: SAMPLE_CATEGORIES.filter((c) => !filter.category || c.category === filter.category),
-  });
-}
 
 // An item with this many days or fewer to spare is at risk, not safely on track. This is P3's working
 // definition for the sample; P4 owns the real one and should confirm or replace it.

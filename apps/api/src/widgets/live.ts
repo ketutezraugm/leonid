@@ -1,4 +1,7 @@
 import {
+  BudgetBurnData,
+  type BudgetCategoryBurn,
+  type CompiledRules,
   CurrencyCode,
   FundingThermometerData,
   RuleResult,
@@ -8,10 +11,14 @@ import {
 } from '@quartermaster/shared';
 import { and, desc, eq, isNotNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { loadEventSpendRecords } from '../db/budget.js';
 import type { Db } from '../db/client.js';
 import { getDemoEvent, getEvent, listSponsors } from '../db/events.js';
-import { clearedIncomeBySponsor } from '../db/ledger.js';
+import { clearedIncome, clearedIncomeBySponsor } from '../db/ledger.js';
 import { auditLog } from '../db/schema.js';
+import { committedSpends, sumMinor, unlockedBudget } from '../rules/budget.js';
+import { normalizeName } from '../rules/check.js';
+import { DEMO_RULES } from '../rules/demoRules.js';
 
 // Funding thermometer: pledged, invoiced and cleared per sponsor, for one event. Read-only.
 //  - invoiced is the pledge once the sponsor is invoiced or paid: an invoice is always for the full
@@ -139,4 +146,76 @@ export async function getRulesHealth(
     }
   }
   return RulesHealthData.parse({ asOf: now.toISOString(), counts, recent });
+}
+
+// A spend with no category is listed under this name. It still counts against the unlocked budget.
+export const UNCATEGORISED = 'uncategorised';
+
+const DAY_MS = 86_400_000;
+
+// Budget burn: the funds-gated budget (F10) for one event, by category. Read-only.
+//  - cleared income is the ledger's, as in the funding thermometer. Committed spend is what check() counts
+//    for the event: every spend.check row that carried the event's id and still holds money
+//    (db/budget.ts, rules/budget.ts). So the unlocked figure here is the one the rules enforce.
+//  - spent is committed spend that has been paid; committed is held but not paid yet (waiting on the
+//    treasurer, or in flight).
+//  - a category's cap comes from the category_cap rules in force, the same rules check() enforces (the
+//    demo rules until the rules table lands). Null: no cap. A cap in another currency is left out, since it
+//    cannot be drawn against this event's money; check() sends such spends to a person.
+//  - the totals stay event-wide whatever the filter says, because unlocked budget is one number for the
+//    whole event; only the category list narrows. A sponsor filter means nothing here.
+// Returns undefined when the event does not exist.
+export async function getBudgetBurn(
+  db: Db,
+  eventId: string,
+  filter: WidgetFilter = {},
+  now: Date = new Date(),
+  rules: CompiledRules = DEMO_RULES,
+): Promise<BudgetBurnData | undefined> {
+  const event = await getEvent(db, eventId);
+  if (!event) return undefined;
+  const [cleared, records] = await Promise.all([
+    clearedIncome(db, eventId, event.currency),
+    loadEventSpendRecords(db, eventId, event.currency),
+  ]);
+  const held = committedSpends(records);
+  const paid = new Set(
+    records.filter((r) => r.outcome === 'paid' || r.approval === 'paid').map((r) => r.referenceId),
+  );
+
+  // Keyed like check() keys its category totals, so "Swag" and "swag" are one category.
+  const categories = new Map<string, BudgetCategoryBurn>();
+  const categoryOf = (name: string | null) => {
+    const key = (name === null ? '' : normalizeName(name)) || UNCATEGORISED;
+    const existing = categories.get(key);
+    if (existing) return existing;
+    const created: BudgetCategoryBurn = { category: key, cap: null, spent: 0, committed: 0 };
+    categories.set(key, created);
+    return created;
+  };
+  for (const rule of rules) {
+    if (rule.type !== 'category_cap' || rule.currency !== event.currency) continue;
+    const row = categoryOf(rule.category);
+    // Two caps on one category: the stricter one is what check() ends up enforcing.
+    row.cap = row.cap === null ? rule.amountMinor : Math.min(row.cap, rule.amountMinor);
+  }
+  for (const spend of held) {
+    const row = categoryOf(spend.category);
+    if (paid.has(spend.referenceId)) row.spent += spend.amountMinor;
+    else row.committed += spend.amountMinor;
+  }
+
+  const committed = sumMinor(held);
+  const eventDate = event.date.toISOString().slice(0, 10);
+  const wanted = filter.category ? normalizeName(filter.category) : undefined;
+  return BudgetBurnData.parse({
+    asOf: now.toISOString(),
+    currency: event.currency,
+    eventDate,
+    daysToEvent: Date.parse(`${eventDate}T00:00:00Z`) / DAY_MS - Math.floor(now.getTime() / DAY_MS),
+    clearedIncome: Math.max(0, cleared),
+    committed,
+    unlocked: unlockedBudget(cleared, committed),
+    categories: [...categories.values()].filter((c) => !wanted || c.category === wanted),
+  });
 }
