@@ -51,7 +51,8 @@ async function build(env: NodeJS.ProcessEnv = on, { wallet: withWallet = true, h
   return { app, orderPosts, requestIds, wallet, approvals, audit };
 }
 
-const spend = (amountMinor: number, extra: object = {}) => ({ amountMinor, label: 'Lanyards (200)', ...extra });
+const EVENT_ID = '11111111-1111-4111-8111-111111111111';
+const spend = (amountMinor: number, extra: object = {}) => ({ amountMinor, label: 'Lanyards (200)', eventId: EVENT_ID, ...extra });
 
 describe('POST /api/demo/spend', () => {
   it('is off unless DEMO_SPEND=true, and treasurer only when on', async () => {
@@ -112,6 +113,7 @@ describe('POST /api/demo/spend', () => {
     expect((await request(app).post('/api/demo/spend').set(treasurer).send(spend(14_000, { eventId, category: 'swag' }))).status).toBe(200);
     expect(audit.rows.find((r) => r.action === 'spend.check')?.input).toMatchObject({ eventId, amountMinor: 14_000, currency: 'USD', category: 'swag' });
     expect((await request(app).post('/api/demo/spend').set(treasurer).send(spend(14_000, { eventId: 'not-a-uuid' }))).status).toBe(422);
+    expect((await request(app).post('/api/demo/spend').set(treasurer).send(spend(14_000, { eventId: undefined }))).status).toBe(422);
     expect(orderPosts).toHaveLength(1);
   });
 

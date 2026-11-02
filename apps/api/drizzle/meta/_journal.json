@@ -50,6 +50,13 @@
       "when": 1793457525464,
       "tag": "0006_revoke_api_role_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793607300733,
+      "tag": "0007_event_id_on_spends",
+      "breakpoints": true
     }
   ]
 }

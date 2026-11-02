@@ -60,7 +60,7 @@ async function build(orderStatus: () => Response) {
 
 const approved = () => json(200, { id: 'ORD-1', status: 'APPROVED', purchase_units: [{ amount: { currency_code: 'USD', value: '420.00' } }], links: [] });
 const notYet = () => json(200, { id: 'ORD-1', status: 'PAYER_ACTION_REQUIRED', purchase_units: [{ amount: { currency_code: 'USD', value: '420.00' } }], links: [] });
-const prizeSpend = { referenceId: 'prizes-1', amountMinor: 42000, currency: 'USD', actor: 'procurement-agent', reason: 'prize cart' };
+const prizeSpend = { referenceId: 'prizes-1', amountMinor: 42000, currency: 'USD', actor: 'procurement-agent', reason: 'prize cart', eventId: '11111111-1111-4111-8111-111111111111' };
 
 describe('approvals routes', () => {
   it('serves the public PayPal client id without a token, and 503 when it is missing', async () => {
