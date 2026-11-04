@@ -350,9 +350,11 @@ export const SpendOutcome = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('needs_approval'),
     approvalId: z.string(),
-    paypalOrderId: z.string(),
+    paypalOrderId: z.string().optional(), // none for a payout: it has no PayPal popup, the treasurer just approves it
     reasons: z.array(z.string()),
   }),
+  // A payout (a claim or a person's payment) that PayPal accepted. PayPal pays out later; the webhooks carry the result.
+  z.object({ status: z.literal('submitted'), batchId: z.string() }),
   z.object({ status: z.literal('blocked'), reasons: z.array(z.string()) }),
   z.object({ status: z.literal('refused'), reason: z.string() }),
   z.object({

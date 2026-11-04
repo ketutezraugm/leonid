@@ -54,6 +54,10 @@ describe('committedSpends', () => {
     expect(total([record('a', { decision: null })])).toBe(14_000);
   });
 
+  it('keeps counting a payout PayPal accepted but has not finished', () => {
+    expect(total([record('payout', { outcome: 'submitted' })])).toBe(14_000);
+  });
+
   it('counts a retried spend once', () => {
     expect(total([record('a', { outcome: 'refused' }), record('a', { outcome: 'error' }), record('a')])).toBe(14_000);
   });

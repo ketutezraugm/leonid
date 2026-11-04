@@ -173,6 +173,8 @@ describe('the executor with the real check()', () => {
       wallet: createDbWalletStore(db),
       approvals: createDbApprovals(db),
       references: createDbReferences(db),
+      // A claim or payout is refused up front without a sender; none of these tests sends one.
+      payouts: { send: async () => ({ batchId: 'PB-test' }) },
     });
   }
   const connectWallet = () => createDbWalletStore(db).activate({ paymentTokenId: 'pt_1' });
@@ -221,8 +223,10 @@ describe('the executor with the real check()', () => {
     await clear(50_000);
     await connectWallet();
     const { requestSpend } = executor();
-    await requestSpend(spend('cart', 10_000));
-    expect(await requestSpend(spend('cart', 10_000, change))).toEqual({ status: 'refused', reason: 'reference_reused' });
+    // Both carry a recipient email, so a claim is not refused for lacking one and only the named field differs.
+    const email = { payeeEmail: 'dana@example.com' };
+    await requestSpend(spend('cart', 10_000, email));
+    expect(await requestSpend(spend('cart', 10_000, { ...email, ...change }))).toEqual({ status: 'refused', reason: 'reference_reused' });
   });
 
   it('does not confuse which field a value was set on', async () => {

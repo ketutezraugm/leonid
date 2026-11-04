@@ -18,7 +18,14 @@ export interface Spend {
   // What check() needs beyond a plain purchase. kind defaults to 'purchase'.
   kind?: 'purchase' | 'claim' | 'payout';
   payee?: string; // the person a claim or payout is for
+  payeeEmail?: string; // where a claim or payout is sent: the person's PayPal email
   fundedBySponsorId?: string; // tasks.funded_by_sponsor_id: this spend waits on that sponsor's paid invoice
+}
+
+// Sends one payout from the Treasury app (paypal/payouts.ts, P3). referenceId must become PayPal's sender_batch_id, so one
+// spend can only ever be sent once. PayPal pays out later: this only says it accepted the batch.
+export interface PayoutSender {
+  send(input: { referenceId: string; recipientEmail: string; amountMinor: number; currency: string; note: string }): Promise<{ batchId: string }>;
 }
 
 // Same shape as money-safety.md: { decision, reasons, ruleIds }.
