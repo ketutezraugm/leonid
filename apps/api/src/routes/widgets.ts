@@ -11,12 +11,8 @@ import { z } from 'zod';
 import { requireTreasurer } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
 import { getDemoEvent } from '../db/events.js';
-import { getFundingThermometer, getRulesHealth } from '../widgets/live.js';
-import {
-  getBudgetBurnSample,
-  getDeliveryRiskSample,
-  getPayoutsLedgerSample,
-} from '../widgets/sample.js';
+import { getBudgetBurn, getFundingThermometer, getRulesHealth } from '../widgets/live.js';
+import { getDeliveryRiskSample, getPayoutsLedgerSample } from '../widgets/sample.js';
 
 export interface WidgetsRouterOptions {
   env?: NodeJS.ProcessEnv;
@@ -32,7 +28,7 @@ const EventQuery = WidgetFilter.extend({ eventId: z.uuid().optional() });
 // owner's data does not exist yet.
 //   GET /funding[?eventId=…&sponsorId=…]   pledged, invoiced and cleared per sponsor
 //   GET /rules-health[?eventId=…&category=…]   allowed, sent to approval and blocked, with reasons
-//   GET /budget-burn[?eventId=…&category=…]    SAMPLE until P1's funds-gated budget exists
+//   GET /budget-burn[?eventId=…&category=…]    cleared, committed and unlocked, by category, with caps
 //   GET /delivery-risk[?eventId=…&sponsorId=…&category=…]   SAMPLE until P4's orders and tracking exist
 //   GET /payouts[?eventId=…&sponsorId=…&category=…]   SAMPLE until F17's payouts exist
 // With no eventId the seeded demo event is used: the web does not know an event's id until the Event
@@ -105,12 +101,12 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     guard,
     handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
       const id = await eventIdOf(db, eventId);
-      const data = id ? await getBudgetBurnSample(db, id, filter, now) : undefined;
+      const data = id ? await getBudgetBurn(db, id, filter, now) : undefined;
       if (!data) {
         res.status(404).json({ error: 'No such event' });
         return;
       }
-      res.json(BudgetBurnResponse.parse({ source: 'sample', data }));
+      res.json(BudgetBurnResponse.parse({ source: 'live', data }));
     }),
   );
 

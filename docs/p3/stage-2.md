@@ -7,7 +7,7 @@ Owner: P3. Source: PRD §8 (AG Studio widgets) and the Stage 2 plan. Reader: the
 | Part of Stage 2 | State |
 | --- | --- |
 | Funding thermometer (custom) | Done and merged. Numbers are live, from the ledger. |
-| Budget burn (custom) | Done and merged. Numbers are **sample** until it reads P1's funds-gated budget, merged in #46. |
+| Budget burn (custom) | Done. Numbers are **live**: cleared income from the ledger, committed spend exactly as the rules check counts it, caps from the rules in force. |
 | Rules health (custom) | Done. Reads the audit log's `spend.check` rows, so it is live as soon as spends are checked. |
 | Delivery risk (custom) | Done. Numbers are **sample** until P4's orders and tracking exist. |
 | Payouts ledger (grid) | Done. Rows are **sample** until F17's payouts table exists. |
@@ -56,7 +56,7 @@ Unit tests for each piece (web 263, API widget tests 71, shared 33), plus, in a 
 
 ## Not done, and why
 
-- **Budget burn has no unlocked-budget or days-to-event figure.** PRD §8 lists them, but they are not in the categories table. They need a budget table, and real values need P1's budget.
+- **Budget burn has no unlocked-budget or days-to-event figure.** PRD §8 lists them, but they are not in the categories table. The endpoint returns real `unlocked` and `daysToEvent` figures now; the widget needs a table for them before it can show them.
 - **Rules health counts the latest 20 checks**, which is what the endpoint returns, not all-time counts. It has no event filter yet (`live.ts` is correct while there is one event).
 - **There is no "spend by sponsor" view.** Event-level widgets deliberately ignore a sponsor selection, so that widget (F21's demo beat) needs a table of spend attributed to a sponsor first.
 - **The Filters panel says "No filters available".** There are no filter widgets yet.
@@ -67,7 +67,7 @@ Unit tests for each piece (web 263, API widget tests 71, shared 33), plus, in a 
 
 | Who | What is needed | Why |
 | --- | --- | --- |
-| P3 | Budget burn reading the funds-gated budget (F10, merged in #46) | Its sample is labelled until then |
+| P1 | The rules table (F8) | Budget burn's caps come from the demo rules until then, as the rules check's do |
 | P4 | The Event endpoint, so `useEvent()` has an id | The web can then pass an event id; it works without one for the demo event |
 | P4 | Orders and tracking (F18) | Delivery risk is sample until then |
 | P2 | Staging deployed from `development`, with a treasurer login | The widgets are treasurer-only, so a signed-out visitor sees the labelled sample |

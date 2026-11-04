@@ -87,6 +87,36 @@ export async function loadBudget(db: Db, spend: Spend, now: Date): Promise<Budge
   };
 }
 
+// Every spend.check record of one event, in the shape committedSpends() reads: the rows loadFunds counts for that event.
+// The budget burn widget (P3, F20) reads this so it shows the same committed spend that check() enforces.
+export async function loadEventSpendRecords(db: Db, eventId: string, currency: string): Promise<SpendRecord[]> {
+  const rows = await db
+    .select({ input: auditLog.input, ruleResult: auditLog.ruleResult, outcome: auditLog.outcome, approval: approvals.status })
+    .from(auditLog)
+    .leftJoin(approvals, sql`${approvals.spend}->>'referenceId' = ${auditLog.input}->>'referenceId'`)
+    .where(
+      and(
+        eq(auditLog.action, 'spend.check'),
+        sql`${auditLog.input}->>'currency' = ${currency}`,
+        sql`${auditLog.input}->>'eventId' = ${eventId}`,
+      ),
+    );
+  return rows.flatMap((row) => {
+    const input = Input.safeParse(row.input);
+    if (!input.success) return [];
+    return [
+      {
+        referenceId: input.data.referenceId,
+        amountMinor: input.data.amountMinor,
+        category: input.data.category ?? null,
+        decision: decisionOf(row.ruleResult),
+        outcome: row.outcome,
+        approval: row.approval,
+      },
+    ];
+  });
+}
+
 async function loadFunds(
   db: Db,
   eventId: string,
