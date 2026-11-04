@@ -387,6 +387,22 @@
   margin-top: var(--space-4);
 }
 
+/* Legend on the left, the sample preview buttons on the right; they stack on a phone. */
+.plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.plan-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /* --- Approvals: queue on the left, the selected item on the right --- */
 .approvals-layout {
   display: grid;

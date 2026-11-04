@@ -76,9 +76,31 @@ The Stage 2 write-up, with how the cross-filtering works and what is still sampl
 
 ### Bryntum
 
-The Plan screen is a Bryntum Gantt (trial 7.3.7, React wrapper) in [`apps/web/src/plan/`](apps/web/src/plan/). Each sponsor invoice is a task, and the purchases that sponsor funds depend on it, so they stay blocked until PayPal reports the invoice paid. Event day is a fixed milestone. Task colors and the Gantt theme come from the same design tokens as the rest of the app.
+The Plan screen is a Bryntum Gantt (trial 7.3.7, React wrapper) in [`apps/web/src/plan/`](apps/web/src/plan/). It shows the rule Bryntum's own brief asks for: a PayPal payment that has not arrived visibly blocks the work that depends on it.
 
-_Status: hello world on a static slice of the demo plan. Next: live tasks from the planning agent (F11), tracking dates (F18) and the late-delivery cascade (F19). Screenshot of the invoice-gated cascade to come._
+- **Each sponsor invoice is a task.** The purchases a sponsor funds depend on it, and stay blocked, labelled "Waiting on Harbor Cloud", until PayPal reports the invoice paid (`INVOICING.INVOICE.PAID`). Once the sponsor is paid, they unblock.
+- **The Gantt shows the rule; it does not enforce it.** The spend itself is refused by the rules engine: `check()` in [`apps/api/src/rules/check.ts`](apps/api/src/rules/check.ts) blocks a spend whose sponsor has not paid, so the plan and the money can't disagree.
+- **Event day is a fixed milestone** (a must-start-on constraint), and each purchase with a deadline gets a deadline flag.
+- **One design system.** Bars use the same status colors as every badge in the app, and the Gantt theme is driven from `apps/web/src/styles/tokens.css`.
+
+| What                                                           | Code                                                                     |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Gantt setup: columns, the Status column, bar colors by status  | [`apps/web/src/plan/PlanGantt.tsx`](apps/web/src/plan/PlanGantt.tsx)     |
+| Sponsor gating: which tasks wait on which sponsor's invoice    | [`apps/web/src/plan/gating.ts`](apps/web/src/plan/gating.ts)             |
+| Task model with our status and the sponsor it waits on         | [`apps/web/src/plan/PlanTask.ts`](apps/web/src/plan/PlanTask.ts)         |
+| Sample OpenHack 2027 plan: 15 linked tasks, three sponsors     | [`apps/web/src/plan/demoPlan.ts`](apps/web/src/plan/demoPlan.ts)         |
+| Theme overrides from design tokens                             | [`apps/web/src/plan/gantt-theme.css`](apps/web/src/plan/gantt-theme.css) |
+| Plan page: legend, the preview buttons, lazy-loading the Gantt | [`apps/web/src/pages/Plan.tsx`](apps/web/src/pages/Plan.tsx)             |
+
+Harbor Cloud has been invoiced but has not paid, so swag and speaker travel wait on it:
+
+![Plan: purchases waiting on Harbor Cloud's invoice](docs/p4/screenshots/plan-waiting-on-sponsor.png)
+
+After Harbor Cloud pays, its invoice task is done and both purchases are released. Pixel Foundry's two purchases still wait:
+
+![Plan: Harbor Cloud paid, its purchases released](docs/p4/screenshots/plan-sponsor-paid.png)
+
+_Status: the plan is sample data, labelled as such on the screen, and the "Preview: <sponsor> pays" buttons stand in for the PayPal webhook. Next: live tasks from the plan endpoint and the planning agent (F11), with sponsor status from `GET /api/sponsors`, both fed through the same `gateBySponsor()`; then tracking dates (F18) and the late-delivery cascade (F19)._
 
 ### Channel3
 
