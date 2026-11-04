@@ -17,6 +17,8 @@ import { webhookRouter } from './webhooks/router.js';
 
 export function createApp() {
   const app = express();
+  // Render puts one proxy in front: without this req.ip is the proxy for everyone and the per-IP rate limits become one shared bucket.
+  if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
   app.use(cors());
   // Before express.json(): PayPal webhook signatures are checked against the raw request body.
   app.use('/api/webhooks/paypal', webhookRouter());
