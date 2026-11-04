@@ -41,6 +41,11 @@ describe('refusalMessage', () => {
   it('never says the charge happened when it was refused', () => {
     expect(refusalMessage(undefined)).toContain('Nothing was charged');
   });
+
+  it('explains the reasons the API sends', () => {
+    expect(refusalMessage('paypal_refused')).toContain('revoked');
+    expect(refusalMessage('payer_mismatch')).toContain('different PayPal account');
+  });
 });
 
 describe('waitingItems', () => {
