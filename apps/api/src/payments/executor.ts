@@ -156,7 +156,8 @@ export function createExecutor(deps: ExecutorDeps) {
 
   // Sends a claim or payout. A repeat is safe: PayPal's sender_batch_id comes from the reference id. A PayPal answer is
   // handled like a purchase's (a definite refusal is 'failed' and the money is released, anything unclear stays held).
-  async function sendPayout(spend: Spend, auditId: string): Promise<SpendOutcome> {
+  // unclear: PayPal's answer leaves it unknown whether the payout went out (a 5xx, a timeout), so the caller must not free it.
+  async function sendPayout(spend: Spend, auditId: string): Promise<{ outcome: SpendOutcome; unclear: boolean }> {
     const to = spend.payeeEmail;
     if (!payouts || !to) throw new Error('sendPayout needs a payout sender and a recipient; requestSpend checks both first');
     try {
@@ -168,10 +169,10 @@ export function createExecutor(deps: ExecutorDeps) {
         note: oneLine(spend.reason).slice(0, 120),
       });
       await audit.update(auditId, { outcome: 'submitted', paypalId: sent.batchId });
-      return { status: 'submitted', batchId: sent.batchId };
+      return { outcome: { status: 'submitted', batchId: sent.batchId }, unclear: false };
     } catch (err) {
       await audit.update(auditId, { outcome: failureOutcome(err), detail: messageOf(err) });
-      if (err instanceof PayPalApiError) return failedFrom(err);
+      if (err instanceof PayPalApiError) return { outcome: failedFrom(err), unclear: !definitelyRefused(err) };
       throw err;
     }
   }
@@ -199,10 +200,11 @@ export function createExecutor(deps: ExecutorDeps) {
       await approvals.releaseCapture(approvalId);
       return refuse('no_wallet', 'no active agent wallet');
     }
-    // A thrown (non-PayPal) error leaves the approval 'capturing': the payout may have gone out, so it needs a human.
-    const outcome = await sendPayout(spend, auditId);
+    // Only a definite PayPal refusal frees the approval. A thrown (non-PayPal) error, or an answer that leaves it unknown whether
+    // the payout went out, keeps it 'capturing': it needs a human (or the payout webhooks), never a second approval click.
+    const { outcome, unclear } = await sendPayout(spend, auditId);
     if (outcome.status === 'submitted') await approvals.markPaid(approvalId);
-    else await approvals.releaseCapture(approvalId);
+    else if (!unclear) await approvals.releaseCapture(approvalId);
     return outcome;
   }
 
@@ -294,7 +296,7 @@ export function createExecutor(deps: ExecutorDeps) {
         throw err;
       }
     }
-    return isPayout(spend) ? sendPayout(spend, auditId) : pay(spend, auditId);
+    return isPayout(spend) ? (await sendPayout(spend, auditId)).outcome : pay(spend, auditId);
   }
 
   // Called after the treasurer approved in the PayPal popup (and by the CHECKOUT.ORDER.APPROVED webhook). We do not trust

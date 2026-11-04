@@ -671,6 +671,15 @@ describe('payouts (claims and payouts)', () => {
     const unknown = setup({ payouts: dropped.port, approvals: { AP1: { spend: claim(25_000), status: 'pending', reasons: [] } } });
     await expect(unknown.executor.captureApproved('AP1', 'treasurer:u1')).rejects.toThrow('socket hang up');
     expect(unknown.approvalRows.get('AP1')!.status).toBe('capturing'); // the payout may have gone out: a human decides
+
+    // a PayPal 5xx is not a refusal either: PayPal may have accepted the batch before failing, so it is not freed for a second click
+    const serverError = sender(async () => {
+      throw new PayPalApiError({ status: 500, errorName: 'INTERNAL_SERVER_ERROR' });
+    });
+    const unclear = setup({ payouts: serverError.port, approvals: { AP1: { spend: claim(25_000), status: 'pending', reasons: [] } } });
+    expect((await unclear.executor.captureApproved('AP1', 'treasurer:u1')).status).toBe('failed');
+    expect(unclear.approvalRows.get('AP1')!.status).toBe('capturing');
+    expect(await unclear.executor.rejectApproval('AP1', 'treasurer:u1')).toEqual({ rejected: false });
   });
 
   it('lets the treasurer reject a payout approval, and then nothing is sent', async () => {

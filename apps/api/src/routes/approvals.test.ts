@@ -109,6 +109,8 @@ describe('approvals routes', () => {
       ['prizes-1', 'purchase', 'ORD-1'],
       ['claim-1', 'payout', undefined],
     ]);
+    // the treasurer sees who a payout goes to, since there is no PayPal popup showing it
+    expect(items[1]).toMatchObject({ payee: 'Dana', payeeEmail: 'dana@example.com' });
   });
 
   it('lists the oldest approval first', async () => {

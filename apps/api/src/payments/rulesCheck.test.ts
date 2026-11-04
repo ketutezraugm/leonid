@@ -142,6 +142,18 @@ describe('createRulesCheck', () => {
     expect((await rulesCheck()(claim('c5', 2_001, 'volunteer-1'))).decision).toBe('block');
   });
 
+  it('counts a claim against the email the money goes to, not the name typed with it', async () => {
+    await clear(800_000);
+    const claim = (referenceId: string, amountMinor: number, payee: string, payeeEmail?: string) =>
+      spend(referenceId, amountMinor, { kind: 'claim', payee, payeeEmail, category: 'volunteers' });
+    await recorded(claim('c1', 4_000, 'Dana', 'Dana@Example.com'), allow, 'paid');
+    // the same inbox under another name, or another spelling of it, is the same person: $40 + $10.01 is over the $50 cap
+    expect((await rulesCheck()(claim('c2', 1_001, 'D. Smith', ' dana@example.com '))).decision).toBe('block');
+    expect((await rulesCheck()(claim('c3', 1_000, 'D. Smith', 'dana@example.com'))).decision).toBe('allow');
+    // another inbox is another person
+    expect((await rulesCheck()(claim('c4', 4_000, 'Dana', 'someone-else@example.com'))).decision).toBe('allow');
+  });
+
   it('skips an audit row it cannot read instead of failing the spend', async () => {
     await clear(20_000);
     await db.insert(auditLog).values({ actor: 'x', action: 'spend.check', input: { currency: 'USD', eventId }, ruleResult: 'not json' });
