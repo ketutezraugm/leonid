@@ -64,8 +64,8 @@ describe('App', () => {
     const meetup = crypto.randomUUID();
     stubApi({
       events: [
-        { id: hack, name: 'OpenHack 2027', date: '2027-03-14', people: 200, currency: 'USD' },
-        { id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, currency: 'USD' },
+        { id: hack, name: 'OpenHack 2027', date: '2027-03-14', people: 200, budget: 800_000, currency: 'USD' },
+        { id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, budget: 120_000, currency: 'USD' },
       ],
     });
     render(
