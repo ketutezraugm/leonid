@@ -15,7 +15,7 @@ export const PayPalOrder = z.object({
   id: z.string(),
   status: z.enum(['CREATED', 'SAVED', 'APPROVED', 'VOIDED', 'COMPLETED', 'PAYER_ACTION_REQUIRED']),
   purchase_units: z
-    .array(z.object({ reference_id: z.string().optional(), amount: PayPalMoney.optional() }))
+    .array(z.object({ reference_id: z.string().optional(), custom_id: z.string().optional(), amount: PayPalMoney.optional() }))
     .optional(),
   links: z.array(PayPalLink).default([]),
   // Who approved the order. Orders v2 spec (2.32): payment_source.paypal.account_id is the current field; payer.payer_id

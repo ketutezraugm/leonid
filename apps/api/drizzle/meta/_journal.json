@@ -57,6 +57,13 @@
       "when": 1793607300733,
       "tag": "0007_event_id_on_spends",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793611518626,
+      "tag": "0008_events_ticket_price",
+      "breakpoints": true
     }
   ]
 }

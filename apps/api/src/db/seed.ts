@@ -3,6 +3,7 @@ import type { Db } from './client.js';
 import { events, sponsors } from './schema.js';
 
 export const DEMO_EVENT_NAME = 'OpenHack 2027';
+export const DEMO_TICKET_PRICE = 2_500; // $25, in cents
 
 const DEMO_SPONSORS = [
   { name: 'Harbor Cloud', tier: 'gold', pledged: 300_000 },
@@ -15,6 +16,11 @@ const DEMO_SPONSORS = [
 export async function seedDemoEvent(db: Db) {
   const [existing] = await db.select().from(events).where(eq(events.name, DEMO_EVENT_NAME));
   if (existing) {
+    // An event seeded before tickets existed gets the demo price; one that already has a price keeps it.
+    if (existing.ticketPrice === null) {
+      await db.update(events).set({ ticketPrice: DEMO_TICKET_PRICE }).where(eq(events.id, existing.id));
+      existing.ticketPrice = DEMO_TICKET_PRICE;
+    }
     // Brings an already seeded event up to these amounts. A sponsor past 'pledged' keeps its amount: an invoice is always
     // for the full pledge, so changing it now would make the two disagree.
     for (const { name, tier, pledged } of DEMO_SPONSORS) {
@@ -36,6 +42,7 @@ export async function seedDemoEvent(db: Db) {
       headcount: 200,
       budgetTotal: 800_000,
       currency: 'USD',
+      ticketPrice: DEMO_TICKET_PRICE,
     })
     .returning();
   if (!event) throw new Error('Could not seed the demo event');

@@ -10,6 +10,8 @@ export const events = pgTable('events', {
   headcount: integer('headcount').notNull(),
   budgetTotal: integer('budget_total').notNull(),
   currency: text('currency').notNull().default('USD'),
+  // Price of one ticket in minor units. Null: this event sells no tickets, and the public checkout refuses them.
+  ticketPrice: integer('ticket_price'),
   treasuryMerchantId: text('treasury_merchant_id'),
 }).enableRLS();
 
