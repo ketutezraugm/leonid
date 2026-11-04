@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CurrencyCode, Id, IsoDate, IsoDateTime, MinorUnits } from './common.js';
+import { Sponsor } from './sponsor.js';
 
 // Our own lifecycle. The API maps PayPal's statuses (SENT, UNPAID, PAID, MARKED_AS_PAID, ...) onto these.
 export const InvoiceStatus = z.enum([
@@ -65,3 +66,12 @@ export const InvoiceReminderDraft = z.object({
   reasoning: z.string().min(1).max(1000),
 });
 export type InvoiceReminderDraft = z.infer<typeof InvoiceReminderDraft>;
+
+// One row of the Money screen's "Sponsors and invoices" tab: the shared Sponsor without a contact email, because the
+// sponsor row has none. The treasurer types the recipient when sending (POST /api/sponsors/:id/send).
+export const SponsorSummary = Sponsor.omit({ contactEmail: true });
+export type SponsorSummary = z.infer<typeof SponsorSummary>;
+
+// GET /api/sponsors[?eventId=]: the event's sponsors, by name.
+export const SponsorsResponse = z.object({ sponsors: z.array(SponsorSummary) });
+export type SponsorsResponse = z.infer<typeof SponsorsResponse>;
