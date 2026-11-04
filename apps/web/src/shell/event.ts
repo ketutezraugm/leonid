@@ -84,19 +84,22 @@ export interface EventsState {
   /** loading; ready (from the API, possibly empty); fallback (the API is missing or failed: the demo event). */
   kind: 'loading' | 'ready' | 'fallback';
   events: EventInfo[];
+  /** Fetch the list again quietly (no loading state), e.g. after setup created an event. */
+  refresh: () => void;
 }
 
-const FALLBACK: EventsState = { kind: 'fallback', events: [DEMO_EVENT] };
+const FALLBACK: EventsState = { kind: 'fallback', events: [DEMO_EVENT], refresh: () => {} };
 const EventsContext = createContext<EventsState>(FALLBACK);
 
 export function EventsProvider({ children }: { children: ReactNode }) {
   const list = useFetch('/api/events', EventsResponse);
   const data = list.kind === 'ready' ? list.data : null;
+  const { refresh } = list;
   const value = useMemo<EventsState>(() => {
-    if (list.kind === 'loading') return { kind: 'loading', events: [] };
-    if (data) return { kind: 'ready', events: data.events.map((e) => ({ ...e, routeId: e.id })) };
-    return FALLBACK;
-  }, [list.kind, data]);
+    if (list.kind === 'loading') return { kind: 'loading', events: [], refresh };
+    if (data) return { kind: 'ready', events: data.events.map((e) => ({ ...e, routeId: e.id })), refresh };
+    return { ...FALLBACK, refresh };
+  }, [list.kind, data, refresh]);
   return createElement(EventsContext.Provider, { value }, children);
 }
 

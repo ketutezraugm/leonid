@@ -23,3 +23,13 @@ export function formatMoney(minorUnits: number, currency = 'USD', locale = 'en-U
   // Intl formats decimal strings exactly (NumberFormat v3); the ES2022 lib types only know numbers.
   return format.format(decimal as unknown as number);
 }
+
+// What a person typed in a money field ("8,000" or "8000.50") as integer minor units of a two-decimal currency,
+// or null when it isn't an amount. Parsed as text, so no float ever touches it.
+export function parseMoneyInput(text: string): number | null {
+  const match = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(
+    text.trim().replace(/^\$/, '').replace(/,/g, ''),
+  );
+  if (!match) return null;
+  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
+}

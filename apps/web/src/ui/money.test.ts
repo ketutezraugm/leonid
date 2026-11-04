@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoney } from './money';
+import { formatMoney, parseMoneyInput } from './money';
 
 describe('formatMoney', () => {
   it('formats cents as dollars', () => {
@@ -22,5 +22,18 @@ describe('formatMoney', () => {
 
   it('rejects non-integer amounts', () => {
     expect(() => formatMoney(140.5)).toThrow(RangeError);
+  });
+});
+
+describe('parseMoneyInput', () => {
+  it('reads dollars as typed into integer cents', () => {
+    expect(parseMoneyInput('8,000')).toBe(800_000);
+    expect(parseMoneyInput(' $1500.5 ')).toBe(150_050);
+    expect(parseMoneyInput('0.07')).toBe(7);
+  });
+
+  it('refuses anything that is not an amount', () => {
+    for (const text of ['', 'abc', '1.234', '-5', '1e3', '12.'])
+      expect(parseMoneyInput(text)).toBeNull();
   });
 });
