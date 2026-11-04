@@ -42,6 +42,20 @@ export interface CaptureOptions {
 const failedFrom = (err: PayPalApiError): SpendOutcome =>
   err.status >= 500 || err.status === 429 ? { status: 'failed', detail: err.message, retryable: true } : { status: 'failed', detail: err.message };
 
+// The outcome to write on the audit row when a PayPal call failed. The budget gives the money of a 'failed' spend back and keeps
+// holding an 'error' one, so 'failed' has to mean PayPal definitely refused and nothing moved:
+//   - a 4xx answer: PayPal looked at the request and said no (declined, bad request, not found, rate limited).
+//   - but not 408 or 409: a timeout, or a call still in progress, leaves the result unknown.
+//   - and not "already captured": that 422 means the money moved on an earlier attempt.
+// Everything else stays 'error': a 5xx, a dropped connection or our own timeout may well have charged the wallet.
+const MONEY_MAY_HAVE_MOVED = new Set(['ORDER_ALREADY_CAPTURED', 'ORDER_ALREADY_AUTHORIZED']);
+export function definitelyRefused(err: unknown): boolean {
+  if (!(err instanceof PayPalApiError)) return false;
+  if (err.status < 400 || err.status >= 500 || err.status === 408 || err.status === 409) return false;
+  return !(err.issue !== undefined && MONEY_MAY_HAVE_MOVED.has(err.issue));
+}
+const failureOutcome = (err: unknown) => (definitelyRefused(err) ? 'failed' : 'error');
+
 export interface ExecutorDeps {
   client: PayPalClient; // the Procurement app's client
   check: CheckSpend;
@@ -122,7 +136,7 @@ export function createExecutor(deps: ExecutorDeps) {
         await audit.update(auditId, { outcome: 'refused', detail: err.message });
         return { status: 'refused', reason: 'paypal_refused' };
       }
-      await audit.update(auditId, { outcome: 'error', detail: messageOf(err) });
+      await audit.update(auditId, { outcome: failureOutcome(err), detail: messageOf(err) });
       if (err instanceof PayPalApiError) return { status: 'failed', detail: err.message };
       throw err;
     }
@@ -191,7 +205,7 @@ export function createExecutor(deps: ExecutorDeps) {
         await audit.update(auditId, { outcome: 'needs_approval', paypalId: order.id, detail: approvalId });
         return { status: 'needs_approval', approvalId, paypalOrderId: order.id, reasons: result.reasons };
       } catch (err) {
-        await audit.update(auditId, { outcome: 'error', detail: messageOf(err) });
+        await audit.update(auditId, { outcome: failureOutcome(err), detail: messageOf(err) });
         if (err instanceof PayPalApiError) return { status: 'failed', detail: err.message };
         throw err;
       }
@@ -255,9 +269,10 @@ export function createExecutor(deps: ExecutorDeps) {
       if (outcome.status === 'paid') await approvals.markPaid(approvalId);
       return outcome;
     } catch (err) {
-      await audit.update(auditId, { outcome: 'error', detail: messageOf(err) });
-      // A PayPal error response means PayPal did not capture. A dropped connection mid-capture might have, so that one
-      // stays 'capturing' (cannot be rejected) until a human or the capture webhook settles it.
+      await audit.update(auditId, { outcome: failureOutcome(err), detail: messageOf(err) });
+      // A PayPal error response means PayPal did not capture (except "already captured", which failureOutcome keeps as
+      // 'error'). A dropped connection mid-capture might have, so that one stays 'capturing' (cannot be rejected) until a
+      // human or the capture webhook settles it.
       if (err instanceof PayPalApiError || !captureSent) await approvals.releaseCapture(approvalId);
       if (err instanceof PayPalApiError) return failedFrom(err);
       throw err;

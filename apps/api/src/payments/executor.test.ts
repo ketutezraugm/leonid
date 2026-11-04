@@ -449,7 +449,26 @@ describe('captureApproved (the treasurer approved in the PayPal popup)', () => {
     });
     expect((await executor.captureApproved('AP1', 'treasurer')).status).toBe('failed');
     expect(approvalRows.get('AP1')?.status).toBe('pending');
-    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'error' });
+    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'failed' }); // PayPal said no, so nothing moved
+  });
+
+  it('records a 5xx on capture as error, and "order already captured" as error too, since money may have moved', async () => {
+    const down = setup({
+      routes: { ...approvedAtPayPal, 'POST /v2/checkout/orders/ORD-1/capture': () => json(503, { name: 'SERVICE_UNAVAILABLE' }) },
+      approvals: { AP1: pending },
+    });
+    expect(await down.executor.captureApproved('AP1', 'treasurer')).toMatchObject({ status: 'failed', retryable: true });
+    expect(down.auditRows[0]!.patch).toMatchObject({ outcome: 'error' });
+
+    const already = setup({
+      routes: {
+        ...approvedAtPayPal,
+        'POST /v2/checkout/orders/ORD-1/capture': () => json(422, { name: 'UNPROCESSABLE_ENTITY', details: [{ issue: 'ORDER_ALREADY_CAPTURED' }] }),
+      },
+      approvals: { AP1: pending },
+    });
+    expect((await already.executor.captureApproved('AP1', 'treasurer')).status).toBe('failed');
+    expect(already.auditRows[0]!.patch).toMatchObject({ outcome: 'error' });
   });
 });
 
