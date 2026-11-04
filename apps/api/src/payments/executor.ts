@@ -4,7 +4,7 @@ import { fromPayPalMoney } from '../paypal/money.js';
 import { createOrder, getOrder, payerIdOf, spendTag } from '../paypal/orders.js';
 import { captureApprovedOrder, chargeVaultedWallet, type Charge } from '../paypal/spend.js';
 import { deletePaymentToken } from '../paypal/vault.js';
-import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, CheckSpend, ReferencePort, Spend, WalletPort } from './ports.js';
+import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, CheckSpend, PayoutSender, ReferencePort, Spend, WalletPort } from './ports.js';
 
 // The only path to PayPal's money-moving calls. Every spend goes: rules check -> audit row -> pay.
 //   allow          -> charge the saved wallet (automatic payment, F13)
@@ -14,7 +14,10 @@ import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, CheckSpe
 
 export type SpendOutcome =
   | { status: 'paid'; orderId: string; captureId?: string }
-  | { status: 'needs_approval'; approvalId: string; paypalOrderId: string; reasons: string[] }
+  // paypalOrderId is missing for a payout: it has no PayPal popup, the treasurer approves it with a button.
+  | { status: 'needs_approval'; approvalId: string; paypalOrderId?: string; reasons: string[] }
+  // A payout PayPal accepted. It pays out later (webhooks carry the result), and it holds its budget until then.
+  | { status: 'submitted'; batchId: string }
   | { status: 'blocked'; reasons: string[] }
   | { status: 'refused'; reason: RefusedReason }
   // Safe to retry with the same referenceId, except a capture mismatch (needs a human). retryable: PayPal answered 5xx or
@@ -32,7 +35,9 @@ export type RefusedReason =
   | 'already_paid'
   | 'in_progress'
   | 'payer_mismatch'
-  | 'no_event'; // the spend, or the approval being captured, belongs to no event
+  | 'no_event' // the spend, or the approval being captured, belongs to no event
+  | 'no_recipient' // a claim or payout with no PayPal email to send it to
+  | 'payouts_unavailable'; // this server has no way to send payouts
 
 export interface CaptureOptions {
   // Capture only if this PayPal payer id approved the order. The unattended webhook path sets it to the treasurer's
@@ -64,6 +69,8 @@ export interface ExecutorDeps {
   wallet: WalletPort;
   approvals: ApprovalsPort;
   references: ReferencePort;
+  // Sends claims and payouts from the Treasury app. Without it every claim and payout is refused (payouts_unavailable).
+  payouts?: PayoutSender;
 }
 
 // Every field that gives a spend its meaning or changes its rules outcome. Free-text `reason` is left out on purpose,
@@ -71,10 +78,13 @@ export interface ExecutorDeps {
 // had before they existed, and a retry across a deploy is not refused as reference_reused.
 const fingerprintOf = (s: Spend) => {
   const base = [s.amountMinor, s.currency, s.vendor ?? null, s.category ?? null, s.actor];
-  const later = { kind: s.kind, payee: s.payee, fundedBySponsorId: s.fundedBySponsorId };
+  const later = { kind: s.kind, payee: s.payee, payeeEmail: s.payeeEmail, fundedBySponsorId: s.fundedBySponsorId };
   const anySet = Object.values(later).some((value) => value !== undefined);
   return JSON.stringify(anySet ? [...base, later] : base);
 };
+
+// Claims and payouts go to a person from the Treasury app; everything else is a purchase from the agent wallet.
+const isPayout = (s: Spend) => s.kind === 'claim' || s.kind === 'payout';
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -83,7 +93,7 @@ const messageOf = (err: unknown) => (err instanceof Error ? err.message : String
 const oneLine = (text: string) => text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, ' ').replace(/\s+/g, ' ').trim();
 
 export function createExecutor(deps: ExecutorDeps) {
-  const { client, check, audit, wallet, approvals, references } = deps;
+  const { client, check, audit, wallet, approvals, references, payouts } = deps;
 
   // The funds gate reads committed spend from audit rows, so a check and the row it writes must not overlap with another
   // check, or two carts could each see the same dollars free. One server process, so a promise chain is enough.
@@ -144,11 +154,66 @@ export function createExecutor(deps: ExecutorDeps) {
     }
   }
 
+  // Sends a claim or payout. A repeat is safe: PayPal's sender_batch_id comes from the reference id. A PayPal answer is
+  // handled like a purchase's (a definite refusal is 'failed' and the money is released, anything unclear stays held).
+  // unclear: PayPal's answer leaves it unknown whether the payout went out (a 5xx, a timeout), so the caller must not free it.
+  async function sendPayout(spend: Spend, auditId: string): Promise<{ outcome: SpendOutcome; unclear: boolean }> {
+    const to = spend.payeeEmail;
+    if (!payouts || !to) throw new Error('sendPayout needs a payout sender and a recipient; requestSpend checks both first');
+    try {
+      const sent = await payouts.send({
+        referenceId: spend.referenceId,
+        recipientEmail: to,
+        amountMinor: spend.amountMinor,
+        currency: spend.currency,
+        note: oneLine(spend.reason).slice(0, 120),
+      });
+      await audit.update(auditId, { outcome: 'submitted', paypalId: sent.batchId });
+      return { outcome: { status: 'submitted', batchId: sent.batchId }, unclear: false };
+    } catch (err) {
+      await audit.update(auditId, { outcome: failureOutcome(err), detail: messageOf(err) });
+      if (err instanceof PayPalApiError) return { outcome: failedFrom(err), unclear: !definitelyRefused(err) };
+      throw err;
+    }
+  }
+
+  // The treasurer approved a payout. There is no PayPal order to ask about: the treasurer's logged-in session is the approval,
+  // which is weaker than the PayPal popup (the README says so). Same claim-before-send as a capture, and the kill switch applies.
+  async function approvePayout(approvalId: string, actor: string, spend: Spend, status: ApprovalStatus): Promise<SpendOutcome> {
+    const lost = lostClaim(status);
+    if (lost) return lost;
+    const auditId = await audit.record({ actor, action: 'spend.capture', input: spend, reason: 'treasurer approved the payout' });
+    const refuse = async (reason: RefusedReason, detail: string): Promise<SpendOutcome> => {
+      await audit.update(auditId, { outcome: 'refused', detail });
+      return { status: 'refused', reason };
+    };
+    if (!spend.eventId) return refuse('no_event', 'approval has no event');
+    if (!payouts) return refuse('payouts_unavailable', 'this server cannot send payouts');
+    if (!(await wallet.getActive())) return refuse('no_wallet', 'no active agent wallet');
+    if (!(await approvals.claimCapture(approvalId))) {
+      const now = (await approvals.get(approvalId))?.status ?? 'missing';
+      await audit.update(auditId, { outcome: 'refused', detail: `approval is ${now}, not pending` });
+      return lostClaim(now) ?? { status: 'refused', reason: 'not_approved' };
+    }
+    // The kill switch may have fired while we claimed: checked again right before the money leaves.
+    if (!(await wallet.getActive())) {
+      await approvals.releaseCapture(approvalId);
+      return refuse('no_wallet', 'no active agent wallet');
+    }
+    // Only a definite PayPal refusal frees the approval. A thrown (non-PayPal) error, or an answer that leaves it unknown whether
+    // the payout went out, keeps it 'capturing': it needs a human (or the payout webhooks), never a second approval click.
+    const { outcome, unclear } = await sendPayout(spend, auditId);
+    if (outcome.status === 'submitted') await approvals.markPaid(approvalId);
+    else if (!unclear) await approvals.releaseCapture(approvalId);
+    return outcome;
+  }
+
   // What an approval already made for this spend means for a retry of it. null: the approval is pending but its PayPal
   // order was never created (PayPal failed), so the retry carries on and reuses the row.
   function retryOutcome(existing: ApprovalRecord): SpendOutcome | null {
     const orderId = existing.paypalOrderId;
     if (existing.status === 'pending') {
+      if (isPayout(existing.spend)) return { status: 'needs_approval', approvalId: existing.id, reasons: existing.reasons }; // it never has an order
       return orderId ? { status: 'needs_approval', approvalId: existing.id, paypalOrderId: orderId, reasons: existing.reasons } : null;
     }
     if (existing.status === 'paid' && orderId) return { status: 'paid', orderId };
@@ -163,6 +228,13 @@ export function createExecutor(deps: ExecutorDeps) {
       return { status: 'refused', reason: 'no_event' };
     }
     // One reference id = one spend. Reusing it for something else is refused before any rules check or PayPal call.
+    // A claim or payout needs somewhere to go and a way to get there; refused before any rules check or PayPal call.
+    if (isPayout(spend) && (!payouts || !spend.payeeEmail)) {
+      const reason = payouts ? 'no_recipient' : 'payouts_unavailable';
+      const refusedId = await audit.record({ actor: spend.actor, action: 'spend.rejected', input: spend, reason: spend.reason });
+      await audit.update(refusedId, { outcome: 'refused', detail: reason === 'no_recipient' ? 'payout has no recipient email' : 'this server cannot send payouts' });
+      return { status: 'refused', reason };
+    }
     const claim = await references.claim(spend.referenceId, fingerprintOf(spend), spend.eventId);
     if (claim === 'conflict') {
       const rejectedId = await audit.record({ actor: spend.actor, action: 'spend.rejected', input: spend, reason: spend.reason });
@@ -201,6 +273,11 @@ export function createExecutor(deps: ExecutorDeps) {
     }
     if (result.decision === 'needs_approval') {
       const approvalId = existing?.id ?? (await approvals.create(spend, result, auditId));
+      if (isPayout(spend)) {
+        // No PayPal order: the treasurer approves a payout with a button, and approvePayout sends it.
+        await audit.update(auditId, { outcome: 'needs_approval', detail: approvalId });
+        return { status: 'needs_approval', approvalId, reasons: result.reasons };
+      }
       try {
         // Creating the order moves no money. The treasurer approves it in the PayPal popup; capture is a separate step.
         const order = await createOrder(client, {
@@ -219,7 +296,7 @@ export function createExecutor(deps: ExecutorDeps) {
         throw err;
       }
     }
-    return pay(spend, auditId);
+    return isPayout(spend) ? (await sendPayout(spend, auditId)).outcome : pay(spend, auditId);
   }
 
   // Called after the treasurer approved in the PayPal popup (and by the CHECKOUT.ORDER.APPROVED webhook). We do not trust
@@ -228,6 +305,7 @@ export function createExecutor(deps: ExecutorDeps) {
   // the same approval loses cleanly instead of both proceeding.
   async function captureApproved(approvalId: string, actor: string, options: CaptureOptions = {}): Promise<SpendOutcome> {
     const approval = await approvals.get(approvalId);
+    if (approval && isPayout(approval.spend)) return approvePayout(approvalId, actor, approval.spend, approval.status);
     if (!approval?.paypalOrderId) return { status: 'refused', reason: 'not_approved' };
     const lost = lostClaim(approval.status);
     if (lost) return lost;

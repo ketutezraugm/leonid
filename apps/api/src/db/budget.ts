@@ -3,7 +3,7 @@ import { and, eq, gte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Spend } from '../payments/ports.js';
 import { committedSpends, sumMinor, unlockedBudget, type SpendRecord } from '../rules/budget.js';
-import { normalizeName, type Budget } from '../rules/check.js';
+import { normalizeName, payeeKey, type Budget } from '../rules/check.js';
 import type { Db } from './client.js';
 import { listSponsors } from './events.js';
 import { clearedIncome, clearedIncomeBySponsor } from './ledger.js';
@@ -20,6 +20,7 @@ const Input = z.looseObject({
   eventId: z.string().optional(),
   kind: z.string().optional(),
   payee: z.string().optional(),
+  payeeEmail: z.string().optional(),
 });
 
 const startOfUtcDay = (now: Date) =>
@@ -74,9 +75,10 @@ export async function loadBudget(db: Db, spend: Spend, now: Date): Promise<Budge
 
   const todays = parsed.filter((p) => p.isToday);
   const autoPaidToday = committedSpends(todays.map((p) => p.record)).filter((s) => s.autoPaid);
+  const who = payeeKey(spend);
   const claimsToday = committedSpends(
     todays
-      .filter((p) => p.input.kind === 'claim' && p.input.payee === spend.payee)
+      .filter((p) => p.input.kind === 'claim' && who !== undefined && payeeKey(p.input) === who)
       .map((p) => p.record),
   );
 

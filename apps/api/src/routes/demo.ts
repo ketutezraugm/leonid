@@ -23,7 +23,7 @@ const Body = z.object({
   eventId: z.uuid(), // every spend belongs to an event
 });
 
-const STATUS: Record<SpendOutcome['status'], number> = { paid: 200, needs_approval: 202, blocked: 403, refused: 409, failed: 502 };
+const STATUS: Record<SpendOutcome['status'], number> = { paid: 200, submitted: 202, needs_approval: 202, blocked: 403, refused: 409, failed: 502 };
 
 // A stand-in for the procurement agent's spend tool (Harfi), so the Gate 2 beats can be shown before it lands:
 //   POST /spend  (treasurer, only when DEMO_SPEND=true)  { amountMinor, label, eventId, category?, vendor?, referenceId? }

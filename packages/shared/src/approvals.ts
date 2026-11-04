@@ -18,6 +18,12 @@ export const ApprovalItem = z.object({
   createdAt: IsoDateTime,
   referenceId: z.string(),
   eventId: z.string().optional(), // the event the spend belongs to; missing only on old rows
+  // 'payout' (also claims): no PayPal order and no popup, the treasurer approves with a plain button. Missing means 'purchase'.
+  kind: z.enum(['purchase', 'payout']).optional(),
+  // For a payout: the person and the PayPal email the money goes to. The treasurer approves a payout without a PayPal popup,
+  // so the screen must show where it goes. Treasurer-only data.
+  payee: z.string().optional(),
+  payeeEmail: z.string().optional(),
   amountMinor: MinorUnits,
   currency: CurrencyCode,
   actor: z.string(),

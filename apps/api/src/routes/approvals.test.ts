@@ -96,6 +96,23 @@ describe('approvals routes', () => {
     });
   });
 
+  it("tells purchases from payouts with `kind`, and a payout has no PayPal order to approve", async () => {
+    const { app, executor, approvals } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await approvals.create(
+      { ...prizeSpend, referenceId: 'claim-1', kind: 'claim', payee: 'Dana', payeeEmail: 'dana@example.com' },
+      { decision: 'needs_approval', reasons: ['over the $200 approval threshold'], ruleIds: [] },
+      'audit-1',
+    );
+    const items = ApprovalsResponse.parse((await request(app).get('/api/approvals').set(treasurer)).body).approvals;
+    expect(items.map((a) => [a.referenceId, a.kind, a.paypalOrderId])).toEqual([
+      ['prizes-1', 'purchase', 'ORD-1'],
+      ['claim-1', 'payout', undefined],
+    ]);
+    // the treasurer sees who a payout goes to, since there is no PayPal popup showing it
+    expect(items[1]).toMatchObject({ payee: 'Dana', payeeEmail: 'dana@example.com' });
+  });
+
   it('lists the oldest approval first', async () => {
     const { app, executor } = await build(approved);
     await executor.requestSpend(prizeSpend);

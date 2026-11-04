@@ -11,6 +11,7 @@ export const SPEND_RECENT_MAX = 50;
 // stopped mid-call).
 export const SpendStatus = z.enum([
   'paid',
+  'submitted', // a payout PayPal accepted but has not finished
   'needs_approval',
   'capturing',
   'rejected',
