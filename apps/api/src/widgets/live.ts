@@ -6,10 +6,10 @@ import {
   type RulesHealthEntry,
   type WidgetFilter,
 } from '@quartermaster/shared';
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/client.js';
-import { getEvent, listSponsors } from '../db/events.js';
+import { getDemoEvent, getEvent, listSponsors } from '../db/events.js';
 import { clearedIncomeBySponsor } from '../db/ledger.js';
 import { auditLog } from '../db/schema.js';
 
@@ -79,14 +79,23 @@ function parseDecision(raw: string): RuleResult | undefined {
 // Rules health: how many spends the rules allowed, sent to the treasurer, or blocked, with the reasons.
 // Source: the spend.check rows the payment executor writes to audit_log (rule_result is a JSON string).
 // Rows that do not parse are skipped, never guessed.
-// Not scoped to an event: a spend request carries no event id yet, so this is every decision. That is
-// correct while there is one event, and needs Spend to carry an event id (P1/P2) before there are two.
+// Scoped to one event by the eventId the spend carried when it was checked. A check with no event id (from
+// before spends carried one) is shown under the seeded demo event only, as the other endpoints do.
 // Only the category filter applies: a spend has no sponsor.
+// Returns undefined when the event does not exist.
 export async function getRulesHealth(
   db: Db,
+  eventId: string,
   filter: WidgetFilter = {},
   now: Date = new Date(),
-): Promise<RulesHealthData> {
+): Promise<RulesHealthData | undefined> {
+  if (!(await getEvent(db, eventId))) return undefined;
+  const isDemoEvent = (await getDemoEvent(db))?.id === eventId;
+  const checkedForThisEvent = sql`${auditLog.input}->>'eventId' = ${eventId}`;
+  const inThisEvent = isDemoEvent
+    ? or(checkedForThisEvent, sql`${auditLog.input}->>'eventId' is null`)
+    : checkedForThisEvent;
+
   const rows = await db
     .select({
       id: auditLog.id,
@@ -97,7 +106,7 @@ export async function getRulesHealth(
       ruleResult: auditLog.ruleResult,
     })
     .from(auditLog)
-    .where(and(eq(auditLog.action, 'spend.check'), isNotNull(auditLog.ruleResult)))
+    .where(and(eq(auditLog.action, 'spend.check'), isNotNull(auditLog.ruleResult), inThisEvent))
     .orderBy(desc(auditLog.createdAt))
     .limit(RULES_HEALTH_MAX_ROWS);
 
