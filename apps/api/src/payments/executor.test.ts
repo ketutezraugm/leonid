@@ -117,13 +117,21 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
   return { executor, events, fetch, auditRows, approvalRows, wallet };
 }
 
+const EVENT_ID = '11111111-1111-4111-8111-111111111111';
 const spend = (amountMinor: number, referenceId = 'cart-1'): Spend => ({
   referenceId,
   amountMinor,
   currency: 'USD',
   actor: 'procurement-agent',
   reason: 'lanyards for 200 attendees',
+  eventId: EVENT_ID,
 });
+// An approval or spend from before every spend needed an event.
+const withoutEvent = (s: Spend): Spend => {
+  const copy = { ...s };
+  delete copy.eventId;
+  return copy;
+};
 const callsTo = (fetch: ReturnType<typeof setup>['fetch'], method: string, pathEnd: string) =>
   fetch.mock.calls.filter(([u, init]) => init?.method === method && new URL(String(u)).pathname.endsWith(pathEnd));
 const orderPosts = (fetch: ReturnType<typeof setup>['fetch']) => callsTo(fetch, 'POST', '/v2/checkout/orders');
@@ -190,6 +198,34 @@ describe('requestSpend', () => {
     const { executor, fetch } = setup({ wallet: false });
     expect(await executor.requestSpend(spend(14000))).toEqual({ status: 'refused', reason: 'no_wallet' });
     expect(orderPosts(fetch)).toHaveLength(0);
+  });
+
+  it('refuses a spend with no event before any rules check or PayPal call, and audits it', async () => {
+    const { executor, fetch, events, auditRows } = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
+    const noEvent = withoutEvent(spend(14000));
+    expect(await executor.requestSpend(noEvent)).toEqual({ status: 'refused', reason: 'no_event' });
+    expect(orderPosts(fetch)).toHaveLength(0);
+    expect(events).toEqual(['audit.record spend.rejected', 'audit.update refused']);
+    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'refused', detail: 'spend has no event' });
+  });
+
+  it("tags the PayPal order with the spend's event, on the auto-pay path and the approval path", async () => {
+    const tagOf = (fetch: ReturnType<typeof setup>['fetch']) => JSON.parse(String(orderPosts(fetch)[0]![1]!.body)).purchase_units[0].custom_id;
+    const auto = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
+    await auto.executor.requestSpend(spend(14000));
+    expect(tagOf(auto.fetch)).toBe(`qm:${EVENT_ID}:spend`);
+    const asked = setup({ routes: { 'POST /v2/checkout/orders': orderCreated } });
+    await asked.executor.requestSpend(spend(42000, 'prizes-1'));
+    expect(tagOf(asked.fetch)).toBe(`qm:${EVENT_ID}:spend`);
+  });
+
+  it('does not capture or reject an approval made before spends had an event', async () => {
+    const old = withoutEvent(spend(42000, 'prizes-old'));
+    const { executor, fetch, approvalRows } = setup({ approvals: { AP1: { spend: old, status: 'pending', paypalOrderId: 'ORD-1' } } });
+    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'no_event' });
+    expect(await executor.rejectApproval('AP1', 'treasurer')).toEqual({ rejected: false });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(approvalRows.get('AP1')!.status).toBe('pending');
   });
 
   it('treats PayPal refusing the token (403) as a revoked wallet', async () => {

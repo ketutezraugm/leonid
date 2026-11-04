@@ -17,6 +17,7 @@ export const ApprovalItem = z.object({
   status: ApprovalStatus,
   createdAt: IsoDateTime,
   referenceId: z.string(),
+  eventId: z.string().optional(), // the event the spend belongs to; missing only on old rows
   amountMinor: MinorUnits,
   currency: CurrencyCode,
   actor: z.string(),

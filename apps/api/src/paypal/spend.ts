@@ -57,7 +57,7 @@ export async function captureApprovedOrder(
 // Charge the saved wallet with nobody present. PayPal refuses it if the payment token was deleted (kill switch).
 export async function chargeVaultedWallet(
   client: PayPalClient,
-  input: { referenceId: string; paymentTokenId: string; amountMinor: number; currency: string },
+  input: { referenceId: string; paymentTokenId: string; amountMinor: number; currency: string; customId?: string },
 ): Promise<Charge> {
   const res = await client.request({
     method: 'POST',
@@ -70,6 +70,7 @@ export async function chargeVaultedWallet(
       purchase_units: [
         {
           reference_id: input.referenceId,
+          custom_id: input.customId,
           amount: toPayPalMoney(input.amountMinor, input.currency),
         },
       ],

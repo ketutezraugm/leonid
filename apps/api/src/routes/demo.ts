@@ -20,13 +20,13 @@ const Body = z.object({
   vendor: z.string().trim().min(1).max(100).optional(),
   // Send the same id to retry a spend safely: PayPal's idempotency key comes from it, so it can only be charged once.
   referenceId: z.string().trim().min(1).max(64).optional(),
-  eventId: z.uuid().optional(),
+  eventId: z.uuid(), // every spend belongs to an event
 });
 
 const STATUS: Record<SpendOutcome['status'], number> = { paid: 200, needs_approval: 202, blocked: 403, refused: 409, failed: 502 };
 
 // A stand-in for the procurement agent's spend tool (Harfi), so the Gate 2 beats can be shown before it lands:
-//   POST /spend  (treasurer, only when DEMO_SPEND=true)  { amountMinor, label, category?, vendor?, referenceId?, eventId? }
+//   POST /spend  (treasurer, only when DEMO_SPEND=true)  { amountMinor, label, eventId, category?, vendor?, referenceId? }
 // It adds no money path of its own: the spend goes through executor.requestSpend like any agent's would, so the rules
 // check, the audit row, the kill switch and the approval flow all apply. $140 auto-pays, $420 opens an approval.
 // Delete this file once an agent tool calls requestSpend.
@@ -50,7 +50,7 @@ export function demoRouter(options: DemoRouterOptions = {}) {
   router.post('/spend', gate, requireTreasurer(env), async (req, res) => {
     const body = Body.safeParse(req.body);
     if (!body.success) {
-      res.status(422).json({ error: `body must be { amountMinor (1 to ${DEMO_SPEND_MAX_MINOR}), label }`, issues: body.error.issues });
+      res.status(422).json({ error: `body must be { amountMinor (1 to ${DEMO_SPEND_MAX_MINOR}), label, eventId }`, issues: body.error.issues });
       return;
     }
     let ctx: PaymentsContext;

@@ -1,7 +1,7 @@
 import type { PayPalClient } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { fromPayPalMoney } from '../paypal/money.js';
-import { createOrder, getOrder, payerIdOf } from '../paypal/orders.js';
+import { createOrder, getOrder, payerIdOf, spendTag } from '../paypal/orders.js';
 import { captureApprovedOrder, chargeVaultedWallet, type Charge } from '../paypal/spend.js';
 import { deletePaymentToken } from '../paypal/vault.js';
 import type { ApprovalRecord, ApprovalStatus, ApprovalsPort, AuditPort, CheckSpend, ReferencePort, Spend, WalletPort } from './ports.js';
@@ -31,7 +31,8 @@ export type RefusedReason =
   | 'reference_reused'
   | 'already_paid'
   | 'in_progress'
-  | 'payer_mismatch';
+  | 'payer_mismatch'
+  | 'no_event'; // the spend, or the approval being captured, belongs to no event
 
 export interface CaptureOptions {
   // Capture only if this PayPal payer id approved the order. The unattended webhook path sets it to the treasurer's
@@ -127,6 +128,7 @@ export function createExecutor(deps: ExecutorDeps) {
           paymentTokenId: active.paymentTokenId,
           amountMinor: spend.amountMinor,
           currency: spend.currency,
+          customId: spend.eventId && spendTag(spend.eventId),
         }),
       );
     } catch (err) {
@@ -154,8 +156,14 @@ export function createExecutor(deps: ExecutorDeps) {
   }
 
   async function requestSpend(spend: Spend): Promise<SpendOutcome> {
+    // Every spend belongs to an event: its budget, its audit trail and its PayPal order tag all hang on it.
+    if (!spend.eventId) {
+      const rejectedId = await audit.record({ actor: spend.actor, action: 'spend.rejected', input: spend, reason: spend.reason });
+      await audit.update(rejectedId, { outcome: 'refused', detail: 'spend has no event' });
+      return { status: 'refused', reason: 'no_event' };
+    }
     // One reference id = one spend. Reusing it for something else is refused before any rules check or PayPal call.
-    const claim = await references.claim(spend.referenceId, fingerprintOf(spend));
+    const claim = await references.claim(spend.referenceId, fingerprintOf(spend), spend.eventId);
     if (claim === 'conflict') {
       const rejectedId = await audit.record({ actor: spend.actor, action: 'spend.rejected', input: spend, reason: spend.reason });
       await audit.update(rejectedId, { outcome: 'refused', detail: `referenceId ${spend.referenceId} is already used for a different spend` });
@@ -200,6 +208,7 @@ export function createExecutor(deps: ExecutorDeps) {
           amountMinor: spend.amountMinor,
           currency: spend.currency,
           description: spend.reason.slice(0, 120),
+          customId: spendTag(spend.eventId),
         });
         await approvals.attachOrder(approvalId, order.id);
         await audit.update(auditId, { outcome: 'needs_approval', paypalId: order.id, detail: approvalId });
@@ -224,6 +233,11 @@ export function createExecutor(deps: ExecutorDeps) {
     if (lost) return lost;
     const { spend, paypalOrderId } = approval;
     const auditId = await audit.record({ actor, action: 'spend.capture', input: spend, reason: 'treasurer approved in PayPal' });
+    // Approvals made before every spend needed an event have none: they are not captured.
+    if (!spend.eventId) {
+      await audit.update(auditId, { outcome: 'refused', paypalId: paypalOrderId, detail: 'approval has no event' });
+      return { status: 'refused', reason: 'no_event' };
+    }
     // An approval created before the kill switch stays pending, but nothing is captured until a wallet is active again.
     if (!(await wallet.getActive())) {
       await audit.update(auditId, { outcome: 'refused', paypalId: paypalOrderId, detail: 'no active agent wallet' });
@@ -290,7 +304,8 @@ export function createExecutor(deps: ExecutorDeps) {
   async function rejectApproval(approvalId: string, actor: string, why?: string): Promise<{ rejected: boolean }> {
     const approval = await approvals.get(approvalId);
     // Conditional on 'pending': a capture that claimed the approval first wins, and the reject is refused.
-    if (!approval || !(await approvals.reject(approvalId, actor))) return { rejected: false };
+    // Same rule as capture: an approval with no event is not touched.
+    if (!approval?.spend.eventId || !(await approvals.reject(approvalId, actor))) return { rejected: false };
     const note = why && oneLine(why);
     const auditId = await audit.record({ actor, action: 'spend.rejected_by_treasurer', input: approval.spend, reason: note ? `treasurer rejected: ${note}` : 'treasurer rejected' });
     await audit.update(auditId, { outcome: 'rejected', paypalId: approval.paypalOrderId });

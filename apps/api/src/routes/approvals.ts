@@ -20,6 +20,7 @@ const toItem = (v: ApprovalView): ApprovalItem => ({
   status: v.status,
   createdAt: v.createdAt,
   referenceId: v.spend.referenceId,
+  eventId: v.spend.eventId,
   amountMinor: v.spend.amountMinor,
   currency: v.spend.currency,
   actor: v.spend.actor,

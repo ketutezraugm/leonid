@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { approvals as approvalsTable } from '../db/schema.js';
+import { approvals as approvalsTable, spendReferences } from '../db/schema.js';
+import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import type { Db } from '../db/client.js';
 import { createDbApprovals, createDbAudit, createDbReferences, createDbWalletStore } from './db.js';
@@ -75,6 +76,17 @@ describe('audit and approvals', () => {
     expect((await approvals.list()).map((a) => a.id)).toEqual([id, second]); // oldest first
     expect((await approvals.list())[0]?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(await approvals.findByOrder('ORDER-2')).toBeNull();
+  });
+
+  it("keeps the spend's event on the approval and the reference as a column, and refuses an event that does not exist", async () => {
+    const { id: eventId } = await seedDemoEvent(db);
+    const approvals = createDbApprovals(db);
+    const auditId = await createDbAudit(db).record({ actor: 'agent', action: 'spend.check', input: spend, reason: 'swag' });
+    const id = await approvals.create({ ...spend, eventId }, result, auditId);
+    expect((await db.select().from(approvalsTable))[0]).toMatchObject({ id, eventId });
+    expect(await createDbReferences(db).claim('cart-1', 'fp', eventId)).toBe('new');
+    expect((await db.select().from(spendReferences))[0]).toMatchObject({ referenceId: 'cart-1', eventId });
+    await expect(approvals.create({ ...spend, referenceId: 'cart-2', eventId: crypto.randomUUID() }, result, auditId)).rejects.toThrow();
   });
 
   it('breaks ties between approvals created in the same instant by id, so the order is stable', async () => {

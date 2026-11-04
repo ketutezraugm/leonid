@@ -79,11 +79,14 @@ interface OrderBody {
 }
 
 let db: Db;
+let demoEventId: string;
 beforeEach(async () => {
   db = await createTestDb();
+  demoEventId = (await seedDemoEvent(db)).id;
 });
 
-async function seedThread(messages: UIMessage[], eventId: string | null = null) {
+// A deposit is a spend and every spend needs an event: the thread gets the seeded one unless a test passes another or null (none).
+async function seedThread(messages: UIMessage[], eventId: string | null = demoEventId) {
   const id = crypto.randomUUID();
   await getOrCreateThread(db, id, eventId);
   await saveMessages(db, id, messages);
@@ -217,13 +220,17 @@ describe('venue deposit route', () => {
 
   it("records the chat's event on the spend, so the deposit shows up under that event", async () => {
     const { app, audit } = await build();
-    const { id: eventId } = await seedDemoEvent(db);
-    const id = await seedThread(
-      thread([small], { name: small.name, sourceUrl: listingUrl(small) }),
-      eventId,
-    );
+    const id = await seedThread(thread([small], { name: small.name, sourceUrl: listingUrl(small) }));
     await request(app).post(`/api/venue-deposit/${id}`).set(treasurer).expect(200);
-    expect(audit.rows[0]?.input).toMatchObject({ eventId });
+    expect(audit.rows[0]?.input).toMatchObject({ eventId: demoEventId });
+  });
+
+  it('refuses a deposit for a chat that has no event, without calling PayPal', async () => {
+    const { app, calls } = await build();
+    const id = await seedThread(thread([small], { name: small.name, sourceUrl: listingUrl(small) }), null);
+    const res = await request(app).post(`/api/venue-deposit/${id}`).set(treasurer).expect(409);
+    expect(VenueDepositPayResponse.parse(res.body).outcome).toEqual({ status: 'refused', reason: 'no_event' });
+    expect(calls).toEqual([]);
   });
 
   it('sends a deposit over the rules to the treasurer as a PayPal order to approve', async () => {

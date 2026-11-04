@@ -132,6 +132,8 @@ export const walletSetups = pgTable('wallet_setups', {
 export const spendReferences = pgTable('spend_references', {
   referenceId: text('reference_id').primaryKey(),
   fingerprint: text('fingerprint').notNull(),
+  // The event that spend belongs to. Null only for rows made before every spend needed an event.
+  eventId: uuid('event_id').references(() => events.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 
@@ -140,6 +142,8 @@ export const approvals = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     spend: jsonb('spend').notNull(),
+    // Same event as spend.eventId, as a column so it has a foreign key and approvals can be listed per event. Null only for old rows.
+    eventId: uuid('event_id').references(() => events.id),
     reasons: text('reasons').array().notNull().default([]),
     // pending -> capturing -> paid, or pending -> rejected; see ApprovalsPort in payments/ports.ts
     status: text('status', { enum: ['pending', 'capturing', 'rejected', 'paid'] })
