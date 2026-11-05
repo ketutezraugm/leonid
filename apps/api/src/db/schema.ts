@@ -142,6 +142,17 @@ export const demoTokenPool = pgTable('demo_token_pool', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 
+// The published sponsor spend report (F22): one per sponsor, regenerated in place. share_token is the bearer secret in the public
+// link /report/:shareToken, so it stays the same when the report is regenerated and is never written to the audit log.
+export const sponsorReports = pgTable('sponsor_reports', {
+  sponsorId: uuid('sponsor_id')
+    .primaryKey()
+    .references(() => sponsors.id),
+  shareToken: text('share_token').notNull().unique(),
+  content: jsonb('content').notNull(),
+  generatedAt: timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
 // One reference id = one spend; PayPal's idempotency key comes from it. The fingerprint detects reuse for a different spend.
 export const spendReferences = pgTable('spend_references', {
   referenceId: text('reference_id').primaryKey(),

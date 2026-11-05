@@ -71,6 +71,13 @@
       "when": 1793862791816,
       "tag": "0009_demo_token_pool",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793886715235,
+      "tag": "0010_sponsor_reports",
+      "breakpoints": true
     }
   ]
 }

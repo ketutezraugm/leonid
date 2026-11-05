@@ -224,7 +224,8 @@ describe('App', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('heading', { name: 'Sponsor report' })).toBeInTheDocument();
+    // The report page fetches its report first (pages/SponsorReport.test.tsx covers what it shows); here it is still loading.
+    expect(screen.getByText('Loading the report…')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ask the agent' })).not.toBeInTheDocument();
   });
