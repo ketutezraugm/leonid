@@ -8,6 +8,9 @@ import { PageHeader } from '../ui/PageHeader';
 import { PageState } from '../ui/PageState';
 import { StatRow, StatTile } from '../ui/StatTile';
 
+// Transaction Search can take hours to list a payment, so "not found" is worded as not yet, never as a problem with the purchase.
+const CHECK_LABEL = { confirmed: 'Confirmed by PayPal', differs: "PayPal's record differs", not_found: "Not in PayPal's records yet" } as const;
+
 const day = (iso: string) => new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 // Public and shared outside the team, at an unguessable link (/report/:shareToken), no login. It names categories and vendors,
@@ -32,6 +35,8 @@ export function SponsorReport() {
 
   const r = report.data;
   const money = (minor: number) => formatMoney(minor, r.currency);
+  const checked = r.spend.lines.filter((l) => l.paypalCheck);
+  const confirmed = checked.filter((l) => l.paypalCheck === 'confirmed').length;
   return (
     <section>
       <PageHeader title={`${r.sponsor.name}: sponsor report`} description={`Where your ${r.sponsor.tier} sponsorship of ${r.event.name} went.`} />
@@ -92,12 +97,21 @@ export function SponsorReport() {
                     <td className="num">
                       {money(l.attributedMinor)} <span className="muted">{l.basis === 'direct' ? 'funded by you' : 'shared'}</span>
                     </td>
-                    <td>{l.paypalId ? <CopyId value={l.paypalId} /> : <span className="muted">None</span>}</td>
+                    <td>
+                      {l.paypalId ? <CopyId value={l.paypalId} /> : <span className="muted">None</span>}
+                      {l.paypalCheck && <div className="muted">{CHECK_LABEL[l.paypalCheck]}</div>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        )}
+        {r.spend.paypalCheckedAt && checked.length > 0 && (
+          <p className="muted">
+            {confirmed} of {checked.length} {checked.length === 1 ? 'purchase' : 'purchases'} confirmed in PayPal&apos;s transaction records on{' '}
+            {day(r.spend.paypalCheckedAt)}. PayPal can take a few hours to list a payment.
+          </p>
         )}
       </Card>
       <Card title="How your share is worked out">

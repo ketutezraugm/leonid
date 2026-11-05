@@ -68,6 +68,8 @@ interface ReportResult {
   sponsorId: string;
   purchases: number;
   summary: string;
+  // What PayPal's transaction records said about the purchases; null when that check could not run.
+  paypalCheck: { confirmed: number; differs: number; notFound: number } | null;
 }
 
 // Sponsor report, one sponsor: the API builds the report from the ledger and the executor's records and publishes it. The
