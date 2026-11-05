@@ -4,6 +4,7 @@ import cors from 'cors';
 import express from 'express';
 import type { HealthResponse } from '@quartermaster/shared';
 import { approvalsRouter } from './routes/approvals.js';
+import { clientIpRouter } from './routes/clientIp.js';
 import { authRouter } from './routes/auth.js';
 import { checkoutRouter } from './routes/checkout.js';
 import { chatRouter } from './routes/chat.js';
@@ -42,6 +43,7 @@ export function createApp() {
   app.use('/api/chat', chatRouter);
   app.use('/api/checkout', checkoutRouter());
   app.use('/api/demo', demoRouter());
+  app.use('/api/ops/client-ip', clientIpRouter()); // temporary probe, see routes/clientIp.ts
   app.use('/api/events', eventsRouter());
   app.use('/api/jobs', jobsRouter());
   app.use('/api/spends', spendsRouter());
