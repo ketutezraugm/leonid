@@ -17,6 +17,8 @@ const usd = (minor: number, currency: string) =>
 // lines to start a fake instruction block, no markup or links.
 export const safeLabel = (s: string) => s.replace(/[^\p{L}\p{N} &'.,-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
 
+const purchases = (n: number) => `${n} ${n === 1 ? 'purchase' : 'purchases'}`;
+
 // The only facts a model may use, as plain lines inside <data>.
 export function figuresText(d: Figures): string {
   const lines = [
@@ -24,8 +26,8 @@ export function figuresText(d: Figures): string {
     `Sponsor: ${safeLabel(d.sponsor.name)} (${safeLabel(d.sponsor.tier)} sponsor)`,
     `Pledged: ${usd(d.funds.pledgedMinor, d.currency)}`,
     `Cleared (paid): ${usd(d.funds.clearedMinor, d.currency)}`,
-    `Spend attributed to this sponsor: ${usd(d.spend.totalMinor, d.currency)} across ${d.spend.lines.length} purchases`,
-    ...d.spend.byCategory.map((c) => `Category ${safeLabel(c.category)}: ${usd(c.attributedMinor, d.currency)} (${c.purchases} purchases)`),
+    `Spend attributed to this sponsor: ${usd(d.spend.totalMinor, d.currency)} across ${purchases(d.spend.lines.length)}`,
+    ...d.spend.byCategory.map((c) => `Category ${safeLabel(c.category)}: ${usd(c.attributedMinor, d.currency)} (${purchases(c.purchases)})`),
     ...[...new Set(d.spend.lines.map((l) => l.vendor).filter((v): v is string => Boolean(v)))].map((v) => `Vendor: ${safeLabel(v)}`),
   ];
   return lines.join('\n');
