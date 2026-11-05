@@ -24,8 +24,27 @@ describe('crossCheckLines', () => {
     expect(check([line('ORDER1')], [tx({ transactionId: 'CAP9', referenceId: 'ORDER1' })])).toEqual(['confirmed']);
   });
 
-  it('reads a negative amount by its size, since the same payment can be listed from the other side', () => {
-    expect(check([line('CAP1')], [tx({ amountMinor: -42_000 })])).toEqual(['confirmed']);
+  it('never reads a negative amount as the payment: a refund of the same size is not a confirmation', () => {
+    expect(check([line('CAP1')], [tx({ amountMinor: -42_000 })])).toEqual(['differs']);
+  });
+
+  it('does not confirm a purchase that PayPal later refunded: the good entry and the refund listed against it add up to "differs"', () => {
+    const payment = tx({ transactionId: 'CAP1' });
+    const refund = tx({ transactionId: 'REF1', referenceId: 'CAP1', amountMinor: -42_000 }); // PayPal lists a refund pointing at its payment
+    expect(check([line('CAP1')], [payment, refund])).toEqual(['differs']);
+    expect(check([line('CAP1')], [refund, payment])).toEqual(['differs']); // whatever the order
+  });
+
+  it('does not confirm a partial refund either, nor a payment whose own status is reversed while another entry looks fine', () => {
+    const payment = tx({ transactionId: 'CAP1' });
+    expect(check([line('CAP1')], [payment, tx({ transactionId: 'REF2', referenceId: 'CAP1', amountMinor: -5_000 })])).toEqual(['differs']);
+    expect(check([line('CAP1')], [payment, tx({ transactionId: 'CAP1', status: 'V' })])).toEqual(['differs']);
+  });
+
+  it('looks at an approved spend through its order id the same way: the capture confirms, a refund pointing at the order does not', () => {
+    const capture = tx({ transactionId: 'CAP9', referenceId: 'ORDER1' });
+    expect(check([line('ORDER1')], [capture])).toEqual(['confirmed']);
+    expect(check([line('ORDER1')], [capture, tx({ transactionId: 'REF9', referenceId: 'ORDER1', amountMinor: -42_000 })])).toEqual(['differs']);
   });
 
   it('says "differs" when PayPal lists the id but not as that successful payment: another amount, pending, reversed or another currency', () => {

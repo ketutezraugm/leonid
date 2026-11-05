@@ -5,8 +5,10 @@ import { SEARCH_MAX_DAYS } from '../paypal/search.js';
 // Checks each purchase of a report against PayPal's own transaction records (Transaction Search). Pure. The ledger and the executor
 // stay the source of the report's figures; this only adds whether PayPal agrees, and it never turns a missing record into an
 // accusation, because Transaction Search lags (up to ~3 hours) and a payment can simply not be listed yet.
-//   confirmed  a successful (S) transaction for the same id and the same gross amount
-//   differs    PayPal lists the id, but not as a successful payment of that amount (reversed, pending, another amount)
+//   confirmed  a successful (S) transaction for the same id and exactly the same positive gross amount, and nothing tied to it
+//              that took money back
+//   differs    PayPal lists the id, but not as a payment in full: a refund or reversal is listed against it, or it is pending,
+//              of another amount or currency
 //   not_found  PayPal does not list the id (yet)
 // A purchase's PayPal id is the capture id or, for a spend the treasurer approved, the order id; a transaction matches on either its
 // own id or the base (reference) id it points at. A line with no PayPal id is left unchecked.
@@ -15,8 +17,14 @@ export function crossCheckLines(lines: readonly SponsorReportLine[], found: read
     if (!line.paypalId) return line;
     const matches = found.filter((f) => f.transactionId === line.paypalId || f.referenceId === line.paypalId);
     if (matches.length === 0) return { ...line, paypalCheck: 'not_found' };
-    const agrees = matches.some((f) => f.status === 'S' && f.currency === currency && f.amountMinor !== null && Math.abs(f.amountMinor) === line.purchaseMinor);
-    return { ...line, paypalCheck: agrees ? 'confirmed' : 'differs' };
+    // Anything tied to this purchase that took money back (a refund, a partial refund, a reversal: a negative entry or status V,
+    // listed pointing at the payment) means PayPal's record is no longer "paid in full", however many good entries also match.
+    const takenBack = matches.some((f) => f.status === 'V' || (f.amountMinor !== null && f.amountMinor < 0));
+    if (takenBack) return { ...line, paypalCheck: 'differs' };
+    // Only a positive, successful entry of exactly this amount in this currency is the payment itself. The size of a negative
+    // entry is never read as the payment.
+    const paid = matches.some((f) => f.status === 'S' && f.currency === currency && f.amountMinor === line.purchaseMinor);
+    return { ...line, paypalCheck: paid ? 'confirmed' : 'differs' };
   });
 }
 
