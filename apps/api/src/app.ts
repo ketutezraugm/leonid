@@ -15,6 +15,7 @@ import { jobsRouter } from './routes/jobs.js';
 import { spendsRouter } from './routes/spends.js';
 import { treasuryRouter } from './routes/treasury.js';
 import { venueDepositRouter } from './routes/venueDeposit.js';
+import { TRUSTED_PROXY_HOPS } from './routes/rateLimit.js';
 import { walletRouter } from './routes/wallet.js';
 import { walletPoolRouter } from './routes/walletPool.js';
 import { widgetsRouter } from './routes/widgets.js';
@@ -23,8 +24,8 @@ import { webhookRouter } from './webhooks/router.js';
 
 export function createApp() {
   const app = express();
-  // Render puts one proxy in front: without this req.ip is the proxy for everyone and the per-IP rate limits become one shared bucket.
-  if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+  // Without this req.ip is a Render proxy for everyone and the per-IP rate limits become one shared bucket (hop count: rateLimit.ts).
+  if (process.env.NODE_ENV === 'production') app.set('trust proxy', TRUSTED_PROXY_HOPS);
   app.use(cors());
   // Before express.json(): PayPal webhook signatures are checked against the raw request body.
   app.use('/api/webhooks/paypal', webhookRouter());
