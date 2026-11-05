@@ -58,9 +58,15 @@ export const usesOnlyGivenNumbers = (text: string, figures: string) => {
 };
 
 // A summary for a sponsor never needs a link, an address or markup. A model steered by a hostile vendor name could be made to write
-// one (a phishing link on a page that carries our name), and a number check cannot see that, so anything link-like is refused.
-const LINK_LIKE = /https?:|www\.|@|[<>[\]`]|\b[a-z0-9-]+\.(?:com|net|org|io|co|app|dev|xyz|info|biz|me|ly|ru|cn|top|site|online)\b/i;
-export const looksLikeLink = (text: string) => LINK_LIKE.test(text);
+// one (a phishing link on a page that carries our name), and a number check cannot see that. So the output is held to an allowlist
+// and anything outside it gets the template; a list of known domain endings would always miss one.
+//  - Only ASCII letters and digits, spaces, basic punctuation and typographic dashes and quotes. No '/', '\', '@', angle brackets
+//    or backticks, and no non-ASCII letters or dots, so no look-alike characters.
+//  - No host-shaped word: a letter or digit, a dot, then a letter (evil.example, bit.ly, x.zip), whatever the ending. A number such
+//    as $140.00 is fine, and so is a full stop followed by a space.
+const PLAIN = /^[A-Za-z0-9 $%&'",.;:!?()–—‘’“”-]+$/;
+const HOST_SHAPED = /[A-Za-z0-9]\.[A-Za-z]/;
+export const isPlainSummary = (text: string) => PLAIN.test(text) && !HOST_SHAPED.test(text) && !/\bwww\b/i.test(text);
 
 export async function writeNarrative(d: Figures, model: LanguageModel | undefined, timeoutMs = 20_000): Promise<Narrative> {
   if (!model) return templateNarrative(d);
@@ -73,7 +79,7 @@ export async function writeNarrative(d: Figures, model: LanguageModel | undefine
       abortSignal: AbortSignal.timeout(timeoutMs),
     });
     const clean = text.replace(/\s+/g, ' ').trim();
-    if (!clean || clean.length > 700 || looksLikeLink(clean) || !usesOnlyGivenNumbers(clean, figures)) return templateNarrative(d);
+    if (!clean || clean.length > 700 || !isPlainSummary(clean) || !usesOnlyGivenNumbers(clean, figures)) return templateNarrative(d);
     return { text: clean, source: 'ai' };
   } catch {
     return templateNarrative(d);

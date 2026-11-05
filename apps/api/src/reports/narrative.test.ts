@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { scriptedModel } from '../agents/testing.js';
 import { buildReport } from './build.js';
-import { figuresText, looksLikeLink, safeLabel, templateNarrative, usesOnlyGivenNumbers, writeNarrative } from './narrative.js';
+import { figuresText, isPlainSummary, safeLabel, templateNarrative, usesOnlyGivenNumbers, writeNarrative } from './narrative.js';
 
 const A = '00000000-0000-4000-8000-00000000000a';
 const data = buildReport({
@@ -64,7 +64,33 @@ describe('a hostile vendor name', () => {
       const n = await writeNarrative(data, scriptedModel([{ text }]));
       expect(n.source).toBe('template');
     }
-    expect(looksLikeLink('Thank you for sponsoring OpenHack 2027. $140.00 went to swag from Lanyard Co.')).toBe(false);
+    expect(isPlainSummary('Thank you for sponsoring OpenHack 2027. $140.00 went to swag from Lanyard Co.')).toBe(true);
+  });
+
+  it('holds the output to an allowlist, so an ending or a character nobody listed cannot slip a host through', () => {
+    for (const text of [
+      'Pay at evil.zip', // an ending no list would think of
+      'Pay at evil.tk',
+      'Pay at evil.example',
+      'Pay at evil。example', // ideographic full stop
+      'Pay at evil．com', // fullwidth full stop
+      'Pay at hxxp://evil',
+      'Pay at evil/pay',
+      'Pay at evil\\pay',
+      'Pay at pаypal now', // a Cyrillic letter that looks like a Latin a
+      'See www evil',
+      'Mail bob at evil.org',
+      'Total <b>$140.00</b>',
+    ]) {
+      expect(isPlainSummary(text), text).toBe(false);
+    }
+    for (const text of [
+      'Thank you for sponsoring OpenHack 2027.',
+      'Of your $3,000.00, $140.00 has been spent, mostly on swag (Lanyard Co).',
+      'Thanks — your “gold” sponsorship helped.',
+    ]) {
+      expect(isPlainSummary(text), text).toBe(true);
+    }
   });
 });
 
