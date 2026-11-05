@@ -22,6 +22,7 @@ export interface WorkflowsRouterOptions {
 // The demo controls: a treasurer starts a workflow by hand, so the video does not wait on a schedule.
 //   POST /:name/run     (treasurer) starts the task in the Workflow service -> 202 { runId }
 //   GET  /runs/:runId   (treasurer) -> { status, results, error? }: pending, running, succeeded, failed or canceled
+//                       (Render still reports a finished run as the deprecated 'completed'; it is passed on as 'succeeded')
 // Needs RENDER_API_KEY and WORKFLOW_SLUG (the Workflow service's slug, shown in the Render Dashboard); answers 503 without them.
 export function workflowsRouter(options: WorkflowsRouterOptions = {}) {
   const env = options.env ?? process.env;
@@ -89,7 +90,8 @@ export function workflowsRouter(options: WorkflowsRouterOptions = {}) {
     '/runs/:runId',
     guard,
     withRunner(async (req, res, run) => {
-      res.json(await run.status(String(req.params.runId)));
+      const found = await run.status(String(req.params.runId));
+      res.json({ ...found, status: found.status === 'completed' ? 'succeeded' : found.status });
     }),
   );
 
