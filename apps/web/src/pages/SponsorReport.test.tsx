@@ -51,6 +51,11 @@ describe('the public sponsor report page', () => {
     expect(screen.getByText('funded by you')).toBeTruthy();
   });
 
+  it('says "1 purchase" for a single purchase', async () => {
+    open('tok', () => json({ ...REPORT, spend: { ...REPORT.spend, lines: [REPORT.spend.lines[0]] } }));
+    expect(await screen.findByText('1 purchase', { selector: '.stat-meta' })).toBeTruthy();
+  });
+
   it('does not claim an AI wrote a template summary', async () => {
     open('tok', () => json({ ...REPORT, narrative: { text: 'Thank you.', source: 'template' } }));
     await screen.findByText('Thank you.');

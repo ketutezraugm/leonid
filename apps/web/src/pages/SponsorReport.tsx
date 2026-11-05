@@ -42,7 +42,7 @@ export function SponsorReport() {
       <StatRow>
         <StatTile label="Pledged" value={money(r.funds.pledgedMinor)} />
         <StatTile label="Received" value={money(r.funds.clearedMinor)} meta="After PayPal fees and refunds" />
-        <StatTile label="Spent from it" value={money(r.spend.totalMinor)} meta={`${r.spend.lines.length} purchases`} />
+        <StatTile label="Spent from it" value={money(r.spend.totalMinor)} meta={`${r.spend.lines.length} ${r.spend.lines.length === 1 ? 'purchase' : 'purchases'}`} />
       </StatRow>
       {r.spend.byCategory.length > 0 && (
         <Card title="By category">

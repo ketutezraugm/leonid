@@ -34,6 +34,13 @@ describe('writeNarrative', () => {
     expect((await writeNarrative(data, scriptedModel([{ text: '   ' }]))).source).toBe('template');
   });
 
+  it('says "1 purchase", not "1 purchases", so the model has no wrong grammar to copy onto the page', () => {
+    const text = figuresText(data); // the sample has exactly one purchase
+    expect(text).toContain('across 1 purchase');
+    expect(text).toContain('(1 purchase)');
+    expect(text).not.toContain('1 purchases');
+  });
+
   it('gives the model only the figures and vendor names as plain lines', () => {
     expect(figuresText(data)).toContain('Vendor: Lanyard Co');
     expect(figuresText(data)).toContain('$140.00');
