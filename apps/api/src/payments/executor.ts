@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { PayPalClient } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { fromPayPalMoney } from '../paypal/money.js';
@@ -36,7 +37,8 @@ export type RefusedReason =
   | 'in_progress'
   | 'payer_mismatch'
   | 'no_event' // the spend, or the approval being captured, belongs to no event
-  | 'no_recipient' // a claim or payout with no PayPal email to send it to
+  | 'no_recipient' // a claim or payout with no usable PayPal email to send it to
+  | 'invalid_reference' // a claim or payout whose reference id PayPal would not accept as sender_batch_id
   | 'payouts_unavailable'; // this server has no way to send payouts
 
 export interface CaptureOptions {
@@ -85,6 +87,12 @@ const fingerprintOf = (s: Spend) => {
 
 // Claims and payouts go to a person from the Treasury app; everything else is a purchase from the agent wallet.
 const isPayout = (s: Spend) => s.kind === 'claim' || s.kind === 'payout';
+// What PayPal's Payouts accept (the same limits paypal/payouts.ts enforces). Checked here, before a reference is used up, so a payout
+// that could never be sent is refused outright instead of being held as if it might have gone out.
+const PAYOUT_EMAIL = z.email().max(127);
+const PAYOUT_REFERENCE = /^[A-Za-z0-9._:-]{1,63}$/;
+// The note the recipient reads in PayPal. Fixed on purpose: the agent's own words can carry text from untrusted pages.
+const payoutNote = (s: Spend) => (s.kind === 'claim' ? 'Quartermaster claim' : 'Quartermaster payout');
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -166,7 +174,7 @@ export function createExecutor(deps: ExecutorDeps) {
         recipientEmail: to,
         amountMinor: spend.amountMinor,
         currency: spend.currency,
-        note: oneLine(spend.reason).slice(0, 120),
+        note: payoutNote(spend),
       });
       await audit.update(auditId, { outcome: 'submitted', paypalId: sent.batchId });
       return { outcome: { status: 'submitted', batchId: sent.batchId }, unclear: false };
@@ -229,11 +237,19 @@ export function createExecutor(deps: ExecutorDeps) {
     }
     // One reference id = one spend. Reusing it for something else is refused before any rules check or PayPal call.
     // A claim or payout needs somewhere to go and a way to get there; refused before any rules check or PayPal call.
-    if (isPayout(spend) && (!payouts || !spend.payeeEmail)) {
-      const reason = payouts ? 'no_recipient' : 'payouts_unavailable';
-      const refusedId = await audit.record({ actor: spend.actor, action: 'spend.rejected', input: spend, reason: spend.reason });
-      await audit.update(refusedId, { outcome: 'refused', detail: reason === 'no_recipient' ? 'payout has no recipient email' : 'this server cannot send payouts' });
-      return { status: 'refused', reason };
+    if (isPayout(spend)) {
+      const problem: { reason: RefusedReason; detail: string } | undefined = !payouts
+        ? { reason: 'payouts_unavailable', detail: 'this server cannot send payouts' }
+        : !PAYOUT_EMAIL.safeParse(spend.payeeEmail).success
+          ? { reason: 'no_recipient', detail: 'payout has no valid recipient email' }
+          : !PAYOUT_REFERENCE.test(spend.referenceId)
+            ? { reason: 'invalid_reference', detail: 'payout reference id must be 1 to 63 letters, digits or . _ : -' }
+            : undefined;
+      if (problem) {
+        const refusedId = await audit.record({ actor: spend.actor, action: 'spend.rejected', input: spend, reason: spend.reason });
+        await audit.update(refusedId, { outcome: 'refused', detail: problem.detail });
+        return { status: 'refused', reason: problem.reason };
+      }
     }
     const claim = await references.claim(spend.referenceId, fingerprintOf(spend), spend.eventId);
     if (claim === 'conflict') {

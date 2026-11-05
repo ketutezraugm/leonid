@@ -602,7 +602,7 @@ describe('payouts (claims and payouts)', () => {
     const out = await executor.requestSpend(claim(5000));
     expect(out).toEqual({ status: 'submitted', batchId: 'PB-1' });
     expect(payouts.fn).toHaveBeenCalledOnce();
-    expect(payouts.fn).toHaveBeenCalledWith({ referenceId: 'claim-1', recipientEmail: 'dana@example.com', amountMinor: 5000, currency: 'USD', note: 'lanyards for 200 attendees' });
+    expect(payouts.fn).toHaveBeenCalledWith({ referenceId: 'claim-1', recipientEmail: 'dana@example.com', amountMinor: 5000, currency: 'USD', note: 'Quartermaster claim' });
     expect(orderPosts(fetch)).toHaveLength(0);
     expect(auditRows[0]!.entry.ruleResult?.decision).toBe('allow');
     expect(auditRows[0]!.patch).toMatchObject({ outcome: 'submitted', paypalId: 'PB-1' });
@@ -619,6 +619,17 @@ describe('payouts (claims and payouts)', () => {
     const noSender = setup();
     expect(await noSender.executor.requestSpend(claim(5000))).toEqual({ status: 'refused', reason: 'payouts_unavailable' });
     expect(payouts.fn).not.toHaveBeenCalled();
+  });
+
+  it('refuses a payout PayPal would reject (a bad email, a reference it cannot use as sender_batch_id) before using the reference up', async () => {
+    const payouts = sender();
+    const bad = setup({ payouts: payouts.port });
+    expect(await bad.executor.requestSpend({ ...claim(5000), payeeEmail: 'not-an-email' })).toEqual({ status: 'refused', reason: 'no_recipient' });
+    expect(await bad.executor.requestSpend(claim(5000, 'x'.repeat(64)))).toEqual({ status: 'refused', reason: 'invalid_reference' });
+    expect(await bad.executor.requestSpend(claim(5000, 'has space'))).toEqual({ status: 'refused', reason: 'invalid_reference' });
+    expect(payouts.fn).not.toHaveBeenCalled();
+    // none of the three burned its reference id: a corrected request with the same id still goes through
+    expect(await bad.executor.requestSpend(claim(5000, 'claim-fixed'))).toEqual({ status: 'submitted', batchId: 'PB-1' });
   });
 
   it('sends a payout over the threshold to the treasurer with no PayPal order, and sends it only when the treasurer approves', async () => {

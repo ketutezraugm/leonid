@@ -11,6 +11,7 @@ import {
   type ApprovalView,
   type WalletStore,
 } from './memory.js';
+import { createPayoutSender } from './payoutSender.js';
 import { createRulesCheck } from './rulesCheck.js';
 import type { CheckSpend } from './ports.js';
 import { stubCheck } from './stub-check.js';
@@ -55,6 +56,8 @@ export function getPayments(): PaymentsContext {
       wallet,
       approvals,
       references: db ? createDbReferences(db) : createMemoryReferences(),
+      // Claims and payouts are paid from the Treasury app. Without its credentials there is no sender and every payout is refused.
+      payouts: isPayPalAppConfigured('treasury') ? createPayoutSender(() => getPayPalClient('treasury')) : undefined,
     });
     context = { client, wallet, executor, approvals };
   }
