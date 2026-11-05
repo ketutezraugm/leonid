@@ -72,6 +72,11 @@ describe('workflow demo controls', () => {
     }
   });
 
+  it("report Render's deprecated 'completed' as 'succeeded'", async () => {
+    const { app } = build({ status: async () => ({ status: 'completed', results: [] }) });
+    expect((await request(app).get('/api/workflows/runs/trn-1').set(treasurer)).body.status).toBe('succeeded');
+  });
+
   it('report how a run is going', async () => {
     const { app, full } = build();
     const res = await request(app).get('/api/workflows/runs/trn-1').set(treasurer).expect(200);
