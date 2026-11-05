@@ -15,6 +15,7 @@ import { spendsRouter } from './routes/spends.js';
 import { treasuryRouter } from './routes/treasury.js';
 import { venueDepositRouter } from './routes/venueDeposit.js';
 import { walletRouter } from './routes/wallet.js';
+import { walletPoolRouter } from './routes/walletPool.js';
 import { widgetsRouter } from './routes/widgets.js';
 import { workflowsRouter } from './routes/workflows.js';
 import { webhookRouter } from './webhooks/router.js';
@@ -45,6 +46,7 @@ export function createApp() {
   app.use('/api/jobs', jobsRouter());
   app.use('/api/spends', spendsRouter());
   app.use('/api/treasury', treasuryRouter());
+  app.use('/api/wallet/pool', walletPoolRouter());
   app.use('/api/wallet', walletRouter());
   app.use('/api/approvals', approvalsRouter());
   app.use('/api/sponsors', invoicesRouter());
