@@ -31,6 +31,8 @@ export type KeyLoader = (certUrl: string) => Promise<KeyObject>;
 
 const keyCache = new Map<string, KeyObject>();
 
+export const CERT_FETCH_TIMEOUT_MS = 10_000;
+
 // Only fetch certificates from paypal.com over https, otherwise an attacker could point us at their own key.
 // ponytail: no X.509 chain validation; the cert host pin is the trust anchor. Add chain checks if the threat model needs it.
 export const loadPayPalKey: KeyLoader = async (certUrl) => {
@@ -39,7 +41,8 @@ export const loadPayPalKey: KeyLoader = async (certUrl) => {
   if (!trusted) throw new Error(`untrusted PayPal cert url: ${url.hostname}`);
   const cached = keyCache.get(certUrl);
   if (cached) return cached;
-  const res = await fetch(certUrl);
+  // A hung certificate host must not hold the webhook request open: the router answers 503 and PayPal retries.
+  const res = await fetch(certUrl, { signal: AbortSignal.timeout(CERT_FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`could not fetch PayPal cert: HTTP ${res.status}`);
   const key = new X509Certificate(await res.text()).publicKey;
   keyCache.set(certUrl, key);
