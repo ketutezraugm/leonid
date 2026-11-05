@@ -6,6 +6,7 @@ import {
   getInvoice,
   searchInvoicesByReference,
   sendInvoice,
+  sendInvoiceReminder,
 } from './invoicing.js';
 
 function json(status: number, body: unknown): Response {
@@ -196,5 +197,17 @@ describe('searchInvoicesByReference', () => {
   it('returns nothing when PayPal lists no items', async () => {
     const { client } = clientWith(json(200, {}));
     expect(await searchInvoicesByReference(client, 'sponsor-1')).toEqual([]);
+  });
+});
+
+describe('sendInvoiceReminder', () => {
+  it('posts to the invoice remind path and accepts the empty 204', async () => {
+    const { client, fetch } = clientWith(new Response(null, { status: 204 }));
+
+    await expect(sendInvoiceReminder(client, 'INV2-TEST-1', { subject: 's', note: 'n' })).resolves.toBeUndefined();
+
+    const [url, init] = fetch.mock.calls[1] ?? [];
+    expect(url).toBe('https://api-m.sandbox.paypal.com/v2/invoicing/invoices/INV2-TEST-1/remind');
+    expect(JSON.parse(String(init?.body))).toEqual({ subject: 's', note: 'n', send_to_invoicer: true });
   });
 });

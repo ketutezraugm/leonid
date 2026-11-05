@@ -5,7 +5,10 @@ import { writeAudit } from '../db/audit.js';
 import { getDb, type Db } from '../db/client.js';
 
 // The tasks the Workflow service (apps/workflows) registers, by the name a person triggers them with.
-export const WORKFLOW_TASKS = { 'budget-recompute': 'budget-recompute' } as const;
+export const WORKFLOW_TASKS = {
+  'budget-recompute': 'budget-recompute',
+  'invoice-reminders': 'invoice-reminders',
+} as const;
 
 // The two calls of the Render SDK that this route uses, so a test can stand in for Render.
 export interface WorkflowRunner {

@@ -46,3 +46,20 @@ export const budgetRecompute = task({ name: 'budget-recompute', timeoutSeconds: 
   const { eventIds } = await callApi<{ eventIds: string[] }>('/api/jobs/events');
   return Promise.all(eventIds.map((eventId) => ctx.run(recomputeEvent, eventId)));
 });
+
+interface ReminderResult {
+  sponsorId: string;
+  outcome: string;
+}
+
+// Invoice reminder, one sponsor: the API asks PayPal for the live invoice status and only then asks PayPal to send the reminder.
+export const remindSponsor = task(
+  { name: 'remind-sponsor', retry: { maxRetries: 3, waitDurationMs: 2000, backoffScaling: 2 }, timeoutSeconds: 120 },
+  async (_ctx, sponsorId: string) => callApi<ReminderResult>('/api/jobs/invoice-reminder', { sponsorId }),
+);
+
+// Invoice reminders, every sponsor with an unpaid invoice: one subtask per sponsor, run in parallel, each retried on its own.
+export const invoiceReminders = task({ name: 'invoice-reminders', timeoutSeconds: 600 }, async (ctx) => {
+  const { sponsorIds } = await callApi<{ sponsorIds: string[] }>('/api/jobs/unpaid-invoices');
+  return Promise.all(sponsorIds.map((sponsorId) => ctx.run(remindSponsor, sponsorId)));
+});
