@@ -55,3 +55,11 @@ services:
         value: https://openrouter.ai/api/v1
       - key: OPENROUTER_MODEL
         value: openai/gpt-5.6-luna
+      # Render Workflows (apps/workflows, created in the Dashboard: Blueprints do not support Workflows yet). The demo controls
+      # start a run with RENDER_API_KEY; the Workflow service calls /api/jobs/* with the same JOBS_TOKEN.
+      - key: JOBS_TOKEN
+        sync: false
+      - key: RENDER_API_KEY
+        sync: false
+      - key: WORKFLOW_SLUG
+        sync: false
