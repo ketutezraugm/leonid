@@ -8,6 +8,7 @@ import { recordLedgerEntry } from '../db/ledger.js';
 import { auditLog, sponsors } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
+import type { FoundTransaction } from '../paypal/search.js';
 import { jobsRouter } from '../routes/jobs.js';
 import { createRateLimiter } from '../routes/rateLimit.js';
 import { reportsRouter } from '../routes/reports.js';
@@ -88,6 +89,63 @@ describe('generateSponsorReport', () => {
   });
 });
 
+describe('checking a report against PayPal\'s transaction records', () => {
+  const found = (over: Partial<FoundTransaction>): FoundTransaction => ({ transactionId: 'PP-r1', referenceId: null, status: 'S', amountMinor: 14_000, currency: 'USD', ...over });
+
+  it('marks each purchase confirmed or not found, and records when it checked', async () => {
+    await paidSpend('r1', { amountMinor: 14_000 });
+    await paidSpend('r2', { amountMinor: 20_000, vendor: 'Gold Prints' });
+    const search = async () => [found({})]; // PayPal lists r1 only
+    const { view } = (await generateSponsorReport(db, harbor, { now: NOW, search }))!;
+    const byVendor = Object.fromEntries(view.spend.lines.map((l) => [l.vendor, l.paypalCheck]));
+    expect(byVendor).toEqual({ 'Lanyard Co': 'confirmed', 'Gold Prints': 'not_found' });
+    expect(view.spend.paypalCheckedAt).toBe(NOW.toISOString());
+  });
+
+  it('asks for a window that covers the purchases, once', async () => {
+    await paidSpend('r1');
+    const windows: { start: Date; end: Date }[] = [];
+    await generateSponsorReport(db, harbor, { now: new Date(), search: async (w) => { windows.push(w); return []; } });
+    expect(windows).toHaveLength(1);
+    expect(windows[0]!.start.getTime()).toBeLessThan(Date.now());
+  });
+
+  it('still publishes the report, with no check on it, when PayPal\'s search fails, and logs only the kind of error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await paidSpend('r1');
+    const search = async (): Promise<FoundTransaction[]> => { throw Object.assign(new Error('boom SECRET-detail-in-message'), { code: 'ECONNRESET' }); };
+    const made = await generateSponsorReport(db, harbor, { now: NOW, search });
+    expect(made!.view.spend.lines).toHaveLength(1);
+    expect(made!.view.spend.lines[0]!.paypalCheck).toBeUndefined();
+    expect(made!.view.spend.paypalCheckedAt).toBeUndefined();
+    expect(await getReportLink(db, harbor)).toBeDefined(); // published all the same
+    const logged = spy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(logged).toContain('ECONNRESET');
+    expect(logged).not.toContain('SECRET-detail');
+    spy.mockRestore();
+  });
+
+  it('does nothing when no search is configured, or there is nothing to look up', async () => {
+    await paidSpend('r1');
+    const none = (await generateSponsorReport(db, harbor, { now: NOW }))!.view;
+    expect(none.spend.paypalCheckedAt).toBeUndefined();
+    let called = false;
+    await db.delete(auditLog); // no purchases: no search call
+    await generateSponsorReport(db, harbor, { now: NOW, search: async () => { called = true; return []; } });
+    expect(called).toBe(false);
+  });
+
+  it('shows the counts in the job answer, so a workflow run says what PayPal confirmed', async () => {
+    await paidSpend('r1');
+    await paidSpend('r2', { amountMinor: 20_000 });
+    const a = express();
+    a.use(express.json());
+    a.use('/api/jobs', jobsRouter({ env: { JOBS_TOKEN: JOBS }, db: () => db, now: () => NOW, model: () => undefined, search: () => async () => [found({})] }));
+    const res = await request(a).post('/api/jobs/sponsor-report').set(job).send({ sponsorId: harbor }).expect(200);
+    expect(res.body.paypalCheck).toEqual({ confirmed: 1, differs: 0, notFound: 1 });
+  });
+});
+
 describe('the public report route', () => {
   const app = (limiter = createRateLimiter({ max: 100, windowMs: 60_000 })) => {
     const a = express();
@@ -165,7 +223,7 @@ describe('the sponsor report job endpoints', () => {
   const app = () => {
     const a = express();
     a.use(express.json());
-    a.use('/api/jobs', jobsRouter({ env: { JOBS_TOKEN: JOBS }, db: () => db, now: () => NOW, model: () => undefined }));
+    a.use('/api/jobs', jobsRouter({ env: { JOBS_TOKEN: JOBS }, db: () => db, now: () => NOW, model: () => undefined, search: () => undefined }));
     return a;
   };
 
@@ -180,7 +238,7 @@ describe('the sponsor report job endpoints', () => {
   it('publish the report, answer without the share link, and keep the link out of the audit log', async () => {
     await paidSpend('r1');
     const res = await request(app()).post('/api/jobs/sponsor-report').set(job).send({ sponsorId: harbor }).expect(200);
-    expect(res.body).toEqual({ sponsorId: harbor, purchases: 1, summary: 'template' });
+    expect(res.body).toEqual({ sponsorId: harbor, purchases: 1, summary: 'template', paypalCheck: null });
     const { shareToken } = (await getReportLink(db, harbor))!;
     expect(JSON.stringify(res.body)).not.toContain(shareToken);
     const rows = await db.select().from(auditLog).where(eq(auditLog.action, 'workflow.sponsor_report'));

@@ -5,10 +5,11 @@ import { writeAudit } from '../db/audit.js';
 import { getDb, type Db } from '../db/client.js';
 import { listEvents } from '../db/events.js';
 import { listInvoicedSponsorIds, remindSponsor } from '../invoices/remind.js';
-import { getPayPalClient, type PayPalClient } from '../paypal/client.js';
+import { getPayPalClient, isPayPalAppConfigured, type PayPalClient } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
+import { searchTransactions } from '../paypal/search.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
-import { generateSponsorReport, listReportSponsorIds } from '../reports/generate.js';
+import { generateSponsorReport, listReportSponsorIds, type TransactionSearch } from '../reports/generate.js';
 import { errorLabel } from '../reports/store.js';
 import { getBudgetBurn } from '../widgets/live.js';
 import type { LanguageModel } from 'ai';
@@ -20,6 +21,8 @@ export interface JobsRouterOptions {
   client?: () => PayPalClient;
   // The model that phrases a sponsor report's summary. Undefined (or not configured) means the plain template is used.
   model?: () => LanguageModel | undefined;
+  // How a sponsor report checks its purchases against PayPal's transaction records. Undefined: the report has no PayPal check.
+  search?: () => TransactionSearch | undefined;
 }
 
 const RecomputeBody = z.object({ eventId: z.uuid() });
@@ -33,6 +36,13 @@ function defaultModel(): LanguageModel | undefined {
     if (err instanceof AgentNotConfiguredError) return undefined;
     throw err;
   }
+}
+
+// Transaction Search belongs to the Treasury app (paypal.md); without its credentials the report simply has no PayPal check.
+function defaultSearch(): TransactionSearch | undefined {
+  if (!isPayPalAppConfigured('treasury')) return undefined;
+  const client = getPayPalClient('treasury');
+  return (window) => searchTransactions(client, window);
 }
 
 // A sponsor is reminded at most once per INVOICE_REMINDER_MIN_HOURS (default 24).
@@ -174,12 +184,24 @@ export function jobsRouter(options: JobsRouterOptions = {}) {
     const conn = db(res);
     if (!conn) return;
     try {
-      const made = await generateSponsorReport(conn, body.data.sponsorId, { model: (options.model ?? defaultModel)(), now: now() });
+      const made = await generateSponsorReport(conn, body.data.sponsorId, {
+        model: (options.model ?? defaultModel)(),
+        search: (options.search ?? defaultSearch)(),
+        now: now(),
+      });
       if (!made) {
         res.status(404).json({ error: 'No such sponsor' });
         return;
       }
-      const result = { sponsorId: body.data.sponsorId, purchases: made.view.spend.lines.length, summary: made.view.narrative.source };
+      const lines = made.view.spend.lines;
+      const count = (check: string) => lines.filter((l) => l.paypalCheck === check).length;
+      const result = {
+        sponsorId: body.data.sponsorId,
+        purchases: lines.length,
+        summary: made.view.narrative.source,
+        // What PayPal's own transaction records said about the purchases; null when the check could not run.
+        paypalCheck: made.view.spend.paypalCheckedAt ? { confirmed: count('confirmed'), differs: count('differs'), notFound: count('not_found') } : null,
+      };
       await writeAudit(conn, {
         actor: 'workflow:sponsor-reports',
         action: 'workflow.sponsor_report',

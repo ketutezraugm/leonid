@@ -51,6 +51,25 @@ describe('the public sponsor report page', () => {
     expect(screen.getByText('funded by you')).toBeTruthy();
   });
 
+  it("shows what PayPal's own records said about each purchase, worded so a missing record is not an accusation", async () => {
+    const lines = [
+      { ...REPORT.spend.lines[0], paypalCheck: 'confirmed' },
+      { ...REPORT.spend.lines[1], paypalId: 'PP-x', paypalCheck: 'not_found' },
+    ];
+    open('tok', () => json({ ...REPORT, spend: { ...REPORT.spend, lines, paypalCheckedAt: '2026-11-05T12:00:00.000Z' } }));
+    expect(await screen.findByText('Confirmed by PayPal')).toBeTruthy();
+    expect(screen.getByText("Not in PayPal's records yet")).toBeTruthy();
+    expect(screen.getByText(/1 of 2 purchases confirmed in PayPal's transaction records on Nov 5, 2026/)).toBeTruthy();
+    expect(screen.queryByText(/accus|fraud|wrong|error/i)).toBeNull();
+  });
+
+  it('says nothing about PayPal\'s records when no check ran', async () => {
+    open('tok', () => json(REPORT));
+    await screen.findByText('Harbor Cloud: sponsor report');
+    expect(screen.queryByText(/Confirmed by PayPal/)).toBeNull();
+    expect(screen.queryByText(/transaction records/)).toBeNull();
+  });
+
   it('says "1 purchase" for a single purchase', async () => {
     open('tok', () => json({ ...REPORT, spend: { ...REPORT.spend, lines: [REPORT.spend.lines[0]] } }));
     expect(await screen.findByText('1 purchase', { selector: '.stat-meta' })).toBeTruthy();
