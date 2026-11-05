@@ -8,6 +8,7 @@ import { loadSponsorWithEvent } from '../invoices/draft.js';
 import type { FoundTransaction } from '../paypal/search.js';
 import { recentSpends } from '../payments/recent.js';
 import { buildReport } from './build.js';
+import { captureIdsByOrder } from './captures.js';
 import { crossCheckLines, searchWindows } from './crosscheck.js';
 import { writeNarrative } from './narrative.js';
 import { errorLabel, publishReport } from './store.js';
@@ -32,11 +33,14 @@ export async function generateSponsorReport(
   const found = await loadSponsorWithEvent(db, sponsorId);
   if (!found) return undefined;
   const { sponsor, event } = found;
-  const [clearedBySponsor, clearedTotal, spends] = await Promise.all([
+  const [clearedBySponsor, clearedTotal, recorded, captures] = await Promise.all([
     clearedIncomeBySponsor(db, event.id, event.currency),
     clearedIncome(db, event.id, event.currency),
     recentSpends(db, { eventId: event.id, limit: 1000 }),
+    captureIdsByOrder(db),
   ]);
+  // An approved spend is recorded under its order id; the report shows (and checks against PayPal) the capture id instead.
+  const spends = recorded.map((s) => ({ ...s, paypalId: (s.paypalId && captures.get(s.paypalId)) ?? s.paypalId }));
   const now = options.now ?? new Date();
   const built = buildReport({
     sponsor: { id: sponsor.id, name: sponsor.name, tier: sponsor.tier, pledged: sponsor.pledged, status: sponsor.status },
