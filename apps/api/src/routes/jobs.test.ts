@@ -96,4 +96,18 @@ describe('job endpoints (called by the Render Workflow service)', () => {
     expect(ok.body).toEqual({ sponsorId: sponsor!.id, outcome: 'reminded' });
     expect((await request(app).post('/api/jobs/invoice-reminder').set(job).send({ sponsorId: sponsor!.id })).body.outcome).toBe('recent');
   });
+
+  it('invoice reminders: a fractional INVOICE_REMINDER_MIN_HOURS is rounded down instead of failing the query', async () => {
+    const [sponsor] = await db.select().from(sponsors);
+    await db.update(sponsors).set({ status: 'invoiced', paypalInvoiceId: 'INV2-TEST' }).where(eq(sponsors.id, sponsor!.id));
+    const client = {
+      request: async (req: { method: string; schema: { parse(v: unknown): unknown } }) =>
+        req.method === 'GET' ? req.schema.parse({ id: 'INV2-TEST', status: 'SENT', detail: {} }) : undefined,
+    } as unknown as PayPalClient;
+    const app = express();
+    app.use(express.json());
+    app.use('/api/jobs', jobsRouter({ env: { JOBS_TOKEN: TOKEN, INVOICE_REMINDER_MIN_HOURS: '0.5' }, db: () => db, now: () => NOW, client: () => client }));
+    const res = await request(app).post('/api/jobs/invoice-reminder').set(job).send({ sponsorId: sponsor!.id }).expect(200);
+    expect(res.body.outcome).toBe('reminded');
+  });
 });

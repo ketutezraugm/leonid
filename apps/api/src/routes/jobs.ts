@@ -22,7 +22,8 @@ const ReminderBody = z.object({ sponsorId: z.uuid() });
 // A sponsor is reminded at most once per INVOICE_REMINDER_MIN_HOURS (default 24).
 function reminderInterval(env: NodeJS.ProcessEnv): number {
   const hours = Number(env.INVOICE_REMINDER_MIN_HOURS ?? 24);
-  return Number.isFinite(hours) && hours >= 0 ? hours : 24;
+  // Whole hours: Postgres make_interval(hours => ...) takes an integer, so 0.5 would fail every reminder.
+  return Number.isFinite(hours) && hours >= 0 ? Math.floor(hours) : 24;
 }
 
 // The work behind the Render Workflows tasks (apps/workflows). Called only by the Workflow service, with the JOBS_TOKEN secret;
