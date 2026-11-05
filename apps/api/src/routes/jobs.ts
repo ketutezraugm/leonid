@@ -7,17 +7,32 @@ import { listEvents } from '../db/events.js';
 import { listInvoicedSponsorIds, remindSponsor } from '../invoices/remind.js';
 import { getPayPalClient, type PayPalClient } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
+import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
+import { generateSponsorReport, listReportSponsorIds } from '../reports/generate.js';
 import { getBudgetBurn } from '../widgets/live.js';
+import type { LanguageModel } from 'ai';
 
 export interface JobsRouterOptions {
   env?: NodeJS.ProcessEnv;
   db?: () => Db;
   now?: () => Date;
   client?: () => PayPalClient;
+  // The model that phrases a sponsor report's summary. Undefined (or not configured) means the plain template is used.
+  model?: () => LanguageModel | undefined;
 }
 
 const RecomputeBody = z.object({ eventId: z.uuid() });
 const ReminderBody = z.object({ sponsorId: z.uuid() });
+const ReportBody = z.object({ sponsorId: z.uuid() });
+
+function defaultModel(): LanguageModel | undefined {
+  try {
+    return chatModel();
+  } catch (err) {
+    if (err instanceof AgentNotConfiguredError) return undefined;
+    throw err;
+  }
+}
 
 // A sponsor is reminded at most once per INVOICE_REMINDER_MIN_HOURS (default 24).
 function reminderInterval(env: NodeJS.ProcessEnv): number {
@@ -36,6 +51,11 @@ function reminderInterval(env: NodeJS.ProcessEnv): number {
 //   POST /invoice-reminder   { sponsorId } -> { sponsorId, outcome }: asks PayPal to email the sponsor a reminder, but only if
 //                            PayPal still shows the invoice open and the sponsor was not reminded recently (invoices/remind.ts).
 //                            A PayPal failure answers 502, so the workflow retries it.
+//   GET  /report-sponsors    -> { sponsorIds }: sponsors that have paid, the ones with something to report
+//   POST /sponsor-report     { sponsorId } -> { sponsorId, purchases, summary }: builds the sponsor's spend report from the ledger
+//                            and the executor's records, adds a summary (a model if configured, else a plain template), and
+//                            publishes it at the sponsor's stable link. The link itself is NOT in the answer or the audit log:
+//                            the treasurer reads it from GET /api/reports/link/:sponsorId.
 export function jobsRouter(options: JobsRouterOptions = {}) {
   const env = options.env ?? process.env;
   const now = options.now ?? (() => new Date());
@@ -130,6 +150,45 @@ export function jobsRouter(options: JobsRouterOptions = {}) {
     } catch (err) {
       console.error('invoice reminder failed', err instanceof Error ? err.message : err);
       res.status(err instanceof PayPalApiError ? 502 : 500).json({ error: 'job failed' });
+    }
+  });
+
+  router.get('/report-sponsors', guard, async (_req, res) => {
+    const conn = db(res);
+    if (!conn) return;
+    try {
+      res.json({ sponsorIds: await listReportSponsorIds(conn) });
+    } catch (err) {
+      console.error('job report-sponsors failed', err);
+      res.status(500).json({ error: 'job failed' });
+    }
+  });
+
+  router.post('/sponsor-report', guard, async (req, res) => {
+    const body = ReportBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(422).json({ error: 'body must be { sponsorId }' });
+      return;
+    }
+    const conn = db(res);
+    if (!conn) return;
+    try {
+      const made = await generateSponsorReport(conn, body.data.sponsorId, { model: (options.model ?? defaultModel)(), now: now() });
+      if (!made) {
+        res.status(404).json({ error: 'No such sponsor' });
+        return;
+      }
+      const result = { sponsorId: body.data.sponsorId, purchases: made.view.spend.lines.length, summary: made.view.narrative.source };
+      await writeAudit(conn, {
+        actor: 'workflow:sponsor-reports',
+        action: 'workflow.sponsor_report',
+        input: { ...result, spentMinor: made.view.spend.totalMinor, currency: made.view.currency },
+        reason: 'sponsor spend report built from the ledger and the executor records and published',
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('sponsor report failed', err instanceof Error ? err.message : err);
+      res.status(500).json({ error: 'job failed' });
     }
   });
 

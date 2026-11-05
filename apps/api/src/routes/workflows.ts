@@ -8,6 +8,7 @@ import { getDb, type Db } from '../db/client.js';
 export const WORKFLOW_TASKS = {
   'budget-recompute': 'budget-recompute',
   'invoice-reminders': 'invoice-reminders',
+  'sponsor-reports': 'sponsor-reports',
 } as const;
 
 // The two calls of the Render SDK that this route uses, so a test can stand in for Render.

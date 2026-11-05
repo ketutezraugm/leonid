@@ -370,3 +370,4 @@ export const VenueDepositPayResponse = z.object({ deposit: VenueDeposit, outcome
 export type VenueDepositPayResponse = z.infer<typeof VenueDepositPayResponse>;
 export * from './spends.js';
 export * from './events.js';
+export * from './sponsorReport.js';

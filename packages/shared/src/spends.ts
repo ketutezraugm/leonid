@@ -38,6 +38,10 @@ export const SpendEntry = z.object({
   status: SpendStatus,
   paypalId: z.string().nullable(), // the PayPal order or capture id, to show and copy
   eventId: z.string().nullable(),
+  // What kind of spend this was ('purchase', 'claim', 'payout'); absent on older rows and on spends that did not say.
+  kind: z.string().optional(),
+  // Set when one sponsor's money funded this spend alone (tasks.funded_by_sponsor_id). The sponsor report reads it.
+  fundedBySponsorId: z.string().optional(),
 });
 export type SpendEntry = z.infer<typeof SpendEntry>;
 

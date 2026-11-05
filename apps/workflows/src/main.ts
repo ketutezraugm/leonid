@@ -63,3 +63,22 @@ export const invoiceReminders = task({ name: 'invoice-reminders', timeoutSeconds
   const { sponsorIds } = await callApi<{ sponsorIds: string[] }>('/api/jobs/unpaid-invoices');
   return Promise.all(sponsorIds.map((sponsorId) => ctx.run(remindSponsor, sponsorId)));
 });
+
+interface ReportResult {
+  sponsorId: string;
+  purchases: number;
+  summary: string;
+}
+
+// Sponsor report, one sponsor: the API builds the report from the ledger and the executor's records and publishes it. The
+// share link is never in this result (task results show in the Render Dashboard): the treasurer reads it from the API.
+export const reportSponsor = task(
+  { name: 'report-sponsor', retry: { maxRetries: 3, waitDurationMs: 2000, backoffScaling: 2 }, timeoutSeconds: 180 },
+  async (_ctx, sponsorId: string) => callApi<ReportResult>('/api/jobs/sponsor-report', { sponsorId }),
+);
+
+// Sponsor reports, every sponsor that has paid: one subtask per sponsor, run in parallel, each retried on its own.
+export const sponsorReports = task({ name: 'sponsor-reports', timeoutSeconds: 900 }, async (ctx) => {
+  const { sponsorIds } = await callApi<{ sponsorIds: string[] }>('/api/jobs/report-sponsors');
+  return Promise.all(sponsorIds.map((sponsorId) => ctx.run(reportSponsor, sponsorId)));
+});
