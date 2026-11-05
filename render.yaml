@@ -63,3 +63,6 @@ services:
         sync: false
       - key: WORKFLOW_SLUG
         sync: false
+      # Invoice reminders: a sponsor is reminded at most once in this many whole hours (24 if unset; 0 allows a reminder on every run).
+      - key: INVOICE_REMINDER_MIN_HOURS
+        value: '24'
