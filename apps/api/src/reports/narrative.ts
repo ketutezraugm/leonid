@@ -12,16 +12,21 @@ export type Narrative = SponsorReportView['narrative'];
 const usd = (minor: number, currency: string) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(minor / 100);
 
-// The only facts a model may use, as plain lines. Vendor and category names are data from records, so they sit inside <data>.
+// Vendor and category names come from product pages and agents, so they are untrusted. Before a model sees one it is reduced to
+// letters, digits, spaces and a little punctuation, on one line and short: no angle brackets to close the <data> block, no new
+// lines to start a fake instruction block, no markup or links.
+export const safeLabel = (s: string) => s.replace(/[^\p{L}\p{N} &'.,-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+
+// The only facts a model may use, as plain lines inside <data>.
 export function figuresText(d: Figures): string {
   const lines = [
-    `Event: ${d.event.name}`,
-    `Sponsor: ${d.sponsor.name} (${d.sponsor.tier} sponsor)`,
+    `Event: ${safeLabel(d.event.name)}`,
+    `Sponsor: ${safeLabel(d.sponsor.name)} (${safeLabel(d.sponsor.tier)} sponsor)`,
     `Pledged: ${usd(d.funds.pledgedMinor, d.currency)}`,
     `Cleared (paid): ${usd(d.funds.clearedMinor, d.currency)}`,
     `Spend attributed to this sponsor: ${usd(d.spend.totalMinor, d.currency)} across ${d.spend.lines.length} purchases`,
-    ...d.spend.byCategory.map((c) => `Category ${c.category}: ${usd(c.attributedMinor, d.currency)} (${c.purchases} purchases)`),
-    ...[...new Set(d.spend.lines.map((l) => l.vendor).filter((v): v is string => Boolean(v)))].map((v) => `Vendor: ${v}`),
+    ...d.spend.byCategory.map((c) => `Category ${safeLabel(c.category)}: ${usd(c.attributedMinor, d.currency)} (${c.purchases} purchases)`),
+    ...[...new Set(d.spend.lines.map((l) => l.vendor).filter((v): v is string => Boolean(v)))].map((v) => `Vendor: ${safeLabel(v)}`),
   ];
   return lines.join('\n');
 }
@@ -52,6 +57,11 @@ export const usesOnlyGivenNumbers = (text: string, figures: string) => {
   return numbersIn(text).every((n) => allowed.has(n));
 };
 
+// A summary for a sponsor never needs a link, an address or markup. A model steered by a hostile vendor name could be made to write
+// one (a phishing link on a page that carries our name), and a number check cannot see that, so anything link-like is refused.
+const LINK_LIKE = /https?:|www\.|@|[<>[\]`]|\b[a-z0-9-]+\.(?:com|net|org|io|co|app|dev|xyz|info|biz|me|ly|ru|cn|top|site|online)\b/i;
+export const looksLikeLink = (text: string) => LINK_LIKE.test(text);
+
 export async function writeNarrative(d: Figures, model: LanguageModel | undefined, timeoutMs = 20_000): Promise<Narrative> {
   if (!model) return templateNarrative(d);
   const figures = figuresText(d);
@@ -63,7 +73,7 @@ export async function writeNarrative(d: Figures, model: LanguageModel | undefine
       abortSignal: AbortSignal.timeout(timeoutMs),
     });
     const clean = text.replace(/\s+/g, ' ').trim();
-    if (!clean || clean.length > 1000 || !usesOnlyGivenNumbers(clean, figures)) return templateNarrative(d);
+    if (!clean || clean.length > 700 || looksLikeLink(clean) || !usesOnlyGivenNumbers(clean, figures)) return templateNarrative(d);
     return { text: clean, source: 'ai' };
   } catch {
     return templateNarrative(d);

@@ -4,6 +4,13 @@ import { eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { sponsorReports } from '../db/schema.js';
 
+// What to log about a failure on a report path: the error's class and database code, never its message. A failed query's message
+// quotes the query with its parameters, and here those include the share token (the only thing that opens a public report).
+export function errorLabel(err: unknown): string {
+  const code = (err as { cause?: { code?: unknown } } | null)?.cause?.code ?? (err as { code?: unknown } | null)?.code;
+  return `${err instanceof Error ? err.name : typeof err}${typeof code === 'string' ? ` ${code}` : ''}`;
+}
+
 // 24 random bytes: 192 bits, unguessable. It is the only thing that opens the public report, so it is never logged.
 const newToken = () => randomBytes(24).toString('base64url');
 

@@ -2,7 +2,7 @@ import { SponsorReportView } from '@quartermaster/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.js';
 import { recordLedgerEntry } from '../db/ledger.js';
 import { auditLog, sponsors } from '../db/schema.js';
@@ -124,6 +124,40 @@ describe('the public report route', () => {
     await generateSponsorReport(db, harbor, { now: NOW });
     const res = await request(a).get(`/api/reports/link/${harbor}`).set(treasurer).expect(200);
     expect(res.body.shareToken).toMatch(/^[A-Za-z0-9_-]{32}$/);
+  });
+});
+
+describe('when the database fails', () => {
+  // A failed query's message quotes its parameters, and for these routes a parameter is the share token.
+  const TOKEN = 'SECRET-share-token-0123456789abcdef';
+  const failing = () => {
+    const err = Object.assign(new Error(`Failed query: select ... where share_token = $1\nparams: ${TOKEN}`), { cause: { code: '57P01' } });
+    return { select: () => { throw err; }, insert: () => { throw err; } } as unknown as Db;
+  };
+  const logged = (spy: { mock: { calls: unknown[][] } }) => spy.mock.calls.map((c) => c.join(' ')).join('\n');
+
+  it('the public report route logs what kind of error it was, never the token in the error message', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const a = express();
+    a.use('/api/reports', reportsRouter({ env: {}, db: failing, limiter: createRateLimiter({ max: 100, windowMs: 60_000 }) }));
+    const res = await request(a).get(`/api/reports/${'a'.repeat(32)}`).expect(500);
+    expect(JSON.stringify(res.body)).not.toContain(TOKEN);
+    expect(logged(spy)).toContain('57P01');
+    expect(logged(spy)).not.toContain(TOKEN);
+    spy.mockRestore();
+  });
+
+  it('the treasurer link route and the sponsor report job log the same way', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const a = express();
+    a.use(express.json());
+    a.use('/api/reports', reportsRouter({ env: { TREASURER_TOKEN: 'letmein' }, db: failing }));
+    a.use('/api/jobs', jobsRouter({ env: { JOBS_TOKEN: JOBS }, db: failing, model: () => undefined }));
+    await request(a).get(`/api/reports/link/${crypto.randomUUID()}`).set(treasurer).expect(500);
+    await request(a).post('/api/jobs/sponsor-report').set(job).send({ sponsorId: crypto.randomUUID() }).expect(500);
+    expect(logged(spy)).toContain('57P01');
+    expect(logged(spy)).not.toContain(TOKEN);
+    spy.mockRestore();
   });
 });
 

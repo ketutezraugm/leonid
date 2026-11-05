@@ -9,6 +9,7 @@ import { getPayPalClient, type PayPalClient } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
 import { generateSponsorReport, listReportSponsorIds } from '../reports/generate.js';
+import { errorLabel } from '../reports/store.js';
 import { getBudgetBurn } from '../widgets/live.js';
 import type { LanguageModel } from 'ai';
 
@@ -187,7 +188,8 @@ export function jobsRouter(options: JobsRouterOptions = {}) {
       });
       res.json(result);
     } catch (err) {
-      console.error('sponsor report failed', err instanceof Error ? err.message : err);
+      // Not err.message: a failed publish quotes its query parameters, and those include the report's share token.
+      console.error('sponsor report failed:', errorLabel(err));
       res.status(500).json({ error: 'job failed' });
     }
   });

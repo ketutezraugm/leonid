@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireTreasurer } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
-import { getReportByToken, getReportLink } from '../reports/store.js';
+import { errorLabel, getReportByToken, getReportLink } from '../reports/store.js';
 import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
 export interface ReportsRouterOptions {
@@ -36,7 +36,7 @@ export function reportsRouter(options: ReportsRouterOptions = {}) {
       }
       res.json({ shareToken: link.shareToken, generatedAt: link.generatedAt.toISOString() });
     } catch (err) {
-      console.error('report link failed', err instanceof Error ? err.message : err);
+      console.error('report link failed:', errorLabel(err));
       res.status(500).json({ error: 'could not read the report link' });
     }
   });
@@ -60,7 +60,7 @@ export function reportsRouter(options: ReportsRouterOptions = {}) {
       }
       res.json(report);
     } catch (err) {
-      console.error('report read failed', err instanceof Error ? err.message : err);
+      console.error('report read failed:', errorLabel(err));
       res.status(500).json({ error: 'could not read the report' });
     }
   });
