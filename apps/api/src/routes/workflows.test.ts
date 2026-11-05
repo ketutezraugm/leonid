@@ -50,6 +50,12 @@ describe('workflow demo controls', () => {
     expect(row).toMatchObject({ actor: 'treasurer:ops-token', input: { workflow: 'budget-recompute', runId: 'trn-1' } });
   });
 
+  it('start the invoice reminders by the task name the Workflow service registers', async () => {
+    const { app, full } = build();
+    await request(app).post('/api/workflows/invoice-reminders/run').set(treasurer).expect(202);
+    expect(full.start).toHaveBeenCalledWith('invoice-reminders');
+  });
+
   it('refuse a name that is not one of our workflows, without calling Render', async () => {
     const { app, full } = build();
     for (const name of ['nope', '__proto__', 'constructor']) {
