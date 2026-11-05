@@ -64,6 +64,13 @@
       "when": 1793611518626,
       "tag": "0008_events_ticket_price",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793862791816,
+      "tag": "0009_demo_token_pool",
+      "breakpoints": true
     }
   ]
 }

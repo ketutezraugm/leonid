@@ -130,6 +130,18 @@ export const walletSetups = pgTable('wallet_setups', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 
+// The hosted demo's pool of pre-approved vault tokens (all one payer, created with permit_multiple_payment_tokens).
+// payment_token_id null = an approval link still waiting; set = a token on standby. Nothing ever charges a standby token:
+// a treasurer's Reset moves the oldest one into agent_wallet (deleting its pool row), and "end demo" deletes them all.
+export const demoTokenPool = pgTable('demo_token_pool', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  setupTokenId: text('setup_token_id').notNull().unique(),
+  paymentTokenId: text('payment_token_id').unique(),
+  customerId: text('customer_id'),
+  payerEmail: text('payer_email'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
 // One reference id = one spend; PayPal's idempotency key comes from it. The fingerprint detects reuse for a different spend.
 export const spendReferences = pgTable('spend_references', {
   referenceId: text('reference_id').primaryKey(),
