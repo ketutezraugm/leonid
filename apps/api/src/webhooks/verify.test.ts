@@ -1,7 +1,7 @@
 import { createSign, generateKeyPairSync } from 'node:crypto';
 import { crc32 } from 'node:zlib';
-import { describe, expect, it } from 'vitest';
-import { loadPayPalKey, verifyWebhook, type WebhookHeaders } from './verify.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CERT_FETCH_TIMEOUT_MS, loadPayPalKey, verifyWebhook, type WebhookHeaders } from './verify.js';
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const loadKey = async () => publicKey;
@@ -45,5 +45,28 @@ describe('loadPayPalKey', () => {
     await expect(loadPayPalKey('https://evil.example.com/cert.pem')).rejects.toThrow('untrusted');
     await expect(loadPayPalKey('https://paypal.com.evil.io/cert.pem')).rejects.toThrow('untrusted');
     await expect(loadPayPalKey('http://api.paypal.com/cert.pem')).rejects.toThrow('untrusted');
+  });
+
+  describe('when the certificate host hangs', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('gives up after the timeout instead of holding the webhook request open', async () => {
+      // A fetch that never answers and only ends when its signal aborts (at once if it is already aborted), as a hung server would behave.
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          (_url: string, init?: RequestInit) =>
+            new Promise((_resolve, reject) => {
+              const signal = init?.signal;
+              if (signal?.aborted) reject(signal.reason);
+              else signal?.addEventListener('abort', () => reject(signal.reason));
+            }),
+        ),
+      );
+      const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(AbortSignal.abort(new Error('timed out')));
+      await expect(loadPayPalKey('https://api.paypal.com/hung-cert.pem')).rejects.toThrow('timed out');
+      expect(timeout).toHaveBeenCalledWith(CERT_FETCH_TIMEOUT_MS);
+      vi.unstubAllGlobals();
+    });
   });
 });
