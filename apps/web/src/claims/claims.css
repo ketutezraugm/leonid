@@ -94,3 +94,22 @@
 .claim-review .field {
   flex: 1 1 140px;
 }
+
+/* What happened to the receipt the volunteer just sent. Errors use .field-error; a good result gets its own calm panel. */
+.claim-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-status-done-soft);
+  color: var(--color-status-done-text);
+}
+
+.claim-qr {
+  width: 160px;
+  height: 160px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}

@@ -4,7 +4,7 @@ import { registerHandler, type WebhookHandler } from '../registry.js';
 import { createCaptureCompletedHandler } from './capture-completed.js';
 import { createCaptureReversalHandler, INCOME_REVERSAL_EVENTS } from './capture-reversed.js';
 import { createInvoicePaidHandler } from './invoice-paid.js';
-import { createPayoutItemHandler, PAYOUT_ITEM_EVENTS } from './payout-item.js';
+import { createPayoutBatchDeniedHandler, createPayoutItemHandler, PAYOUT_BATCH_DENIED, PAYOUT_ITEM_EVENTS } from './payout-item.js';
 
 type Register = (eventType: string, handler: WebhookHandler) => void;
 
@@ -19,4 +19,5 @@ export function registerLedgerHandlers(register: Register = registerHandler, db:
   for (const eventType of INCOME_REVERSAL_EVENTS) register(eventType, reversal);
   const payoutItem = createPayoutItemHandler(db);
   for (const eventType of PAYOUT_ITEM_EVENTS) register(eventType, payoutItem);
+  register(PAYOUT_BATCH_DENIED, createPayoutBatchDeniedHandler(db));
 }

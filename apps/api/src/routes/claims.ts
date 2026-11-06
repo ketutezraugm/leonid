@@ -24,6 +24,7 @@ import {
   reviewClaim,
   submitClaim,
   type ClaimDeps,
+  type VolunteerRow,
 } from '../claims/service.js';
 import { getDb, type Db } from '../db/client.js';
 import { getDemoEvent, getEvent, getVisibleEvent } from '../db/events.js';
@@ -31,11 +32,14 @@ import { claims } from '../db/schema.js';
 import { getPayments } from '../payments/context.js';
 import { createDbApprovals } from '../payments/db.js';
 import type { Executor } from '../payments/executor.js';
+import { DEMO_RULES } from '../rules/demoRules.js';
 import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
 export interface ClaimsRouterOptions {
   env?: NodeJS.ProcessEnv;
   db?: () => Db;
+  // The rules in force, for the daily claim limit the volunteer page shows. Defaults to the rules check's own.
+  rules?: typeof DEMO_RULES;
   // The receipt reader. Undefined (or throwing): every claim waits for the treasurer to read it.
   model?: () => LanguageModel | undefined;
   // The executor. Throwing: this server cannot pay, so claims wait for a human.
@@ -130,23 +134,48 @@ export function claimsRouter(options: ClaimsRouterOptions = {}) {
       }
       const event = await getEvent(db, volunteer.eventId);
       const claims = await listVolunteerClaims(depsFor(db), volunteer);
-      res.json(VolunteerClaimsResponse.parse({ volunteer: { name: volunteer.name, eventName: event?.name ?? '' }, claims }));
+      const cap = (options.rules ?? DEMO_RULES).find((r) => r.type === 'claim_daily_cap');
+      const dailyLimit = cap && cap.type === 'claim_daily_cap' ? { amount: cap.amountMinor, currency: cap.currency } : null;
+      res.json(
+        VolunteerClaimsResponse.parse({ volunteer: { name: volunteer.name, eventName: event?.name ?? '' }, claims, dailyLimit }),
+      );
     }),
   );
 
-  router.post(
-    '/mine',
-    photoJson,
-    handle(async (req, res, db) => {
-      if (!submitLimiter.take(req)) {
-        res.status(429).json({ error: 'Too many claims from here; try again in a few minutes' });
-        return;
-      }
+  // The rate limit and the claim link are checked before the photo is read: an unknown sender never gets a
+  // multi-megabyte body parsed.
+  const admitVolunteer: RequestHandler = async (req, res, next) => {
+    if (!submitLimiter.take(req)) {
+      res.status(429).json({ error: 'Too many claims from here; try again in a few minutes' });
+      return;
+    }
+    let db: Db;
+    try {
+      db = (options.db ?? getDb)();
+    } catch {
+      res.status(503).json({ error: 'database is not configured' });
+      return;
+    }
+    try {
       const volunteer = await volunteerOf(req, db);
       if (!volunteer) {
         res.status(401).json({ error: 'This claim link is not valid' });
         return;
       }
+      res.locals.volunteer = volunteer;
+      next();
+    } catch (err) {
+      console.error('claims request failed', err instanceof Error ? err.message : err);
+      res.status(500).json({ error: 'claims request failed' });
+    }
+  };
+
+  router.post(
+    '/mine',
+    admitVolunteer,
+    photoJson,
+    handle(async (req, res, db) => {
+      const volunteer = res.locals.volunteer as VolunteerRow;
       const body = SubmitClaimRequest.safeParse(req.body);
       if (!body.success) {
         res.status(422).json({ error: 'invalid claim', issues: body.error.issues });
