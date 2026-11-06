@@ -1,4 +1,5 @@
 import { SpendsResponse } from '@quartermaster/shared';
+import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../db/client.js';
 import { auditLog } from '../db/schema.js';
@@ -8,8 +9,11 @@ import type { CheckResult, Spend } from './ports.js';
 import { recentSpends } from './recent.js';
 
 let db: Db;
+let tick = 0;
+const BASE_TIME = Date.parse('2026-11-01T00:00:00Z');
 beforeEach(async () => {
   db = await createTestDb();
+  tick = 0;
 });
 
 const EVENT = '3bbd0ba2-ed6c-41d4-a8f0-719e60f44a13';
@@ -30,6 +34,9 @@ const spend = (referenceId: string, amountMinor: number, extra: Partial<Spend> &
 async function request(s: Spend, result: CheckResult, update: { outcome?: string; paypalId?: string; detail?: string }) {
   const audit = createDbAudit(db);
   const id = await audit.record({ actor: s.actor, action: 'spend.check', input: s, reason: s.reason, ruleResult: result });
+  // Rows written in the same millisecond tie on created_at and the tiebreaker is a random id, so give each request
+  // its own second: "newest first" is then a fact of the test, not a coin flip.
+  await db.update(auditLog).set({ createdAt: new Date(BASE_TIME + ++tick * 1000) }).where(eq(auditLog.id, id));
   if (update.outcome) await audit.update(id, { outcome: update.outcome, paypalId: update.paypalId, detail: update.detail });
   return id;
 }
