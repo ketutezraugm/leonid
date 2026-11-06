@@ -38,7 +38,7 @@ volunteer: opens the link on a phone, snaps a receipt
    -> PAYMENT.PAYOUTS-ITEM.SUCCEEDED (Treasury webhook)                         -> "Paid"
 ```
 
-Prizes and speaker fees work the same way from the Money screen's Payouts tab (`POST /api/payouts`, reference `payout:<id>`). A prize funded by a sponsor also needs that sponsor's invoice paid.
+Prizes and speaker fees work the same way from the Money screen's Payouts tab (`POST /api/payouts`, reference `payout:<id>`). A prize funded by a sponsor is not held for that sponsor's invoice: the sponsor gate was removed on Nov 6 and the rules are the limit.
 
 ## Design decisions
 
