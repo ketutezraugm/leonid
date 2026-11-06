@@ -169,7 +169,7 @@ describe('budget burn', () => {
     });
   });
 
-  it('agrees with the rules check: the unlocked budget passes, one cent more is blocked', async () => {
+  it('is informational: the rules check does not stop a spend at the unlocked budget', async () => {
     await clear(30_000);
     await recorded(spend(15_000), 'allow', 'paid');
     const { unlocked } = await burn();
@@ -177,7 +177,7 @@ describe('budget burn', () => {
 
     expect(unlocked).toBe(15_000);
     expect((await check(spend(unlocked))).decision).toBe('allow');
-    expect((await check(spend(unlocked + 1))).decision).toBe('block');
+    expect((await check(spend(unlocked + 1))).decision).toBe('allow');
   });
 
   it('groups categories the way the rules check does, and lists a spend with none on its own line', async () => {
@@ -225,7 +225,7 @@ describe('budget burn', () => {
   });
 });
 
-// F4 step 8: the sponsor pays the invoice, PayPal says so by webhook, and the unlocked budget rises.
+// F4 step 8: the sponsor pays the invoice, PayPal says so by webhook, and the unlocked budget rises (shown, not enforced).
 // Uses the real INVOICING.INVOICE.PAID event from the sandbox ($1.00, fully paid).
 describe('F4 step 8: a paid sponsor invoice unlocks budget', () => {
   const fixture = readFileSync(
@@ -234,7 +234,7 @@ describe('F4 step 8: a paid sponsor invoice unlocks budget', () => {
   );
   const INVOICE_ID = 'INV2-KUAD-G3SZ-RL4H-P6QK';
 
-  it('raises the unlocked budget by the paid amount, and a spend that was blocked now passes', async () => {
+  it('raises the unlocked budget by the paid amount', async () => {
     const [sponsor] = await db
       .select()
       .from(sponsors)
@@ -244,19 +244,13 @@ describe('F4 step 8: a paid sponsor invoice unlocks budget', () => {
       .update(sponsors)
       .set({ paypalInvoiceId: INVOICE_ID, status: 'invoiced' })
       .where(eq(sponsors.id, sponsor!.id));
-    const check = createRulesCheck(db, { now: () => NOW });
-    const dollar = spend(100);
-
     expect((await burn()).unlocked).toBe(0);
-    expect((await check(dollar)).decision).toBe('block');
 
     await createInvoicePaidHandler(() => db)(JSON.parse(fixture) as WebhookEvent, {
       app: 'treasury',
     });
 
     expect(await burn()).toMatchObject({ clearedIncome: 100, committed: 0, unlocked: 100 });
-    expect((await check(dollar)).decision).toBe('allow');
-    expect((await check(spend(101))).decision).toBe('block');
   });
 });
 

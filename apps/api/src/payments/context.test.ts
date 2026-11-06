@@ -36,13 +36,13 @@ describe('pickCheck', () => {
     expect(pickCheck(undefined)).toBe(stubCheck);
   });
 
-  it('uses the real rules and budget when there is a database, and so blocks every spend while no sponsor money has cleared', async () => {
+  it('uses the real rules when there is a database, and they hold a cart the stand-in would pay', async () => {
     const check = pickCheck(await createTestDb());
     expect(check).not.toBe(stubCheck);
-    const result = await check(cart);
-    expect(result.decision).toBe('block');
-    expect(result.ruleIds).toContain('funds-gate');
+    const offList = { ...cart, vendor: 'Mystery Goods' };
+    const result = await check(offList);
+    expect(result).toMatchObject({ decision: 'block', ruleIds: ['swag-approved-vendors'] });
     // the stand-in would have allowed this $140 cart
-    expect(stubCheck(cart).decision).toBe('allow');
+    expect(stubCheck(offList).decision).toBe('allow');
   });
 });

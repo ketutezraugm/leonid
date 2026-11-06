@@ -7,6 +7,8 @@ import type { CheckResult, Spend } from '../payments/ports.js';
 // It fails closed: what it cannot verify is never auto-paid. The strictest finding wins (block > needs_approval > allow).
 
 // What the rules need to know about money, already in the spend's currency. db/budget.ts builds it.
+// Income is no longer a gate: the organizer's own PayPal account pays, so unlockedMinor and paidSponsorIds are
+// informational only (reports, home screen). A user-set maximum spend replaces the gate later.
 export interface Budget {
   // Null when the spend names no event: there is no budget to check it against.
   funds: {
@@ -46,21 +48,6 @@ export const payeeKey = (s: { payee?: string; payeeEmail?: string }): string | u
 };
 
 const isCategoryScoped = (rule: Rule) => rule.type === 'approved_vendors' || rule.type === 'category_cap';
-
-function checkFunds(spend: Spend, budget: Budget): Finding[] {
-  const { funds } = budget;
-  if (!funds) return [refuse('funds-gate', 'this spend names no event, so there is no budget to check it against')];
-  const findings: Finding[] = [];
-  if (spend.amountMinor > funds.unlockedMinor) {
-    const asked = money(spend.amountMinor, spend.currency);
-    const unlocked = money(funds.unlockedMinor, spend.currency);
-    findings.push(refuse('funds-gate', `${asked} is more than the ${unlocked} of unlocked budget`));
-  }
-  if (spend.fundedBySponsorId && !funds.paidSponsorIds.includes(spend.fundedBySponsorId)) {
-    findings.push(refuse('sponsor-gate', "this spend waits on a sponsor's invoice that is not paid yet"));
-  }
-  return findings;
-}
 
 type LimitRule = Exclude<Rule, { type: 'approved_vendors' }>;
 
@@ -123,7 +110,6 @@ export function check(spend: Spend, rules: CompiledRules, budget: Budget): Check
   if (!Number.isSafeInteger(spend.amountMinor) || spend.amountMinor <= 0) {
     findings.push(refuse('amount', 'the amount must be a positive whole number of minor units'));
   }
-  findings.push(...checkFunds(spend, budget));
   if (rules.length === 0) findings.push(ask('no-rules', 'no confirmed rules are in force'));
   // Leaving the category off must not be a way around a category's rules.
   if (spend.category === undefined && rules.some(isCategoryScoped)) {
@@ -139,8 +125,8 @@ export function check(spend: Spend, rules: CompiledRules, budget: Budget): Check
   if (decision === 'allow') {
     return {
       decision,
-      reasons: ['within the rules and the unlocked budget'],
-      ruleIds: ['funds-gate', ...rules.map((rule) => rule.id)],
+      reasons: ['within the rules'],
+      ruleIds: rules.map((rule) => rule.id),
     };
   }
   const deciding = findings.filter((f) => f.decision === decision);

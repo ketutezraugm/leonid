@@ -32,13 +32,12 @@ describe('definitelyRefused: when may a failed PayPal call give its money back t
   });
 });
 
-describe('a failed PayPal call and the funds-gated budget', () => {
+describe('a failed PayPal call and the daily auto-pay cap', () => {
   let db: Db;
   let eventId: string;
   beforeEach(async () => {
     db = await createTestDb();
     eventId = (await seedDemoEvent(db)).id;
-    // $500 cleared, so one $420 cart or three $140 carts fit, but not two $420 carts.
     await recordLedgerEntry(db, { eventId, direction: 'in', amount: 50_000, currency: 'USD', source: 'sponsor_invoice', paypalId: 'PAY-1' });
     await createDbWalletStore(db).activate({ paymentTokenId: 'pt_1' });
   });
@@ -89,18 +88,17 @@ describe('a failed PayPal call and the funds-gated budget', () => {
     const { requestSpend } = executor({ charge: declined });
     expect((await requestSpend(cart('a', 14_000))).status).toBe('failed');
     expect(await outcomeOf()).toEqual(['failed']);
-    // $140 was never taken, so $500 is still unlocked: three more $140 carts pass
-    for (const ref of ['b', 'c', 'd']) expect((await requestSpend(cart(ref, 14_000))).status, ref).toBe('paid');
+    // $140 was never taken, so it does not count towards the $1,000 daily cap: seven more $140 carts pass
+    for (const ref of ['b', 'c', 'd', 'e', 'f', 'g', 'h']) expect((await requestSpend(cart(ref, 14_000))).status, ref).toBe('paid');
   });
 
   it('keeps holding the money when PayPal answered 5xx, because the wallet may have been charged', async () => {
     const { requestSpend } = executor({ charge: unavailable });
     expect((await requestSpend(cart('a', 14_000))).status).toBe('failed');
     expect(await outcomeOf()).toEqual(['error']);
-    // $140 is held, so only $360 is unlocked: two more $140 carts pass, the third is blocked by the funds gate
-    expect((await requestSpend(cart('b', 14_000))).status).toBe('paid');
-    expect((await requestSpend(cart('c', 14_000))).status).toBe('paid');
-    expect((await requestSpend(cart('d', 14_000))).status).toBe('blocked');
+    // $140 may have been charged, so it counts towards the $1,000 daily cap: six more $140 carts pass, the seventh asks
+    for (const ref of ['b', 'c', 'd', 'e', 'f', 'g']) expect((await requestSpend(cart(ref, 14_000))).status, ref).toBe('paid');
+    expect((await requestSpend(cart('h', 14_000))).status).toBe('needs_approval');
   });
 
   it('gives the money back when PayPal cannot create the approval order', async () => {
@@ -109,13 +107,5 @@ describe('a failed PayPal call and the funds-gated budget', () => {
     expect(await outcomeOf()).toEqual(['failed']);
     // the $420 is free again, so another $420 cart still reaches the treasurer
     expect((await requestSpend(cart('big-2', 42_000))).status).toBe('needs_approval');
-  });
-
-  it('keeps holding the money when PayPal is down while creating the approval order', async () => {
-    const { requestSpend } = executor({ order: unavailable });
-    expect((await requestSpend(cart('big-1', 42_000))).status).toBe('failed');
-    expect(await outcomeOf()).toEqual(['error']);
-    // the $420 may be tied up in an order we never saw, so only $80 is unlocked and a second $420 cart is blocked
-    expect((await requestSpend(cart('big-2', 42_000))).status).toBe('blocked');
   });
 });

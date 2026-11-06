@@ -103,8 +103,8 @@ const oneLine = (text: string) => text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, 
 export function createExecutor(deps: ExecutorDeps) {
   const { client, check, audit, wallet, approvals, references, payouts } = deps;
 
-  // The funds gate reads committed spend from audit rows, so a check and the row it writes must not overlap with another
-  // check, or two carts could each see the same dollars free. One server process, so a promise chain is enough.
+  // The daily and category caps read committed spend from audit rows, so a check and the row it writes must not overlap
+  // with another check, or two carts could each see the same room under a cap. One server process, so a promise chain is enough.
   let lastCheck: Promise<unknown> = Promise.resolve();
   const inTurn = <T>(step: () => Promise<T>): Promise<T> => {
     const turn = lastCheck.then(step, step);

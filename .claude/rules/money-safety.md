@@ -6,7 +6,7 @@ paths:
 
 # Money safety (rules engine, budget, audit)
 
-Owner: P1. Features: F8 rules compiler, F9 rules engine, F10 funds-gated budget, F23 audit log.
+Owner: P1. Features: F8 rules compiler, F9 rules engine, F10 budget figures (no longer a gate), F23 audit log.
 
 ## The single gate
 
@@ -21,14 +21,13 @@ Owner: P1. Features: F8 rules compiler, F9 rules engine, F10 funds-gated budget,
 - The compiled schema covers at least the five demo rules: per-spend approval threshold ("nothing over $200 without my approval"), category allowlist / approved vendor list ("swag only from the approved list"), per-person-per-day claim cap ("volunteers up to $50 per day"), category budget caps, and payout approval threshold.
 - When rules conflict, the strictest wins (block > needs_approval > allow).
 
-## Funds-gated budget
+## Budget (no funds gate)
 
-- unlocked = cleared income − committed spend, in integer cents.
-- Cleared income is only `PAYMENT.CAPTURE.COMPLETED` / `INVOICING.INVOICE.PAID` money recorded in `ledger`. Pledges and sent invoices do not count.
-- Committed spend includes approved-but-not-captured carts and pending payouts, not just captured ones. Otherwise two concurrent carts can overspend.
-- A spend funded by a specific sponsor (`tasks.funded_by_sponsor_id`) also needs that sponsor's invoice paid. This is the Gantt gating shown in the demo.
-- Recompute on every money webhook (Render Workflow "Budget recompute").
+- The funds gate and sponsor gate were removed on Nov 6, 2026: the agent pays from the organizer's own PayPal account, so `check()` does not compare a spend with cleared income and does not wait on a sponsor's invoice.
+- unlocked = cleared income − committed spend, in integer cents, is still computed (`rules/budget.ts`, `db/budget.ts`) for the home screen, widgets and sponsor report. It is informational only.
+- Committed spend still feeds the daily auto-pay cap and the category caps, and includes approved-but-not-captured carts and pending payouts, so two concurrent carts cannot both slip under a cap.
+- Next: a user-set maximum spend, entered by the organizer, becomes the spending limit.
 
 ## Tests
 
-`check()` and the budget function must have unit tests for every demo beat. Examples: a $140 cart is allowed, a $420 cart needs approval, an off-list vendor is blocked, a spend with an unpaid sponsor invoice is blocked, and a spend after the kill switch is refused. These tests are cheap and are the strongest protection for the demo.
+`check()` and the budget function must have unit tests for every demo beat. Examples: a $140 cart is allowed, a $420 cart needs approval, an off-list vendor is blocked, and a spend after the kill switch is refused. These tests are cheap and are the strongest protection for the demo.

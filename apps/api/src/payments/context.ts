@@ -16,9 +16,9 @@ import { createRulesCheck } from './rulesCheck.js';
 import type { CheckSpend } from './ports.js';
 import { stubCheck } from './stub-check.js';
 
-// The real rules engine and funds-gated budget whenever there is a database to read the budget from. The stand-in
-// ("nothing over $200") only serves local runs without DATABASE_URL, where there is no ledger to gate on.
-// Note the real check blocks every spend while the ledger holds no cleared income: a sponsor must have paid first.
+// The real rules engine whenever there is a database to read today's spend and the category totals from. The stand-in
+// ("nothing over $200") only serves local runs without DATABASE_URL. Cleared income is not a gate: the organizer's
+// own PayPal account pays.
 export const pickCheck = (db: Db | undefined): CheckSpend => (db ? createRulesCheck(db) : stubCheck);
 
 export interface PaymentsContext {

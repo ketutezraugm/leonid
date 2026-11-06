@@ -50,45 +50,30 @@ describe('check: the demo beats', () => {
     expect(result.reasons[0]).toContain('Mystery Goods');
   });
 
-  it('blocks a spend whose sponsor has not paid', () => {
-    const result = check(lanyards(14_000, { fundedBySponsorId: 'sponsor-2' }), DEMO_RULES, budget());
-    expect(result).toMatchObject({ decision: 'block', ruleIds: ['sponsor-gate'] });
-  });
-
-  it('lets that spend through once the sponsor has paid', () => {
-    expect(check(lanyards(14_000, { fundedBySponsorId: SPONSOR }), DEMO_RULES, budget()).decision).toBe('allow');
+  it('does not wait on a sponsor: an unpaid sponsor no longer blocks a spend', () => {
+    expect(check(lanyards(14_000, { fundedBySponsorId: 'sponsor-2' }), DEMO_RULES, budget()).decision).toBe('allow');
   });
 });
 
-describe('check: the funds gate', () => {
-  it('blocks a spend with nothing unlocked, whatever else it passes: pledges are not spendable', () => {
-    const result = check(lanyards(), DEMO_RULES, budget({ unlockedMinor: 0 }));
-    expect(result).toEqual({
-      decision: 'block',
-      reasons: ['140.00 USD is more than the 0.00 USD of unlocked budget'],
-      ruleIds: ['funds-gate'],
+// The funds gate is gone: the organizer's own PayPal account pays, so cleared income is not a limit.
+describe('check: no funds gate', () => {
+  it('allows a spend with nothing unlocked', () => {
+    expect(check(lanyards(), DEMO_RULES, budget({ unlockedMinor: 0 }))).toEqual({
+      decision: 'allow',
+      reasons: ['within the rules'],
+      ruleIds: DEMO_RULES.map((r) => r.id),
     });
   });
 
-  it('allows spending the last unlocked cent and not one more', () => {
-    expect(check(lanyards(14_000), DEMO_RULES, budget({ unlockedMinor: 14_000 })).decision).toBe('allow');
-    expect(check(lanyards(14_001), DEMO_RULES, budget({ unlockedMinor: 14_000 })).decision).toBe('block');
+  it('allows a spend that names no event', () => {
+    expect(check(lanyards(), DEMO_RULES, { ...budget(), funds: null }).decision).toBe('allow');
   });
 
-  it('blocks when income was reversed and unlocked is negative', () => {
-    const result = check(lanyards(), DEMO_RULES, budget({ unlockedMinor: -5_000 }));
-    expect(result.decision).toBe('block');
-    expect(result.reasons[0]).toContain('-50.00 USD');
-  });
-
-  it('blocks a spend that names no event', () => {
-    const result = check(lanyards(), DEMO_RULES, { ...budget(), funds: null });
-    expect(result).toMatchObject({ decision: 'block', ruleIds: ['funds-gate'] });
-  });
-
-  it('a treasurer cannot be asked to approve money that has not arrived: block beats needs_approval', () => {
-    const result = check(spend(42_000), DEMO_RULES, budget({ unlockedMinor: 1_000 }));
-    expect(result).toMatchObject({ decision: 'block', ruleIds: ['funds-gate'] });
+  it('still sends a big spend to the treasurer, whatever is unlocked', () => {
+    expect(check(spend(42_000), DEMO_RULES, budget({ unlockedMinor: 0 }))).toMatchObject({
+      decision: 'needs_approval',
+      ruleIds: ['approval-threshold'],
+    });
   });
 });
 
@@ -176,7 +161,7 @@ describe('check: failing closed', () => {
       budget({ unlockedMinor: 0 }),
     );
     expect(result.decision).toBe('block');
-    expect(result.ruleIds).toEqual(['funds-gate', 'sponsor-gate', 'swag-approved-vendors']);
+    expect(result.ruleIds).toEqual(['swag-approved-vendors']);
   });
 
   it('is pure: the same input gives the same answer and nothing is mutated', () => {
