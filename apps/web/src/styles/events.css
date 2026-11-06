@@ -220,8 +220,72 @@
   border-color: var(--color-accent);
 }
 
+.event-card-wrap {
+  position: relative;
+  height: 100%;
+}
+
+/* A sibling of the card link (a button can't sit inside a link), pinned to its top-right corner. */
+.event-card-delete {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.event-card-delete:hover,
+.event-card-delete:focus-visible {
+  background: var(--color-surface-sunken);
+  color: var(--color-status-blocked-text);
+}
+
+.event-card-delete svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 720px) {
+  .event-card-delete {
+    width: 44px;
+    height: 44px;
+    top: var(--space-1);
+    right: var(--space-1);
+  }
+}
+
+/* Event home's last card: deleting the event, away from everything used day to day. */
+.event-delete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.event-delete h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-md);
+}
+
+.event-delete p {
+  margin: 0;
+}
+
 .event-card-name {
   grid-column: 1 / -1;
+  padding-right: var(--space-5);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
 }

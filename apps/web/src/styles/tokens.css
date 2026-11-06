@@ -95,6 +95,7 @@
   --radius-card: 8px; /* cards; AG Studio widgets match */
   --radius-sheet: 16px; /* the sheet, the one large corner */
   --radius-pill: 999px;
+  --color-scrim: rgba(15, 26, 20, 0.32); /* behind a popup: the screen under it, dimmed */
   --shadow-menu: 0 8px 24px rgba(15, 26, 20, 0.14); /* only what floats: menus, popovers, dialogs */
   --control-height: 36px; /* 44px on phones */
   --row-height: 44px;

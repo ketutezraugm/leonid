@@ -32,39 +32,19 @@ import {
   venueSearchOf,
   type VenueSearch,
 } from './parts';
-import { loadActiveId, loadIds, newThreadId, saveActiveId, saveIds, withId } from './sessions';
+import {
+  loadActiveId,
+  loadIds,
+  newThreadId,
+  saveActiveId,
+  peekKickoff,
+  saveIds,
+  takeKickoff,
+  withId,
+} from './sessions';
 import { ThreadList } from './ThreadList';
+import type { EventInfo } from '../shell/event';
 import './chat.css';
-
-// Written for first-time organizers: full sentences with the details the agent needs. The cities are
-// ones the seeded demo venue listings cover (Indonesia, Malaysia, Singapore), so every example finds
-// real results, and each venue lists a deposit the organizer can pay with PayPal after picking it.
-const suggestions = [
-  {
-    title: 'Plan a hackathon in Jakarta',
-    prompt:
-      'I want to run a hackathon in West Jakarta for 150 people on Saturday, 21 November 2026, ' +
-      'from 9 am to 9 pm. My budget is $8,000. Find a venue first, then help me plan the rest.',
-  },
-  {
-    title: 'Find a venue in Kuala Lumpur',
-    prompt:
-      'Find venues in Kuala Lumpur for a 60-person workshop on Saturday, 5 December 2026, ' +
-      'ideally with catering included. Show the price, the capacity and the deposit to hold the date.',
-  },
-  {
-    title: 'Book a meetup space in Singapore',
-    prompt:
-      'Find a coworking space or rooftop in Singapore for an evening meetup of 80 people on ' +
-      'Friday, 13 November 2026. Once I pick one, I want to pay the deposit with PayPal.',
-  },
-  {
-    title: 'Check my event',
-    prompt:
-      'Give me a quick summary of my event: the date, how many people, the sponsors, ' +
-      'and what is still left to do.',
-  },
-];
 
 interface CanvasLink {
   // The canvas this chat drives, when it is the workspace rail: it receives the messages and
@@ -81,6 +61,10 @@ interface CanvasLink {
   onThreadChange?: (threadId: string) => void;
 }
 
+// The event in the URL, if any: a new chat opened there works on that event. A null id is the demo
+// fallback, which means the seeded event.
+type InEvent = Pick<EventInfo, 'id' | 'name'> | null;
+
 export function AgentChat({
   variant = 'panel',
   onMessagesChange,
@@ -89,7 +73,8 @@ export function AgentChat({
   viewLeavesChat = false,
   onSendChange,
   onThreadChange,
-}: { variant?: 'panel' | 'rail' } & CanvasLink = {}) {
+  inEvent = null,
+}: { variant?: 'panel' | 'rail'; inEvent?: InEvent } & CanvasLink = {}) {
   const [threadId, setThreadId] = useState(loadActiveId);
   const [ids, setIds] = useState(() => withId(loadIds(), threadId));
   const [threads, setThreads] = useState<ChatThreadSummary[] | null>(null);
@@ -169,11 +154,11 @@ export function AgentChat({
 
   const refreshThreads = useCallback(() => setRefreshCount((n) => n + 1), []);
 
-  // Events a new chat may be linked to: the demo event and the ones this browser's chats work on.
-  const eventOptions = [demoEvent, ...(threads ?? []).map((t) => t.event)].filter(
-    (event, index, all): event is ChatEventRef =>
-      !!event && all.findIndex((other) => other?.id === event.id) === index,
-  );
+  const eventForNewChat: ChatEventRef | null = inEvent
+    ? inEvent.id
+      ? { id: inEvent.id, name: inEvent.name }
+      : demoEvent
+    : null;
 
   function open(id: string) {
     setThreadId(id);
@@ -288,7 +273,7 @@ export function AgentChat({
               initialMessages={ready.thread.messages as UIMessage[]}
               initialChecklist={ready.thread.checklist}
               initialEvent={ready.thread.event}
-              eventOptions={eventOptions}
+              eventForNewChat={eventForNewChat}
               loadError={ready.error}
               onBusyChange={setBusy}
               onSettled={refreshThreads}
@@ -312,7 +297,7 @@ function ChatPanel({
   initialMessages,
   initialChecklist,
   initialEvent,
-  eventOptions,
+  eventForNewChat,
   loadError,
   onBusyChange,
   onSettled,
@@ -326,7 +311,7 @@ function ChatPanel({
   initialMessages: UIMessage[];
   initialChecklist: ChecklistItem[];
   initialEvent: ChatEventRef | null;
-  eventOptions: ChatEventRef[];
+  eventForNewChat: ChatEventRef | null;
   loadError: string | null;
   onBusyChange: (busy: boolean) => void;
   onSettled: () => void;
@@ -334,9 +319,13 @@ function ChatPanel({
   const [draft, setDraft] = useState('');
   const lastSent = useRef('');
   const logRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  // An existing event this new chat may see, chosen by the user before the first message.
-  const [linked, setLinked] = useState<ChatEventRef | null>(null);
+  // The existing event a new chat works on: the one event setup just created, else the event in
+  // the URL. Only read when the server creates the thread.
+  const [kickoffEvent] = useState<ChatEventRef | null>(() => {
+    const kickoff = initialMessages.length === 0 ? peekKickoff(threadId) : null;
+    return kickoff ? { id: kickoff.eventId, name: kickoff.eventName } : null;
+  });
+  const linked = kickoffEvent ?? eventForNewChat;
 
   const { messages, setMessages, sendMessage, status, error, clearError } = useChat({
     id: threadId,
@@ -401,14 +390,19 @@ function ChatPanel({
   }, [busy, onSendChange]);
   useEffect(() => () => onSendChange?.(null), [onSendChange]);
 
-  // Fill the box instead of sending, so the organizer can change the city, headcount or budget first.
-  function pickSuggestion(prompt: string) {
-    setDraft(prompt);
-    const input = inputRef.current;
-    if (!input) return;
-    input.focus();
-    requestAnimationFrame(() => input.setSelectionRange(prompt.length, prompt.length));
-  }
+  // ...and starts on its own: the setup answers go as the first message.
+  // Sent a tick later: StrictMode's trial unmount stops the chat, which would abort a send made
+  // straight away, and the kickoff would already be gone for the real mount.
+  useEffect(() => {
+    if (initialMessages.length > 0) return;
+    const timer = setTimeout(() => {
+      const kickoff = takeKickoff(threadId);
+      if (!kickoff) return;
+      lastSent.current = kickoff.text;
+      void sendMessage({ text: kickoff.text }, { body: { eventId: kickoff.eventId } });
+    });
+    return () => clearTimeout(timer);
+  }, [threadId, initialMessages, sendMessage]);
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -435,45 +429,9 @@ function ChatPanel({
 
       <div className="chat-log" ref={logRef} role="log" aria-live="polite">
         {messages.length === 0 ? (
-          <div className="chat-empty">
-            <p className="chat-empty-title">What do you want to do?</p>
-            <p className="muted">
-              Tell me about your event in your own words: the city, how many people, the date and
-              your budget. Or pick an example, change the details, then press Send.
-            </p>
-            {eventOptions.length > 0 && (
-              <label className="chat-event-pick">
-                Event for this chat
-                <select
-                  value={linked?.id ?? ''}
-                  disabled={busy}
-                  onChange={(e) =>
-                    setLinked(eventOptions.find((option) => option.id === e.target.value) ?? null)
-                  }
-                >
-                  <option value="">None, start fresh</option>
-                  {eventOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <div className="chat-suggestions">
-              {suggestions.map((suggestion) => (
-                <button
-                  key={suggestion.title}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => pickSuggestion(suggestion.prompt)}
-                >
-                  <strong>{suggestion.title}</strong>
-                  <span>{suggestion.prompt}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="chat-empty muted">
+            {linked ? `Ask me anything about ${linked.name}.` : 'Tell me about your event.'}
+          </p>
         ) : (
           messages.map((message, index) => (
             <Message
@@ -504,9 +462,8 @@ function ChatPanel({
 
       <form className="chat-form" onSubmit={onSubmit}>
         <textarea
-          ref={inputRef}
           aria-label="Message"
-          placeholder="e.g. Find a venue in Bandung for 100 people, budget $3,000 (Enter to send)"
+          placeholder="Message Quartermaster (Enter to send)"
           rows={2}
           maxLength={CHAT_MESSAGE_MAX_LENGTH}
           value={draft}

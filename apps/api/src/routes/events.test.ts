@@ -1,8 +1,20 @@
 import { EventsResponse, EventSummary } from '@quartermaster/shared';
 import express from 'express';
 import request from 'supertest';
+import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.js';
+import {
+  auditLog,
+  chatThreads,
+  events,
+  ledgerEntries,
+  mandateItems,
+  mandates,
+  sponsors,
+  tasks,
+} from '../db/schema.js';
+import { DEMO_EVENT_NAME } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { eventsRouter } from './events.js';
 
@@ -101,5 +113,107 @@ describe('/api/events', () => {
       .set(treasurer);
     expect(res.status).toBe(500);
     expect(JSON.stringify(res.body)).not.toContain('boom');
+  });
+
+  describe('DELETE /:id', () => {
+    async function create(body = spring) {
+      const res = await request(app(() => db))
+        .post('/api/events')
+        .set(treasurer)
+        .send(body);
+      return EventSummary.parse(res.body).id;
+    }
+    const del = (id: string) =>
+      request(app(() => db))
+        .delete(`/api/events/${id}`)
+        .set(treasurer);
+
+    it('is treasurer only', async () => {
+      const id = await create();
+      expect((await request(app(() => db)).delete(`/api/events/${id}`)).status).toBe(401);
+      expect(await db.select().from(events).where(eq(events.id, id))).toHaveLength(1);
+    });
+
+    it('deletes an event with no money history, with its plan, sponsors and chats, and audits it', async () => {
+      const id = await create();
+      const [sponsor] = await db
+        .insert(sponsors)
+        .values({ eventId: id, name: 'Acme Labs', tier: 'gold', pledged: 50_000 })
+        .returning();
+      await db.insert(tasks).values({
+        eventId: id,
+        name: 'Order lanyards',
+        start: new Date('2027-05-01'),
+        end: new Date('2027-05-02'),
+        fundedBySponsorId: sponsor!.id,
+      });
+      const [thread] = await db.insert(chatThreads).values({ eventId: id }).returning();
+      const [mandate] = await db
+        .insert(mandates)
+        .values({ threadId: thread!.id, eventId: id, goal: 'Plan it' })
+        .returning();
+      await db
+        .insert(mandateItems)
+        .values({ mandateId: mandate!.id, position: 0, title: 'Book a venue' });
+      const other = await create(openhack);
+
+      expect((await del(id)).status).toBe(204);
+
+      expect(await db.select().from(events).where(eq(events.id, id))).toHaveLength(0);
+      expect(await db.select().from(sponsors).where(eq(sponsors.eventId, id))).toHaveLength(0);
+      expect(await db.select().from(tasks).where(eq(tasks.eventId, id))).toHaveLength(0);
+      expect(await db.select().from(chatThreads).where(eq(chatThreads.eventId, id))).toHaveLength(
+        0,
+      );
+      expect(await db.select().from(mandateItems)).toHaveLength(0);
+      expect(await db.select().from(events).where(eq(events.id, other))).toHaveLength(1);
+      const [audit] = await db.select().from(auditLog).where(eq(auditLog.action, 'event.delete'));
+      expect(audit).toMatchObject({
+        actor: 'treasurer:ops-token',
+        input: { eventId: id, name: 'Spring Meetup' },
+      });
+    });
+
+    it('refuses an event with money history and keeps every row', async () => {
+      const paid = await create();
+      await db.insert(ledgerEntries).values({
+        eventId: paid,
+        direction: 'in',
+        amount: 5_000,
+        currency: 'USD',
+        source: 'ticket',
+        paypalId: 'CAPTURE-1',
+      });
+      const invoiced = await create({ ...spring, name: 'Autumn Meetup' });
+      await db.insert(sponsors).values({
+        eventId: invoiced,
+        name: 'Acme Labs',
+        tier: 'gold',
+        pledged: 50_000,
+        status: 'invoiced',
+        paypalInvoiceId: 'INV2-TEST',
+      });
+
+      for (const id of [paid, invoiced]) {
+        const res = await del(id);
+        expect(res.status).toBe(409);
+        expect(res.body.error).toMatch(/money history/);
+        expect(await db.select().from(events).where(eq(events.id, id))).toHaveLength(1);
+      }
+      expect(await db.select().from(ledgerEntries)).toHaveLength(1);
+      expect(await db.select().from(auditLog)).toHaveLength(0);
+    });
+
+    it('refuses the seeded demo event', async () => {
+      const id = await create({ ...openhack, name: DEMO_EVENT_NAME });
+      const res = await del(id);
+      expect(res.status).toBe(409);
+      expect(res.body.error).toMatch(/demo event/);
+    });
+
+    it('answers 404 for an unknown or malformed id', async () => {
+      expect((await del('00000000-0000-4000-8000-000000000000')).status).toBe(404);
+      expect((await del('not-an-id')).status).toBe(404);
+    });
   });
 });

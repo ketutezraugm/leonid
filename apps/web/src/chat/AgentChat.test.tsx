@@ -1,8 +1,12 @@
+import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentChat } from './AgentChat';
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  sessionStorage.clear();
+});
 afterEach(() => vi.unstubAllGlobals());
 
 const emptyThread = () => Response.json({ messages: [], checklist: [] });
@@ -86,16 +90,65 @@ describe('AgentChat', () => {
     expect(sent.messages).toBeUndefined();
   });
 
-  it('starts a chat with no event unless the user links one', async () => {
+  it('sends the setup answers once, linked to the new event, when the chat opens', async () => {
+    const fetchMock = stubFetch({
+      reply: () => sse([{ type: 'start' }, ...text('On it.'), { type: 'finish' }]),
+    });
+    const threadId = crypto.randomUUID();
+    const eventId = crypto.randomUUID();
+    localStorage.setItem('quartermaster.threadId', threadId);
+    sessionStorage.setItem(
+      'quartermaster.kickoff',
+      JSON.stringify({
+        threadId,
+        eventId,
+        eventName: 'Spring Meetup',
+        text: 'Plan our new event.',
+      }),
+    );
+    // StrictMode, as in the app: its trial unmount stops the chat, and the answers must still go.
+    render(
+      <StrictMode>
+        <AgentChat />
+      </StrictMode>,
+    );
+
+    expect(await screen.findByText('On it.')).toBeInTheDocument();
+    expect(screen.getByText('Event: Spring Meetup')).toBeInTheDocument();
+    const posts = fetchMock.mock.calls.filter(
+      ([url, init]) => url === '/api/chat' && init?.method === 'POST',
+    );
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(String(posts[0]?.[1]?.body))).toMatchObject({
+      threadId,
+      eventId,
+      message: { parts: [{ type: 'text', text: 'Plan our new event.' }] },
+    });
+    expect(sessionStorage.getItem('quartermaster.kickoff')).toBeNull();
+  });
+
+  it('links a new chat to the event it is opened in', async () => {
+    const eventId = crypto.randomUUID();
+    const fetchMock = stubFetch({ reply: () => sse([{ type: 'start' }]) });
+    render(<AgentChat inEvent={{ id: eventId, name: 'Spring Meetup' }} />);
+
+    expect(await screen.findByText('Ask me anything about Spring Meetup.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Plan a hackathon/ })).not.toBeInTheDocument();
+    type('Check my event');
+
+    await screen.findByText('Event: Spring Meetup');
+    const post = fetchMock.mock.calls.find(
+      ([url, init]) => url === '/api/chat' && init?.method === 'POST',
+    );
+    expect(JSON.parse(String(post?.[1]?.body)).eventId).toBe(eventId);
+  });
+
+  it('uses the seeded event inside the demo event', async () => {
     const demo = { id: crypto.randomUUID(), name: 'OpenHack 2027' };
     const fetchMock = stubFetch({ demoEvent: demo, reply: () => sse([{ type: 'start' }]) });
-    render(<AgentChat />);
+    render(<AgentChat inEvent={{ id: null, name: 'OpenHack 2027' }} />);
 
-    const pick = await screen.findByLabelText('Event for this chat');
-    await within(pick).findByRole('option', { name: 'OpenHack 2027' });
-    expect(pick).toHaveValue('');
-
-    fireEvent.change(pick, { target: { value: demo.id } });
+    await screen.findByText('Ask me anything about OpenHack 2027.');
     type('Check my event');
 
     await screen.findByText('Event: OpenHack 2027');
@@ -105,12 +158,12 @@ describe('AgentChat', () => {
     expect(JSON.parse(String(post?.[1]?.body)).eventId).toBe(demo.id);
   });
 
-  it('sends no event when the user keeps the default', async () => {
+  it('sends no event outside an event', async () => {
     const demo = { id: crypto.randomUUID(), name: 'OpenHack 2027' };
     const fetchMock = stubFetch({ demoEvent: demo, reply: () => sse([{ type: 'start' }]) });
     render(<AgentChat />);
 
-    await screen.findByLabelText('Event for this chat');
+    await screen.findByText('Tell me about your event.');
     type('Plan a new event');
 
     await screen.findByText('No event in this chat yet');
@@ -369,23 +422,6 @@ describe('AgentChat', () => {
     expect(
       screen.queryByText('Find a venue in Jakarta for 30 people', { selector: 'div' }),
     ).not.toBeInTheDocument();
-  });
-
-  it('puts an example in the message box to edit instead of sending it', async () => {
-    const fetchMock = stubFetch({});
-    render(<AgentChat />);
-
-    await screen.findByLabelText('Message');
-    fireEvent.click(screen.getByRole('button', { name: /Plan a hackathon in Jakarta/ }));
-
-    const box = screen.getByLabelText('Message');
-    expect((box as HTMLTextAreaElement).value).toContain('West Jakarta for 150 people');
-    expect(box).toHaveFocus();
-    expect(
-      fetchMock.mock.calls.some(
-        ([, init]) => init?.method === 'POST' && init.body?.toString().includes('Jakarta'),
-      ),
-    ).toBe(false);
   });
 
   it('lists earlier chats and loads the one you pick', async () => {
