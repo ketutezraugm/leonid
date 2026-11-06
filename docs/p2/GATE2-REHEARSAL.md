@@ -11,7 +11,7 @@ Tue Nov 3. Written for the team and their coding agents. No secrets in this file
 - [ ] Render (`quartermaster-staging`, branch `development`) has `DEMO_SPEND=true`. Set it back to `false` afterwards.
 - [ ] The Procurement webhook is subscribed to `CHECKOUT.ORDER.APPROVED`; the Treasury webhook to `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED`.
 - [ ] The agent wallet is active. If not: `pnpm --filter @quartermaster/api gate2:check -- --connect`, open the link, log in as the sandbox **Personal** payer and agree. It returns to `/?wallet=connected`.
-- [ ] Your gitignored `.env` has `STAGING_TREASURER_TOKEN`. For the stronger checks it also has `STAGING_DATABASE_URL` (the Supabase Transaction pooler string) and the Procurement credentials.
+- [ ] Your gitignored `.env` has `STAGING_TREASURER_TOKEN`. For the stronger checks it also has `STAGING_DATABASE_URL` (the Supabase Session pooler string, port 5432) and the Procurement credentials.
 
 ## The API beats (about 5 minutes)
 
@@ -54,7 +54,7 @@ Tue Nov 3. Written for the team and their coding agents. No secrets in this file
 - A free Render instance sleeps; the first request can take a minute. The script waits up to two minutes per call.
 - PayPal's checkout page can loop on "Complete purchase" after you approve a manually opened order link. The order is still `APPROVED`. The Approvals page uses PayPal's button and popup, which should not loop; confirm it.
 - The staging database has no Drizzle migration table, so new migrations are applied by hand there.
-- If a call returns 401, the treasurer token is wrong. If it returns 500 or 503, check that Render's `DATABASE_URL` is the Supabase Transaction pooler string.
+- If a call returns 401, the treasurer token is wrong. If it returns 500 or 503, check that Render's `DATABASE_URL` is the Supabase Session pooler string (port 5432, not 6543).
 
 ## Production (after Harfi promotes `development` to `main`)
 

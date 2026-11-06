@@ -10,7 +10,10 @@ export class DbNotConfiguredError extends Error {}
 
 let cached: Db | undefined;
 
-// The Supabase transaction pooler does not support prepared statements, hence prepare: false.
+// DATABASE_URL is Supabase's SESSION pooler (port 5432). The transaction pooler (6543) left queries that waited
+// behind another on the same connection unanswered, so requests hung. Each of the `max` connections takes one slot
+// of the pooler's pool (15 by default), shared by every running copy of the API. prepare: false stays, so a URL
+// pointed at the transaction pooler by mistake still works for simple queries.
 export function getDb(): Db {
   if (cached) return cached;
   const url = process.env.DATABASE_URL;
