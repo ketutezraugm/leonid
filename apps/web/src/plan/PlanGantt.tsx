@@ -1,5 +1,6 @@
 import type { Model } from '@bryntum/gantt';
 import { BryntumGantt } from '@bryntum/gantt-react';
+import { memo } from 'react';
 import '@bryntum/gantt/fontawesome/css/fontawesome.css';
 import '@bryntum/gantt/fontawesome/css/solid.css';
 import '@bryntum/gantt/gantt.css';
@@ -11,7 +12,7 @@ import { PlanTask } from './PlanTask';
 
 // Loaded lazily from the Plan page: the trial bundle is large and unminified. The page remounts it
 // (by key) when a sponsor's status changes, so the gating is recomputed from scratch.
-export default function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
+function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
   return (
     <div className="qm-gantt">
       <BryntumGantt
@@ -32,7 +33,11 @@ export default function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
             width: 190,
             renderer: ({ record }: { record: Model }) => {
               const task = record as PlanTask;
-              return { tag: 'span', className: `badge badge-${task.status}`, text: statusText(task.status, task.waitingOn) };
+              return {
+                tag: 'span',
+                className: `badge badge-${task.status}`,
+                text: statusText(task.status, task.waitingOn),
+              };
             },
           },
           { type: 'startdate', width: 124 },
@@ -55,3 +60,10 @@ export default function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
     </div>
   );
 }
+
+// The Plan page re-renders while it polls sponsor status; the Gantt only redraws when a sponsor's status changes.
+const sameStatuses = (a: { sponsors: PlanSponsor[] }, b: { sponsors: PlanSponsor[] }) =>
+  a.sponsors.length === b.sponsors.length &&
+  a.sponsors.every((s, i) => s.id === b.sponsors[i]?.id && s.status === b.sponsors[i]?.status);
+
+export default memo(PlanGantt, sameStatuses);
