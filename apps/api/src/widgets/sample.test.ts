@@ -198,15 +198,16 @@ describe('sample widget routes', () => {
     expect(parsed.data.items.map((i) => i.name)).toEqual(['Prize trophies']);
   });
 
-  it('labels payouts as sample, and applies the filters from the query string', async () => {
+  // F17: the payouts ledger is live now (payouts/service.test.ts covers its rows); with none yet it is empty.
+  it('serves payouts as live data, empty before anyone has been paid', async () => {
     const res = await request(appWith())
       .get(`/api/widgets/payouts?eventId=${eventId}&sponsorId=${silver}&category=prizes`)
       .set(TOKEN);
 
     expect(res.status).toBe(200);
     const parsed = PayoutsLedgerResponse.parse(res.body);
-    expect(parsed.source).toBe('sample');
-    expect(parsed.data.rows.map((r) => r.recipientName)).toEqual(['Ravi Winner']);
+    expect(parsed.source).toBe('live');
+    expect(parsed.data.rows).toEqual([]);
   });
 
   it.each(['delivery-risk', 'payouts'])(
@@ -238,7 +239,7 @@ describe('sample widget routes', () => {
       const res = await request(appWith()).get(`/api/widgets/${name}`).set(TOKEN);
 
       expect(res.status).toBe(200);
-      expect(res.body.source).toBe('sample');
+      expect(res.body.source).toBe(name === 'payouts' ? 'live' : 'sample');
     },
   );
 

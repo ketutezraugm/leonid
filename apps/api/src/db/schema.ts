@@ -258,6 +258,8 @@ export const volunteers = pgTable(
   (t) => [index('volunteers_event_idx').on(t.eventId)],
 ).enableRLS();
 
+export const PAYOUT_STATUSES_FOR_CLAIMS = ['processing', 'paid', 'failed', 'unclaimed', 'returned', 'blocked'] as const;
+
 export const CLAIM_STATUSES = ['submitted', 'needs_review', 'pending_approval', 'approved', 'paid', 'rejected'] as const;
 
 // One receipt claim. amount is what the receipt says (or what the treasurer confirmed), in minor units. The
@@ -281,8 +283,44 @@ export const claims = pgTable(
     status: text('status', { enum: CLAIM_STATUSES }).notNull().default('submitted'),
     reasons: jsonb('reasons').$type<string[]>().notNull().default([]),
     paypalBatchId: text('paypal_batch_id'),
+    // What PayPal last said about the claim's payout item (F17, from the payout item webhooks). Null until then.
+    payoutStatus: text('payout_status', { enum: PAYOUT_STATUSES_FOR_CLAIMS }),
+    paypalItemId: text('paypal_item_id'),
     submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('claims_event_idx').on(t.eventId), index('claims_volunteer_idx').on(t.volunteerId)],
+).enableRLS();
+
+// --- Prize and speaker payouts (F17)
+
+export const PAYOUT_STATUSES = ['pending_approval', 'queued', 'processing', 'paid', 'failed', 'unclaimed', 'returned', 'blocked'] as const;
+
+// A payment to a person that is not a receipt claim: a prize or a speaker fee. It becomes a `kind: 'payout'`
+// spend with the reference id `payout:<id>`, which is also PayPal's sender_item_id, so the payout item webhooks
+// find it again. Status follows those webhooks (invariant 5), never a guess.
+export const payouts = pgTable(
+  'payouts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    kind: text('kind', { enum: ['prize', 'speaker'] }).notNull(),
+    recipientName: text('recipient_name').notNull(),
+    recipientEmail: text('recipient_email').notNull(),
+    countryCode: text('country_code'),
+    amount: integer('amount').notNull(),
+    currency: text('currency').notNull(),
+    category: text('category').notNull(),
+    sponsorId: uuid('sponsor_id').references(() => sponsors.id),
+    note: text('note').notNull().default(''),
+    status: text('status', { enum: PAYOUT_STATUSES }).notNull().default('queued'),
+    reasons: jsonb('reasons').$type<string[]>().notNull().default([]),
+    paypalBatchId: text('paypal_batch_id'),
+    paypalItemId: text('paypal_item_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('payouts_event_idx').on(t.eventId)],
 ).enableRLS();

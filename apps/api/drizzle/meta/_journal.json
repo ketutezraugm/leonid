@@ -85,6 +85,13 @@
       "when": 1793974768430,
       "tag": "0011_claims",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793977366000,
+      "tag": "0012_payouts",
+      "breakpoints": true
     }
   ]
 }

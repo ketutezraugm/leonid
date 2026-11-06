@@ -12,6 +12,7 @@ import { demoRouter } from './routes/demo.js';
 import { eventsRouter } from './routes/events.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { jobsRouter } from './routes/jobs.js';
+import { payoutsRouter } from './routes/payouts.js';
 import { reportsRouter } from './routes/reports.js';
 import { spendsRouter } from './routes/spends.js';
 import { treasuryRouter } from './routes/treasury.js';
@@ -49,6 +50,7 @@ export function createApp() {
   app.use('/api/demo', demoRouter());
   app.use('/api/events', eventsRouter());
   app.use('/api/jobs', jobsRouter());
+  app.use('/api/payouts', payoutsRouter());
   app.use('/api/reports', reportsRouter());
   app.use('/api/spends', spendsRouter());
   app.use('/api/treasury', treasuryRouter());

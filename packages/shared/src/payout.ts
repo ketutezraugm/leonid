@@ -79,3 +79,23 @@ export const PayoutBatch = z.object({
   createdAt: IsoDateTime,
 });
 export type PayoutBatch = z.infer<typeof PayoutBatch>;
+
+// POST /api/payouts (treasurer): pay a prize winner or a speaker. It goes through the rules engine like any
+// spend; above the payout approval threshold it waits on the Approvals screen. No eventId: the demo event.
+export const CreatePayoutRequest = z.object({
+  eventId: Id.optional(),
+  kind: z.enum(['prize', 'speaker']),
+  recipientName: z.string().trim().min(1).max(80),
+  recipientEmail: z.email().max(127),
+  countryCode: z.string().regex(/^[A-Z]{2}$/).optional(),
+  amount: MinorUnits.positive(),
+  category: z.string().trim().min(1).max(40).default('prizes'),
+  // The sponsor whose money pays it: it then also needs that sponsor's invoice paid.
+  sponsorId: Id.optional(),
+  note: z.string().trim().max(200).default(''),
+});
+export type CreatePayoutRequest = z.infer<typeof CreatePayoutRequest>;
+
+// GET /api/payouts[?eventId=] and the answer to POST: payout items in the shared shape.
+export const PayoutsResponse = z.object({ payouts: z.array(PayoutItem) });
+export type PayoutsResponse = z.infer<typeof PayoutsResponse>;
