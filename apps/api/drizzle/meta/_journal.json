@@ -78,6 +78,13 @@
       "when": 1793886715235,
       "tag": "0010_sponsor_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793974768430,
+      "tag": "0011_claims",
+      "breakpoints": true
     }
   ]
 }

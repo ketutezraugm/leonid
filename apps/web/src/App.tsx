@@ -3,6 +3,7 @@ import { Agent } from './pages/Agent';
 import { Approvals } from './pages/Approvals';
 import { Checkout } from './pages/Checkout';
 import { Claims } from './pages/Claims';
+import { VolunteerClaim } from './pages/VolunteerClaim';
 import { EventHome } from './pages/EventHome';
 import { Events } from './pages/Events';
 import { Money } from './pages/Money';
@@ -79,6 +80,14 @@ export function App() {
               element={
                 <PublicLayout>
                   <Checkout />
+                </PublicLayout>
+              }
+            />
+            <Route
+              path="/claim/:token"
+              element={
+                <PublicLayout>
+                  <VolunteerClaim />
                 </PublicLayout>
               }
             />
