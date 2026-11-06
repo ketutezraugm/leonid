@@ -53,3 +53,9 @@
   --b-gantt-task-primary: var(--gantt-milestone);
   --b-gantt-milestone-primary: var(--gantt-milestone);
 }
+
+/* Funded by: a quiet label, not a status. The sponsor no longer holds a purchase back. */
+.qm-gantt .qm-funding {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}

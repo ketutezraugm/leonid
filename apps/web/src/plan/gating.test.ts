@@ -1,55 +1,79 @@
 import { describe, expect, it } from 'vitest';
 import { demoSponsors, demoTasks, HARBOR } from './demoPlan';
-import { gateBySponsor, statusText, type PlanSponsor, type SourceTask } from './gating';
+import {
+  applySponsors,
+  fundingText,
+  statusLabel,
+  type PlanSponsor,
+  type SourceTask,
+} from './gating';
 
-const sponsor = (status: PlanSponsor['status']): PlanSponsor => ({ id: 's1', name: 'Harbor Cloud', status });
-const funded: SourceTask = { id: 1, name: 'Order swag', status: 'pending', fundedBySponsorId: 's1' };
+const sponsor = (status: PlanSponsor['status']): PlanSponsor => ({
+  id: 's1',
+  name: 'Harbor Cloud',
+  status,
+});
+const funded: SourceTask = {
+  id: 1,
+  name: 'Order swag',
+  status: 'pending',
+  fundedBySponsorId: 's1',
+};
 const invoice: SourceTask = { id: 2, name: 'Invoice', status: 'pending', invoiceOfSponsorId: 's1' };
 
-describe('gateBySponsor', () => {
-  it('blocks a purchase until its sponsor has paid, and names the sponsor', () => {
-    expect(gateBySponsor([funded], [sponsor('invoiced')])[0]).toMatchObject({ status: 'blocked', waitingOn: 'Harbor Cloud' });
-    expect(gateBySponsor([funded], [sponsor('pledged')])[0]).toMatchObject({ status: 'blocked' });
+describe('applySponsors', () => {
+  it('labels a purchase with its sponsor and never blocks it (no sponsor gate)', () => {
+    expect(applySponsors([funded], [sponsor('invoiced')])[0]).toMatchObject({
+      status: 'pending',
+      fundedBy: 'Harbor Cloud',
+      fundedByPaid: false,
+    });
+    expect(applySponsors([funded], [sponsor('paid')])[0]).toMatchObject({
+      status: 'pending',
+      fundedByPaid: true,
+    });
   });
 
-  it('releases the purchase once the invoice is paid', () => {
-    expect(gateBySponsor([funded], [sponsor('paid')])[0]).toMatchObject({ status: 'pending', waitingOn: null });
-  });
-
-  it('treats an unknown sponsor as unpaid', () => {
-    expect(gateBySponsor([funded], [])[0]).toMatchObject({ status: 'blocked', waitingOn: 'a sponsor' });
-  });
-
-  it('leaves done tasks and unfunded tasks alone', () => {
-    const done = { ...funded, status: 'done' as const };
+  it('leaves unfunded tasks and unknown sponsors unlabelled', () => {
     const plain: SourceTask = { id: 3, name: 'Volunteer briefing', status: 'progress' };
-    expect(gateBySponsor([done, plain], [sponsor('invoiced')]).map((t) => t.status)).toEqual(['done', 'progress']);
+    expect(applySponsors([plain, funded], []).map((t) => t.fundedBy)).toEqual([null, null]);
   });
 
   it("follows the sponsor's status on the invoice task", () => {
-    expect(gateBySponsor([invoice], [sponsor('invoiced')])[0]).toMatchObject({ status: 'progress' });
-    expect(gateBySponsor([invoice], [sponsor('paid')])[0]).toMatchObject({ status: 'done', percentDone: 100 });
+    expect(applySponsors([invoice], [sponsor('invoiced')])[0]).toMatchObject({
+      status: 'progress',
+    });
+    expect(applySponsors([invoice], [sponsor('paid')])[0]).toMatchObject({
+      status: 'done',
+      percentDone: 100,
+    });
   });
 
   it('drops the source-only fields before the tasks reach the Gantt', () => {
-    const [task] = gateBySponsor([funded], [sponsor('paid')]);
+    const [task] = applySponsors([funded], [sponsor('paid')]);
     expect(task).not.toHaveProperty('fundedBySponsorId');
   });
 });
 
 describe('the sample plan', () => {
-  it('has the 15 linked tasks the demo needs, with Harbor Cloud holding two purchases', () => {
-    const tasks = gateBySponsor(demoTasks, demoSponsors);
+  it('has the 15 linked tasks the demo needs, none of them held by a sponsor', () => {
+    const tasks = applySponsors(demoTasks, demoSponsors);
     expect(tasks).toHaveLength(15);
-    expect(tasks.filter((t) => t.waitingOn === 'Harbor Cloud')).toHaveLength(2);
+    expect(tasks.filter((t) => t.fundedBy === 'Harbor Cloud')).toHaveLength(2);
+    expect(tasks.some((t) => t.status === 'blocked')).toBe(false);
     const paid = demoSponsors.map((s) => (s.id === HARBOR ? { ...s, status: 'paid' as const } : s));
-    expect(gateBySponsor(demoTasks, paid).filter((t) => t.waitingOn === 'Harbor Cloud')).toHaveLength(0);
+    expect(
+      applySponsors(demoTasks, paid).filter((t) => t.fundedBy === 'Harbor Cloud' && t.fundedByPaid),
+    ).toHaveLength(2);
   });
 });
 
-describe('statusText', () => {
-  it('says who a blocked task is waiting on', () => {
-    expect(statusText('blocked', 'Lumen Labs')).toBe('Waiting on Lumen Labs');
-    expect(statusText('risk', null)).toBe('Late delivery');
+describe('labels', () => {
+  it('keeps red words for deliveries and says whether the sponsor has paid', () => {
+    expect(statusLabel.blocked).toBe('Late');
+    expect(statusLabel.risk).toBe('At risk');
+    expect(fundingText('Lumen Labs', true)).toBe('Lumen Labs · paid');
+    expect(fundingText('Pixel Foundry', false)).toBe('Pixel Foundry · not paid yet');
+    expect(fundingText(null, false)).toBe('');
   });
 });

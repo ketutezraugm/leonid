@@ -7,18 +7,18 @@ import '@bryntum/gantt/gantt.css';
 import '@bryntum/gantt/svalbard-light.css';
 import './gantt-theme.css';
 import { demoDependencies, demoTasks, EVENT_DAY } from './demoPlan';
-import { gateBySponsor, statusText, type PlanSponsor } from './gating';
+import { applySponsors, fundingText, statusLabel, type PlanSponsor } from './gating';
 import { PlanTask } from './PlanTask';
 
 // Loaded lazily from the Plan page: the trial bundle is large and unminified. The page remounts it
-// (by key) when a sponsor's status changes, so the gating is recomputed from scratch.
+// (by key) when a sponsor's status changes, so the sponsor labels are recomputed from scratch.
 function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
   return (
     <div className="qm-gantt">
       <BryntumGantt
         project={{
           taskModelClass: PlanTask,
-          tasks: gateBySponsor(demoTasks, sponsors),
+          tasks: applySponsors(demoTasks, sponsors),
           dependencies: demoDependencies,
           timeRanges: [{ id: 'event-day', name: 'Event day', startDate: EVENT_DAY }],
         }}
@@ -30,13 +30,26 @@ function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
           {
             text: 'Status',
             field: 'status',
-            width: 190,
+            width: 120,
             renderer: ({ record }: { record: Model }) => {
               const task = record as PlanTask;
               return {
                 tag: 'span',
                 className: `badge badge-${task.status}`,
-                text: statusText(task.status, task.waitingOn),
+                text: statusLabel[task.status],
+              };
+            },
+          },
+          {
+            text: 'Funded by',
+            field: 'fundedBy',
+            width: 200,
+            renderer: ({ record }: { record: Model }) => {
+              const task = record as PlanTask;
+              return {
+                tag: 'span',
+                className: 'qm-funding',
+                text: fundingText(task.fundedBy, task.fundedByPaid),
               };
             },
           },
