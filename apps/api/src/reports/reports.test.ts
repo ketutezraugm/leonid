@@ -15,7 +15,9 @@ import { reportsRouter } from '../routes/reports.js';
 import { generateSponsorReport } from './generate.js';
 import { getReportLink } from './store.js';
 
-const NOW = new Date('2026-11-05T12:00:00Z');
+// The test rows get the database's real clock, so "now" must not be in the past: the PayPal search window runs from a
+// day before the earliest purchase up to `now`, and a fixed date before the rows were written makes it empty.
+const NOW = new Date();
 const JOBS = 'j'.repeat(40);
 const job = { 'x-job-token': JOBS };
 const treasurer = { 'x-treasurer-token': 'letmein' };
