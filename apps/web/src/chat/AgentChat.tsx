@@ -234,7 +234,7 @@ export function AgentChat({
   return (
     <section className={`chat chat--${variant}`} aria-label="Agent chat">
       <header className="chat-header">
-        <h2>Ask Quartermaster</h2>
+        <h2>Ask Leo</h2>
         <button
           type="button"
           className="chat-toggle"
@@ -463,7 +463,7 @@ function ChatPanel({
       <form className="chat-form" onSubmit={onSubmit}>
         <textarea
           aria-label="Message"
-          placeholder="Message Quartermaster (Enter to send)"
+          placeholder="Message Leo (Enter to send)"
           rows={2}
           maxLength={CHAT_MESSAGE_MAX_LENGTH}
           value={draft}
@@ -493,7 +493,7 @@ function Message({
   answerable: boolean;
   onAnswer: (text: string) => void;
 }) {
-  const speaker = message.role === 'user' ? 'You: ' : 'Quartermaster: ';
+  const speaker = message.role === 'user' ? 'You: ' : 'Leo: ';
   return (
     <>
       {message.parts.map((part, index) => {

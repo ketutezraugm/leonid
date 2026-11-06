@@ -15,7 +15,7 @@ export function chatModel(): LanguageModel {
     name: 'openrouter',
     baseURL: process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1',
     apiKey,
-    headers: { 'X-Title': 'Quartermaster' },
+    headers: { 'X-Title': 'Leonid' },
   });
   return openrouter.chatModel(modelId);
 }

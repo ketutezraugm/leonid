@@ -1,72 +1,77 @@
 /*
- * Quartermaster design system tokens, v2 "Forest and brass" (owner: P4).
+ * Leonid design system tokens, v3 "Midnight" (owner: P4; palette by Ezra, P2).
  *
  * One source of truth for color, type, spacing and shape. Every screen, the
  * agent chat, and the AG Studio and Bryntum themes read these variables.
  * Never hard-code a color or a spacing value in a component; add or reuse a
  * token here instead (see .claude/rules/web-ui.md).
  *
- * Mirrors the "Quartermaster" design system in Claude Design
+ * Mirrors the "Leonid" design system in Claude Design
  * (https://claude.ai/artifact/4VM9W7CbxAMmoQe4HzHDmi). Change a value there
- * and here together. Component styles live in components.css.
+ * and here together. Component styles live in components.css. Token names are
+ * kept from v2 "Forest and brass" on purpose (docs/brand/BRAND.md): only the
+ * values moved, so no component had to change.
  */
 
 :root {
   /* --- Frame, sheet and ink ---
    * The frame (bg) holds the sidebar; each screen is a white sheet on it, and
    * cards on the sheet are white with a 1px border. No shadows at rest. */
-  --color-bg: #eef1ee; /* green-grey frame: text 15.7:1, muted 5.6:1 */
+  --color-bg: #f4f4fb; /* night-indigo frame: text 15.9:1, muted 6.9:1 */
   --color-surface: #ffffff; /* the sheet and every card */
-  --color-surface-sunken: #e8ede9; /* secondary buttons, bar tracks, row hover */
-  --color-text: #0f1a14; /* ink, 17.8:1 on white */
-  --color-muted: #56625b; /* secondary text, 6.4:1 on white */
-  --color-border: #e1e6e2; /* card and sheet edges: decorative, never a control outline */
-  --color-rule: #edf1ee; /* row rules inside tables and lists */
-  --color-control-edge: #7d8a82; /* input and checkbox outlines, 3.6:1 on white */
+  --color-surface-sunken: #ececf7; /* secondary buttons, bar tracks, row hover */
+  --color-text: #15163a; /* ink, 15.9:1 on bg */
+  --color-muted: #55577a; /* secondary text, 6.9:1 on white */
+  --color-border: #dedff0; /* card and sheet edges: decorative, never a control outline */
+  --color-rule: #ededf7; /* row rules inside tables and lists */
+  --color-control-edge: #7a7da3; /* input and checkbox outlines, 4.0:1 on white */
 
-  /* --- Forest: the one action color --- */
-  --color-accent: #1f3a2c; /* primary buttons, links, active nav text; white on it 12.4:1 */
-  --color-accent-strong: #142a1f; /* primary hover and pressed */
-  --color-accent-soft: #e1e9e3; /* active nav row, selected rows; accent text on it 10:1 */
+  /* --- Indigo: the one action color --- */
+  --color-accent: #2b2670; /* primary buttons, links, active nav text; white on it 13.0:1 */
+  --color-accent-strong: #201c58; /* primary hover and pressed */
+  --color-accent-soft: #e8eafc; /* periwinkle-soft: active nav row, selected rows */
   --color-on-accent: #ffffff;
 
-  /* --- Data and brass ---
-   * One chart hue on the main data element. Brass is the insignia: the brand
-   * mark and the today line only, never an area and never text (3.6:1). */
-  --color-data: #2d5a3d; /* committed spend, main series, in-progress bars; 8:1 on white */
-  --color-data-soft: #b9d0bf; /* unlocked budget segment, secondary series */
-  --color-brass: #a4812e;
-  --color-brass-text: #7d6020; /* brass as words, 5.9:1 on white */
-  --color-brass-soft: #f7f2e6; /* the one surface that says "this needs you"; brass-text on it 5.4:1 */
-  --color-brass-on-dark: #d9b968; /* brass as words on forest (the landing hero); 6.5:1 on --color-accent */
-  --color-hold: #d1d8d3; /* money that exists but cannot be spent: invoiced, pledged */
+  /* --- Data and the meteor ---
+   * One chart hue on the main data element. The meteor is the insignia: the
+   * brand mark and the today line only, never an area and never text. */
+  --color-data: #3d46b8; /* chart-1: committed spend, main series, in-progress bars */
+  --color-data-soft: #93a6f7; /* chart-3: unlocked budget segment, secondary series */
+  --color-brass: #b42d6e; /* the meteor: mark and Gantt today line only */
+  --color-brass-text: #b42d6e; /* meteor as words; landing page only */
+  --color-brass-soft: #fff1d6; /* the one surface that says "this needs you" = approval-soft */
+  --color-brass-on-dark: #ff7ab6; /* the meteor on the night sky (landing hero) */
+  --color-hold: #d3d5ea; /* money that exists but cannot be spent: invoiced, pledged */
 
   /* --- Status colors ---
    * Shared by badges, the Gantt, AG Studio and Approvals so a "blocked" spend
    * and a "blocked" task read as the same state everywhere. Base = fills and
    * bars, -soft = badge fill, -text = words (each 6.7:1 or better on its soft). */
-  --color-status-done: #2e7d32; /* paid / delivered / allowed; brighter than the brand forest on purpose */
-  --color-status-done-soft: #dcfae5;
-  --color-status-done-text: #14622c;
+  --color-status-done: #1e7a3e; /* paid / delivered / allowed */
+  --color-status-done-soft: #e2f4e7;
+  --color-status-done-text: #1e7a3e;
   --color-status-progress: var(--color-data); /* in flight */
   --color-status-progress-soft: var(--color-accent-soft);
   --color-status-progress-text: var(--color-accent);
-  --color-status-pending: #8a948e; /* not started */
+  --color-status-pending: #56656a; /* not started */
   --color-status-pending-soft: var(--color-surface-sunken);
-  --color-status-pending-text: #3d4a42;
-  --color-status-risk: #b26a00; /* at risk / needs approval: a fill or mark, 4.2:1 */
-  --color-status-risk-soft: #fffbeb;
-  --color-status-risk-text: #92400e;
-  --color-status-blocked: #c4242a; /* blocked, missed deadline, danger action; white on it 5.8:1 */
-  --color-status-blocked-soft: #ffedea;
-  --color-status-blocked-text: #831c1e;
+  --color-status-pending-text: #56656a;
+  --color-status-risk: #8f5600; /* at risk / needs approval: a fill or mark */
+  --color-status-risk-soft: #fff1d6;
+  --color-status-risk-text: #8f5600;
+  --color-status-blocked: #b42318; /* blocked, missed deadline, danger action */
+  --color-status-blocked-soft: #fde7e4;
+  --color-status-blocked-text: #b42318;
   --color-danger: var(--color-status-blocked);
 
   /* --- Typography ---
-   * Geist for everything; Geist Mono for PayPal IDs and rule JSON only.
+   * Bricolage Grotesque for page titles, the wordmark, the one headline
+   * figure per screen and the landing headline; IBM Plex Sans for everything
+   * else; IBM Plex Mono for PayPal IDs and rule JSON only.
    * Body is 14px on desktop and 16px on phones and in every input (iOS won't zoom). */
-  --font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, 'Consolas', monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Consolas', monospace;
+  --font-display: 'Bricolage Grotesque', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
   --font-size-xs: 12px; /* badges, table headers, legends, captions */
   --font-size-sm: 14px; /* desktop body */
   --font-size-md: 16px; /* phone body, inputs, section titles */
@@ -95,8 +100,8 @@
   --radius-card: 8px; /* cards; AG Studio widgets match */
   --radius-sheet: 16px; /* the sheet, the one large corner */
   --radius-pill: 999px;
-  --color-scrim: rgba(15, 26, 20, 0.32); /* behind a popup: the screen under it, dimmed */
-  --shadow-menu: 0 8px 24px rgba(15, 26, 20, 0.14); /* only what floats: menus, popovers, dialogs */
+  --color-scrim: rgba(21, 22, 58, 0.32); /* behind a popup: the screen under it, dimmed */
+  --shadow-menu: 0 8px 24px rgba(21, 22, 58, 0.14); /* only what floats: menus, popovers, dialogs */
   --control-height: 36px; /* 44px on phones */
   --row-height: 44px;
   --sidebar-width: 228px;

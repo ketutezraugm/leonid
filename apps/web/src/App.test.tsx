@@ -44,7 +44,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByRole('heading', { name: 'Event home' })).toBeInTheDocument();
-    expect(screen.getByText('Quartermaster')).toBeInTheDocument();
+    expect(screen.getByText('Leonid')).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
   });
 

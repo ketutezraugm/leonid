@@ -33,7 +33,7 @@ export function Events() {
 
       {kind === 'ready' && events.length === 0 && (
         <PageState kind="empty" title="Create your first event">
-          Add its date, headcount and budget, and Quartermaster sets up its plan and money.
+          Add its date, headcount and budget, and Leo sets up its plan and money.
         </PageState>
       )}
 

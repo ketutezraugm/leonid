@@ -4,7 +4,7 @@ Shared instructions for every coding agent working in this repo (Claude Code, Cu
 
 ## Project
 
-Quartermaster is an AI operations agent for community tech events that runs all of an event's money on PayPal (sandbox). Sponsor money comes in, purchases and people payouts go out, and every outflow passes spending rules that no agent can break. It is a PayPal AI Hackathon entry: the internal submit date is **Nov 10, 2026**, and the official deadline is Nov 12, 12:00 PM PST. The spec is `docs/PRD.pdf`. Features are F1–F25 and owners are P1–P4, so reference those IDs in PRs and commits.
+Leonid is an AI operations agent for community tech events that runs all of an event's money on PayPal (sandbox). Sponsor money comes in, purchases and people payouts go out, and every outflow passes spending rules that no agent can break. It is a PayPal AI Hackathon entry: the internal submit date is **Nov 10, 2026**, and the official deadline is Nov 12, 12:00 PM PST. The spec is `docs/PRD.pdf`. Features are F1–F25 and owners are P1–P4, so reference those IDs in PRs and commits.
 
 | Role | Owns                                                                                                      | Rules file                                                 |
 | ---- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
