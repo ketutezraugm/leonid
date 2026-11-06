@@ -128,14 +128,13 @@ describe('prize and speaker payouts (F17)', () => {
     expect((await listed())[0]).toMatchObject({ id: item.id, status: 'processing' });
   });
 
-  it("blocks a prize funded by a sponsor whose invoice is not paid (the Gantt gate)", async () => {
+  it("pays a prize funded by a sponsor whose invoice is not paid: the sponsor gate is gone, the rules are the limit", async () => {
     const [sponsor] = await db.select().from(sponsors).where(eq(sponsors.eventId, eventId));
 
     const item = await pay(prize({ sponsorId: sponsor!.id }));
 
-    expect(item.status).toBe('blocked');
-    expect(item.note).toMatch(/sponsor's invoice/);
-    expect(sent).toHaveLength(0);
+    expect(item.status).toBe('processing');
+    expect(sent).toHaveLength(1);
   });
 
   it('is treasurer-only and checks its body', async () => {
