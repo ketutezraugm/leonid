@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
+import { Payouts } from '../money/Payouts';
 import { PageHeader } from '../ui/PageHeader';
 import { PageState } from '../ui/PageState';
 import { TabPanel, Tabs } from '../ui/Tabs';
@@ -8,6 +9,7 @@ const CommandCenter = lazy(() => import('../money/CommandCenter'));
 
 const tabs = [
   { id: 'command', label: 'Command center' },
+  { id: 'payouts', label: 'Payouts' },
   { id: 'sponsors', label: 'Sponsors and invoices' },
   { id: 'audit', label: 'Audit log' },
 ];
@@ -27,6 +29,7 @@ export function Money() {
             <CommandCenter />
           </Suspense>
         )}
+        {tab === 'payouts' && <Payouts />}
         {tab === 'sponsors' && (
           <PageState kind="empty" title="Sponsors and invoices">
             Each sponsor’s tier, amount, contact email and invoice status will list here with one

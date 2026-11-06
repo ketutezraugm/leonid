@@ -12,7 +12,8 @@ import { requireTreasurer } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
 import { getDemoEvent } from '../db/events.js';
 import { getBudgetBurn, getFundingThermometer, getRulesHealth } from '../widgets/live.js';
-import { getDeliveryRiskSample, getPayoutsLedgerSample } from '../widgets/sample.js';
+import { getDeliveryRiskSample } from '../widgets/sample.js';
+import { getPayoutsLedger } from '../widgets/payouts.js';
 
 export interface WidgetsRouterOptions {
   env?: NodeJS.ProcessEnv;
@@ -30,7 +31,7 @@ const EventQuery = WidgetFilter.extend({ eventId: z.uuid().optional() });
 //   GET /rules-health[?eventId=…&category=…]   allowed, sent to approval and blocked, with reasons
 //   GET /budget-burn[?eventId=…&category=…]    cleared, committed and unlocked, by category, with caps
 //   GET /delivery-risk[?eventId=…&sponsorId=…&category=…]   SAMPLE until P4's orders and tracking exist
-//   GET /payouts[?eventId=…&sponsorId=…&category=…]   SAMPLE until F17's payouts exist
+//   GET /payouts[?eventId=…&sponsorId=…&category=…]   claims, prizes and speaker fees, live (F17)
 // With no eventId the seeded demo event is used: the web does not know an event's id until the Event
 // endpoint exists, and the demo runs on that one event.
 export function widgetsRouter(options: WidgetsRouterOptions = {}) {
@@ -129,12 +130,12 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     guard,
     handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
       const id = await eventIdOf(db, eventId);
-      const data = id ? await getPayoutsLedgerSample(db, id, filter, now) : undefined;
+      const data = id ? await getPayoutsLedger(db, id, filter, now) : undefined;
       if (!data) {
         res.status(404).json({ error: 'No such event' });
         return;
       }
-      res.json(PayoutsLedgerResponse.parse({ source: 'sample', data }));
+      res.json(PayoutsLedgerResponse.parse({ source: 'live', data }));
     }),
   );
 

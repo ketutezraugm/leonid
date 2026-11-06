@@ -19,6 +19,7 @@ import { webhookRouter } from '../router.js';
 import { buildCaptureTag, createCaptureCompletedHandler } from './capture-completed.js';
 import { createCaptureReversalHandler } from './capture-reversed.js';
 import { registerLedgerHandlers } from './index.js';
+import { PAYOUT_ITEM_EVENTS } from './payout-item.js';
 import { createInvoicePaidHandler } from './invoice-paid.js';
 
 interface Money {
@@ -432,15 +433,18 @@ describe('PAYMENT.CAPTURE.REFUNDED / PAYMENT.CAPTURE.REVERSED', () => {
 });
 
 describe('registerLedgerHandlers', () => {
-  it('registers the ledger handlers for income and income reversals', () => {
+  it('registers the ledger handlers for income and income reversals, and the payout item handler (F17)', () => {
     const registered: string[] = [];
     registerLedgerHandlers((eventType) => registered.push(eventType), () => db);
-    expect(registered.sort()).toEqual([
-      'INVOICING.INVOICE.PAID',
-      'PAYMENT.CAPTURE.COMPLETED',
-      'PAYMENT.CAPTURE.REFUNDED',
-      'PAYMENT.CAPTURE.REVERSED',
-    ]);
+    expect(registered.sort()).toEqual(
+      [
+        'INVOICING.INVOICE.PAID',
+        'PAYMENT.CAPTURE.COMPLETED',
+        'PAYMENT.CAPTURE.REFUNDED',
+        'PAYMENT.CAPTURE.REVERSED',
+        ...PAYOUT_ITEM_EVENTS,
+      ].sort(),
+    );
   });
 
   it('leaves Procurement refunds to another handler registered on the same event type', async () => {
