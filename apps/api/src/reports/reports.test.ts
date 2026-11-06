@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.js';
 import { recordLedgerEntry } from '../db/ledger.js';
-import { auditLog, sponsors } from '../db/schema.js';
+import { approvals, auditLog, sponsors } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import type { FoundTransaction } from '../paypal/search.js';
@@ -143,6 +143,42 @@ describe('checking a report against PayPal\'s transaction records', () => {
     a.use('/api/jobs', jobsRouter({ env: { JOBS_TOKEN: JOBS }, db: () => db, now: () => NOW, model: () => undefined, search: () => async () => [found({})] }));
     const res = await request(a).post('/api/jobs/sponsor-report').set(job).send({ sponsorId: harbor }).expect(200);
     expect(res.body.paypalCheck).toEqual({ confirmed: 1, differs: 0, notFound: 1 });
+  });
+});
+
+describe('a purchase the treasurer approved', () => {
+  // As the executor records it: the rules row sits under the ORDER id, the approval joins them, and the capture row carries the CAPTURE id.
+  async function approvedSpend(referenceId: string, order: string, capture: { id: string; outcome: string } | null) {
+    const spend = { referenceId, amountMinor: 42_000, currency: 'USD', category: 'prizes', vendor: 'Prize Co', eventId };
+    await db.insert(auditLog).values({
+      actor: 'agent', action: 'spend.check', input: spend, reason: 'x',
+      ruleResult: JSON.stringify({ decision: 'needs_approval', reasons: ['over the limit'], ruleIds: [] }),
+      outcome: 'needs_approval', paypalId: order,
+    });
+    await db.insert(approvals).values({ spend, eventId, status: 'paid', paypalOrderId: order });
+    if (capture) await db.insert(auditLog).values({ actor: 'treasurer', action: 'spend.capture', input: spend, outcome: capture.outcome, paypalId: capture.id });
+  }
+  const tx = (id: string): FoundTransaction => ({ transactionId: id, referenceId: 'something-else', status: 'S', amountMinor: 42_000, currency: 'USD' });
+
+  it('is shown and checked by its capture id, the id PayPal lists, not by its order id', async () => {
+    await approvedSpend('a1', 'ORDER-A', { id: 'CAP-A', outcome: 'paid' });
+    const { view } = (await generateSponsorReport(db, harbor, { now: NOW, search: async () => [tx('CAP-A')] }))!;
+    expect(view.spend.lines).toHaveLength(1);
+    expect(view.spend.lines[0]).toMatchObject({ paypalId: 'CAP-A', paypalCheck: 'confirmed' });
+    expect(JSON.stringify(view)).not.toContain('ORDER-A');
+  });
+
+  it('keeps the order id, and is not confirmed, when no capture was recorded or the capture was refused', async () => {
+    await approvedSpend('a2', 'ORDER-B', null);
+    await approvedSpend('a3', 'ORDER-C', { id: 'CAP-C', outcome: 'refused' });
+    const { view } = (await generateSponsorReport(db, harbor, { now: NOW, search: async () => [tx('CAP-B'), tx('CAP-C')] }))!;
+    expect(view.spend.lines.map((l) => [l.paypalId, l.paypalCheck]).sort()).toEqual([['ORDER-B', 'not_found'], ['ORDER-C', 'not_found']]);
+  });
+
+  it('leaves a spend paid straight from the wallet on its own id, which already is the capture id', async () => {
+    await paidSpend('auto', { amountMinor: 14_000 });
+    const { view } = (await generateSponsorReport(db, harbor, { now: NOW, search: async () => [{ transactionId: 'PP-auto', referenceId: 'B-agreement', status: 'S', amountMinor: 14_000, currency: 'USD' }] }))!;
+    expect(view.spend.lines[0]).toMatchObject({ paypalId: 'PP-auto', paypalCheck: 'confirmed' });
   });
 });
 
