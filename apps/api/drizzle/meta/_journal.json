@@ -92,6 +92,13 @@
       "when": 1793977366000,
       "tag": "0012_payouts",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793981849618,
+      "tag": "0013_event_owners",
+      "breakpoints": true
     }
   ]
 }

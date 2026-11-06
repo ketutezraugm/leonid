@@ -13,7 +13,10 @@ export const events = pgTable('events', {
   // Price of one ticket in minor units. Null: this event sells no tickets, and the public checkout refuses them.
   ticketPrice: integer('ticket_price'),
   treasuryMerchantId: text('treasury_merchant_id'),
-}).enableRLS();
+  // Who the event belongs to: ownerOf() of the treasurer who made it (paypal:<id> or demo:<id>). Null for the seeded demo
+  // event, which every signed-in treasurer sees, and for events made before owners existed, which only the ops token sees.
+  ownerSub: text('owner_sub'),
+}, (t) => [index('events_owner_idx').on(t.ownerSub)]).enableRLS();
 
 export const sponsors = pgTable('sponsors', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -192,6 +195,8 @@ export const chatThreads = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     // Null until the chat creates its event or the user links one; a chat never sees other events.
     eventId: uuid('event_id').references(() => events.id),
+    // Same key as events.owner_sub. A chat is seen only by its owner; null (made before owners existed) only by the ops token.
+    ownerSub: text('owner_sub'),
     title: text('title'),
     messages: jsonb('messages').notNull().default([]),
     // Archived threads leave the list but keep their mandate and still open by id.

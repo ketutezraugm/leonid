@@ -7,9 +7,9 @@ import type {
   VenueDepositResponse,
 } from '@quartermaster/shared';
 import { venuePickOf } from '../agents/venuePick.js';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
-import { getThread } from '../db/mandates.js';
+import { getVisibleThread } from '../db/mandates.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import { findListing, type VenueListing } from '../search/venueCatalog.js';
 
@@ -20,7 +20,7 @@ export interface VenueDepositRouterOptions {
 }
 
 // The deposit that holds the venue the organizer picked in a chat, paid with PayPal:
-//   GET  /:threadId  public: the picked venue's deposit, or null (nothing picked, or not a catalog venue)
+//   GET  /:threadId  (treasurer) the picked venue's deposit, or null (nothing picked, not a catalog venue, or not the caller's chat)
 //   POST /:threadId  (treasurer) pays it through the executor: rules check -> audit -> PayPal. Within the rules it is
 //                    charged to the agent wallet; over them it becomes a PayPal order the treasurer approves.
 // Nothing here trusts the browser or the agent: the pick is read from the thread's own messages (and must be a venue the
@@ -34,8 +34,9 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
 
   async function pickedVenue(
     threadId: string,
+    owner: string | null,
   ): Promise<{ listing: VenueListing; eventId: string | null } | null> {
-    const thread = await getThread(db(), threadId);
+    const thread = await getVisibleThread(db(), threadId, owner);
     if (!thread || !Array.isArray(thread.messages) || thread.messages.length === 0) return null;
     let messages: UIMessage[];
     try {
@@ -77,8 +78,9 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
 
   router.get(
     '/:threadId',
+    requireTreasurer(env),
     handle(async (_req, res, threadId) => {
-      const picked = await pickedVenue(threadId);
+      const picked = await pickedVenue(threadId, ownerOf(currentTreasurer(res)));
       const body: VenueDepositResponse = { deposit: picked ? depositOf(picked.listing) : null };
       res.json(body);
     }),
@@ -95,7 +97,7 @@ export function venueDepositRouter(options: VenueDepositRouterOptions = {}) {
         res.status(503).json({ error: 'PayPal Procurement app is not configured' });
         return;
       }
-      const picked = await pickedVenue(threadId);
+      const picked = await pickedVenue(threadId, ownerOf(currentTreasurer(res)));
       if (!picked) {
         res.status(409).json({ error: 'Pick one of the seeded venues in this chat first.' });
         return;

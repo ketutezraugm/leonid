@@ -20,7 +20,7 @@ beforeEach(async () => {
   db = await createTestDb();
   eventId = (await seedDemoEvent(db)).id;
   threadId = crypto.randomUUID();
-  await getOrCreateThread(db, threadId, eventId);
+  await getOrCreateThread(db, threadId, eventId, null);
 });
 
 const chosen: BookingChoice = { chosen: ['venue', 'swag'], extra: null };
@@ -126,7 +126,7 @@ describe('orchestrator', () => {
 
   it('refuses to plan tasks before the chat has an event', async () => {
     const empty = crypto.randomUUID();
-    await getOrCreateThread(db, empty, null);
+    await getOrCreateThread(db, empty, null, null);
     const agent = createOrchestrator({
       db,
       model: scriptedModel([
@@ -183,7 +183,7 @@ describe('orchestrator', () => {
 
   it('tells the agents today and refuses an event date in the past', async () => {
     const empty = crypto.randomUUID();
-    await getOrCreateThread(db, empty, null);
+    await getOrCreateThread(db, empty, null, null);
     const model = scriptedModel([
       {
         tool: 'create_event',

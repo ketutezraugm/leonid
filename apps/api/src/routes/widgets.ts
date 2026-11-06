@@ -8,9 +8,9 @@ import {
 } from '@quartermaster/shared';
 import { Router, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
-import { getDemoEvent } from '../db/events.js';
+import { getDemoEvent, getVisibleEvent } from '../db/events.js';
 import { getBudgetBurn, getFundingThermometer, getRulesHealth } from '../widgets/live.js';
 import { getDeliveryRiskSample } from '../widgets/sample.js';
 import { getPayoutsLedger } from '../widgets/payouts.js';
@@ -39,9 +39,12 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
   const guard = requireTreasurer(env);
   const router = Router();
 
-  // The event a request is about: the one it names, else the seeded demo event (none: undefined, so 404).
-  const eventIdOf = async (db: Db, eventId: string | undefined) =>
-    eventId ?? (await getDemoEvent(db))?.id;
+  // The event a request is about: the one it names when the caller can see it, else the seeded demo event
+  // (none: undefined, so 404). Someone else's event answers like an unknown one.
+  const eventIdOf = async (db: Db, eventId: string | undefined, res: Response) =>
+    eventId
+      ? (await getVisibleEvent(db, eventId, ownerOf(currentTreasurer(res))))?.id
+      : (await getDemoEvent(db))?.id;
 
   const handle =
     <Q>(
@@ -73,7 +76,7 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     '/funding',
     guard,
     handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
-      const id = await eventIdOf(db, eventId);
+      const id = await eventIdOf(db, eventId, res);
       const data = id ? await getFundingThermometer(db, id, filter, now) : undefined;
       if (!data) {
         res.status(404).json({ error: 'No such event' });
@@ -87,7 +90,7 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     '/rules-health',
     guard,
     handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
-      const id = await eventIdOf(db, eventId);
+      const id = await eventIdOf(db, eventId, res);
       const data = id ? await getRulesHealth(db, id, filter, now) : undefined;
       if (!data) {
         res.status(404).json({ error: 'No such event' });
@@ -101,7 +104,7 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     '/budget-burn',
     guard,
     handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
-      const id = await eventIdOf(db, eventId);
+      const id = await eventIdOf(db, eventId, res);
       const data = id ? await getBudgetBurn(db, id, filter, now) : undefined;
       if (!data) {
         res.status(404).json({ error: 'No such event' });
@@ -115,7 +118,7 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     '/delivery-risk',
     guard,
     handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
-      const id = await eventIdOf(db, eventId);
+      const id = await eventIdOf(db, eventId, res);
       const data = id ? await getDeliveryRiskSample(db, id, filter, now) : undefined;
       if (!data) {
         res.status(404).json({ error: 'No such event' });
@@ -129,7 +132,7 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     '/payouts',
     guard,
     handle(EventQuery, async ({ eventId, ...filter }, res, { db, now }) => {
-      const id = await eventIdOf(db, eventId);
+      const id = await eventIdOf(db, eventId, res);
       const data = id ? await getPayoutsLedger(db, id, filter, now) : undefined;
       if (!data) {
         res.status(404).json({ error: 'No such event' });

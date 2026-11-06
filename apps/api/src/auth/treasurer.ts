@@ -75,6 +75,12 @@ export function currentTreasurer(res: Response): Treasurer {
   return { sub: t.sub, via: t.via };
 }
 
+// The key events and chats are owned under (events.owner_sub): paypal:<PayPal user id> or demo:<id of that demo login>.
+// Null for the ops token, which sees and acts on every event.
+export function ownerOf(t: Treasurer): string | null {
+  return t.via === 'ops-token' ? null : `${t.via}:${t.sub}`;
+}
+
 // Audit actor for a treasurer action: treasurer:paypal:<sub>, treasurer:demo or treasurer:ops-token.
 export function treasurerActor(res: Response): string {
   const t = currentTreasurer(res);

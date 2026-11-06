@@ -1,7 +1,7 @@
 import { CreateEventRequest, type EventsResponse, type EventSummary } from '@quartermaster/shared';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
 import { createEvent, deleteEvent, listEvents } from '../db/events.js';
 
@@ -11,9 +11,10 @@ export interface EventsRouterOptions {
 }
 
 // The events the app runs (All events, the switcher) and the setup flow's first step. Treasurer only. No money moves.
+// Each treasurer sees their own events plus the shared demo event (canSeeEvent in db/events.ts).
 //   GET    /      -> EventsResponse (shared), soonest first
-//   POST   /      CreateEventRequest -> 201 EventSummary; 422 with the first problem when the body is invalid
-//   DELETE /:id   -> 204; 404 unknown; 409 { error } for the demo event or one with money history (never deleted)
+//   POST   /      CreateEventRequest -> 201 EventSummary, owned by the caller; 422 with the first problem when the body is invalid
+//   DELETE /:id   -> 204; 404 unknown or not the caller's; 409 { error } for the demo event or one with money history (never deleted)
 export function eventsRouter(options: EventsRouterOptions = {}) {
   const env = options.env ?? process.env;
   const router = Router();
@@ -31,7 +32,7 @@ export function eventsRouter(options: EventsRouterOptions = {}) {
     const conn = db(res);
     if (!conn) return;
     try {
-      const body: EventsResponse = { events: await listEvents(conn) };
+      const body: EventsResponse = { events: await listEvents(conn, ownerOf(currentTreasurer(res))) };
       res.json(body);
     } catch (err) {
       console.error('list events failed', err);
@@ -55,7 +56,7 @@ export function eventsRouter(options: EventsRouterOptions = {}) {
     const conn = db(res);
     if (!conn) return;
     try {
-      const body: EventSummary = await createEvent(conn, input.data);
+      const body: EventSummary = await createEvent(conn, input.data, ownerOf(currentTreasurer(res)));
       res.status(201).json(body);
     } catch (err) {
       console.error('create event failed', err);
@@ -72,7 +73,12 @@ export function eventsRouter(options: EventsRouterOptions = {}) {
     const conn = db(res);
     if (!conn) return;
     try {
-      const result = await deleteEvent(conn, id.data, treasurerActor(res));
+      const result = await deleteEvent(
+        conn,
+        id.data,
+        treasurerActor(res),
+        ownerOf(currentTreasurer(res)),
+      );
       if (result.kind === 'not_found') res.status(404).json({ error: 'event not found' });
       else if (result.kind === 'refused') res.status(409).json({ error: result.reason });
       else res.status(204).end();

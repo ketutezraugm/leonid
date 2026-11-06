@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -5,8 +6,11 @@ import { ChatThreadResponse } from '@quartermaster/shared';
 import { createApp } from '../app.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
 import { scriptedModel, type ScriptStep } from '../agents/testing.js';
+import { SESSION_COOKIE, sign } from '../auth/session.js';
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
+import { createEvent } from '../db/events.js';
 import { getThread } from '../db/mandates.js';
+import { events } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { createChatRouter } from './chat.js';
@@ -24,12 +28,33 @@ vi.mock('../db/client.js', async (importOriginal) => ({
 
 let db: Db;
 
+const SECRET = 's'.repeat(40);
+const ORIGIN = 'http://app.test';
+
 beforeEach(async () => {
   db = await createTestDb();
   vi.mocked(getDb).mockReturnValue(db);
   vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.stubEnv('SESSION_SECRET', SECRET);
+  vi.stubEnv('APP_BASE_URL', ORIGIN);
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
+
+// Every request through this app is the demo treasurer `sub`, signed in and sent from the app's own page.
+function signedIn(inner: express.Express = createApp(), sub = 'alice') {
+  const cookie = `${SESSION_COOKIE}=${sign('session', { sub, via: 'demo' }, SECRET, 3600)}`;
+  const app = express();
+  app.use((req, _res, next) => {
+    req.headers.cookie = cookie;
+    req.headers.origin = ORIGIN;
+    next();
+  });
+  app.use(inner);
+  return app;
+}
 
 function userMessage(text: string, threadId = crypto.randomUUID()) {
   return {
@@ -54,7 +79,7 @@ describe('POST /api/chat', () => {
   it('streams the reply and saves the thread', async () => {
     await seedDemoEvent(db);
     useScript([{ text: 'Nothing is unlocked until a sponsor pays.' }]);
-    const app = createApp();
+    const app = signedIn();
     const body = userMessage('How much budget is unlocked?');
 
     const res = await request(app).post('/api/chat').send(body);
@@ -78,7 +103,7 @@ describe('POST /api/chat', () => {
       },
       { text: 'On it.' },
     ]);
-    const app = createApp();
+    const app = signedIn();
     const body = userMessage('Find lanyards');
 
     const res = await request(app).post('/api/chat').send(body);
@@ -94,7 +119,7 @@ describe('POST /api/chat', () => {
 
   it('sends earlier messages of the same thread to the model', async () => {
     await seedDemoEvent(db);
-    const app = createApp();
+    const app = signedIn();
     const first = userMessage('My code word is pineapple');
 
     useScript([{ text: 'Noted.' }]);
@@ -109,7 +134,7 @@ describe('POST /api/chat', () => {
   });
 
   it('rejects an invalid body', async () => {
-    const app = createApp();
+    const app = signedIn();
     expect((await request(app).post('/api/chat').send({})).status).toBe(400);
     expect((await request(app).post('/api/chat').send(userMessage('   '))).status).toBe(400);
     expect(
@@ -125,7 +150,7 @@ describe('POST /api/chat', () => {
     vi.mocked(chatModel).mockImplementation(() => {
       throw new AgentNotConfiguredError('missing key');
     });
-    const res = await request(createApp()).post('/api/chat').send(userMessage('Hi'));
+    const res = await request(signedIn()).post('/api/chat').send(userMessage('Hi'));
     expect(res.status).toBe(503);
   });
 
@@ -134,14 +159,14 @@ describe('POST /api/chat', () => {
     vi.mocked(getDb).mockImplementation(() => {
       throw new DbNotConfiguredError('missing url');
     });
-    const res = await request(createApp()).post('/api/chat').send(userMessage('Hi'));
+    const res = await request(signedIn()).post('/api/chat').send(userMessage('Hi'));
     expect(res.status).toBe(503);
   });
 
   it('works with no event seeded: a new chat starts without one', async () => {
     useScript([{ text: 'Tell me about your event.' }]);
     const body = userMessage('Hi');
-    const res = await request(createApp()).post('/api/chat').send(body);
+    const res = await request(signedIn()).post('/api/chat').send(body);
     expect(res.status).toBe(200);
     expect((await getThread(db, body.threadId))?.eventId).toBeNull();
   });
@@ -149,12 +174,13 @@ describe('POST /api/chat', () => {
   it('rate limits per client', async () => {
     await seedDemoEvent(db);
     useScript([{ text: 'ok' }]);
-    const app = express();
-    app.use(express.json());
-    app.use(
+    const inner = express();
+    inner.use(express.json());
+    inner.use(
       '/api/chat',
       createChatRouter({ limiter: createRateLimiter({ max: 1, windowMs: 60_000 }) }),
     );
+    const app = signedIn(inner);
 
     expect((await request(app).post('/api/chat').send(userMessage('one'))).status).toBe(200);
     const limited = await request(app).post('/api/chat').send(userMessage('two'));
@@ -177,7 +203,7 @@ describe('chat event scope', () => {
   // The bug this guards: tasks planned in one chat showed up in every new chat.
   it("does not show one chat's event or tasks to a new chat", async () => {
     await seedDemoEvent(db);
-    const app = createApp();
+    const app = signedIn();
     const first = userMessage('Plan a meetup in Yogyakarta for 80 people');
     useScript([
       newMeetup,
@@ -207,7 +233,7 @@ describe('chat event scope', () => {
 
   it('links a new chat to an existing event only when asked', async () => {
     const demo = await seedDemoEvent(db);
-    const app = createApp();
+    const app = signedIn();
     const body = { ...userMessage('Check my event'), eventId: demo.id };
     const model = useScript([{ tool: 'read_event', input: {} }, { text: 'OpenHack is set.' }]);
 
@@ -221,7 +247,7 @@ describe('chat event scope', () => {
 
   it('ignores eventId for an existing thread and rejects an unknown event', async () => {
     const demo = await seedDemoEvent(db);
-    const app = createApp();
+    const app = signedIn();
     const body = userMessage('Hi');
     useScript([{ text: 'ok' }]);
     await request(app).post('/api/chat').send(body);
@@ -242,12 +268,12 @@ describe('chat event scope', () => {
 
 describe('GET /api/chat/:threadId', () => {
   it('returns an empty thread for an unknown id', async () => {
-    const thread = await loadThread(createApp(), crypto.randomUUID());
+    const thread = await loadThread(signedIn(), crypto.randomUUID());
     expect(thread).toEqual({ messages: [], checklist: [], event: null });
   });
 
   it('rejects a malformed id', async () => {
-    expect((await request(createApp()).get('/api/chat/not-a-uuid')).status).toBe(400);
+    expect((await request(signedIn()).get('/api/chat/not-a-uuid')).status).toBe(400);
   });
 });
 
@@ -267,7 +293,7 @@ describe('chat sessions', () => {
 
   it('titles a thread from its first message and lists only the requested ids, newest first', async () => {
     await seedDemoEvent(db);
-    const app = createApp();
+    const app = signedIn();
     const first = await sendOne(app, 'Plan swag for OpenHack');
     const second = await sendOne(app, 'How much budget is unlocked?');
     await sendOne(app, 'Someone else’s chat');
@@ -282,7 +308,7 @@ describe('chat sessions', () => {
 
   it('leaves out archived threads, which still open by id', async () => {
     await seedDemoEvent(db);
-    const app = createApp();
+    const app = signedIn();
     const id = await sendOne(app, 'Find lanyards');
 
     expect((await request(app).patch(`/api/chat/${id}`).send({ archived: true })).status).toBe(204);
@@ -295,7 +321,7 @@ describe('chat sessions', () => {
 
   it('renames a thread', async () => {
     await seedDemoEvent(db);
-    const app = createApp();
+    const app = signedIn();
     const id = await sendOne(app, 'Find lanyards');
 
     await request(app).patch(`/api/chat/${id}`).send({ title: '  Swag run ' });
@@ -311,7 +337,7 @@ describe('chat sessions', () => {
       },
       { text: 'On it.' },
     ]);
-    const app = createApp();
+    const app = signedIn();
     const body = userMessage('Find lanyards');
     await request(app).post('/api/chat').send(body);
     await vi.waitFor(async () => {
@@ -330,7 +356,7 @@ describe('chat sessions', () => {
   });
 
   it('rejects bad requests and unknown threads', async () => {
-    const app = createApp();
+    const app = signedIn();
     expect((await lookup(app, [])).status).toBe(400);
     expect((await lookup(app, ['nope'])).status).toBe(400);
     expect((await request(app).patch('/api/chat/nope').send({ title: 'x' })).status).toBe(400);
@@ -338,5 +364,89 @@ describe('chat sessions', () => {
     expect((await request(app).patch(`/api/chat/${id}`).send({})).status).toBe(400);
     expect((await request(app).patch(`/api/chat/${id}`).send({ title: 'x' })).status).toBe(404);
     expect((await request(app).delete('/api/chat/nope')).status).toBe(400);
+  });
+});
+
+describe('chat ownership', () => {
+  const lookup = (app: express.Express, ids: string[]) =>
+    request(app).post('/api/chat/threads/lookup').send({ ids });
+
+  it('is treasurer only', async () => {
+    const app = createApp();
+    expect((await request(app).post('/api/chat').send(userMessage('Hi'))).status).toBe(401);
+    expect((await request(app).get(`/api/chat/${crypto.randomUUID()}`)).status).toBe(401);
+    expect((await lookup(app, [crypto.randomUUID()])).status).toBe(401);
+  });
+
+  it("never shows, changes or continues another treasurer's chat", async () => {
+    await seedDemoEvent(db);
+    const alice = signedIn(createApp(), 'alice');
+    const bob = signedIn(createApp(), 'bob');
+    useScript([{ text: 'ok' }]);
+    const body = userMessage('Plan swag for OpenHack');
+    await request(alice).post('/api/chat').send(body);
+    await vi.waitFor(async () =>
+      expect((await loadThread(alice, body.threadId)).messages).toHaveLength(2),
+    );
+
+    expect(await loadThread(bob, body.threadId)).toEqual({ messages: [], checklist: [], event: null });
+    expect((await lookup(bob, [body.threadId])).body.threads).toEqual([]);
+    expect((await request(bob).patch(`/api/chat/${body.threadId}`).send({ title: 'mine' })).status).toBe(404);
+    expect((await request(bob).delete(`/api/chat/${body.threadId}`)).status).toBe(404);
+    useScript([{ text: 'should not run' }]);
+    expect((await request(bob).post('/api/chat').send(userMessage('hi', body.threadId))).status).toBe(404);
+
+    expect((await lookup(alice, [body.threadId])).body.threads[0].title).toBe('Plan swag for OpenHack');
+  });
+
+  it("links a new chat to the shared demo event or the treasurer's own, never someone else's", async () => {
+    const demo = await seedDemoEvent(db);
+    const mine = await createEvent(
+      db,
+      { name: 'Alice meetup', date: '2027-05-20', people: 40, budget: 100_000, currency: 'USD' },
+      'demo:alice',
+    );
+    const alice = signedIn(createApp(), 'alice');
+    const bob = signedIn(createApp(), 'bob');
+
+    useScript([{ text: 'ok' }]);
+    const toTheirs = { ...userMessage('Use it'), eventId: mine.id };
+    expect((await request(bob).post('/api/chat').send(toTheirs)).status).toBe(400);
+    expect(await getThread(db, toTheirs.threadId)).toBeUndefined();
+
+    useScript([{ text: 'ok' }]);
+    expect(
+      (await request(bob).post('/api/chat').send({ ...userMessage('Use the demo'), eventId: demo.id })).status,
+    ).toBe(200);
+    useScript([{ text: 'ok' }]);
+    expect(
+      (await request(alice).post('/api/chat').send({ ...userMessage('Use mine'), eventId: mine.id })).status,
+    ).toBe(200);
+  });
+
+  it('gives the event a chat creates to the treasurer who owns the chat', async () => {
+    const bob = signedIn(createApp(), 'bob');
+    const body = userMessage('Plan a meetup in Yogyakarta for 80 people');
+    useScript([
+      {
+        tool: 'create_event',
+        input: {
+          name: 'Yogyakarta meetup',
+          date: '2027-02-06',
+          headcount: 80,
+          budgetTotalCents: 150_000,
+          currency: 'USD',
+        },
+      },
+      { text: 'Your meetup is set up.' },
+    ]);
+    await request(bob).post('/api/chat').send(body);
+    await vi.waitFor(async () =>
+      expect((await loadThread(bob, body.threadId)).event?.name).toBe('Yogyakarta meetup'),
+    );
+    const eventId = (await getThread(db, body.threadId))?.eventId;
+    expect(eventId).toBeTruthy();
+    const [row] = await db.select().from(events).where(eq(events.id, eventId!));
+    expect(row?.ownerSub).toBe('demo:bob');
   });
 });

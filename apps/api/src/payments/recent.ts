@@ -1,5 +1,5 @@
 import { RuleResult, SpendStatus, type SpendEntry } from '@quartermaster/shared';
-import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/client.js';
 import { approvals, auditLog } from '../db/schema.js';
@@ -19,7 +19,11 @@ const Input = z.looseObject({
 
 const FROM_APPROVAL = { pending: 'needs_approval', capturing: 'capturing', rejected: 'rejected', paid: 'paid' } as const;
 
-export async function recentSpends(db: Db, options: { limit?: number; eventId?: string } = {}): Promise<SpendEntry[]> {
+// eventIds narrows to spends of those events (the ones a treasurer can see); an empty list matches nothing.
+export async function recentSpends(
+  db: Db,
+  options: { limit?: number; eventId?: string; eventIds?: string[] } = {},
+): Promise<SpendEntry[]> {
   const limit = options.limit ?? 20;
   const rows = await db
     .select({
@@ -41,6 +45,7 @@ export async function recentSpends(db: Db, options: { limit?: number; eventId?: 
         eq(auditLog.action, 'spend.check'),
         isNotNull(auditLog.ruleResult),
         options.eventId ? sql`${auditLog.input}->>'eventId' = ${options.eventId}` : undefined,
+        options.eventIds ? inArray(sql`${auditLog.input}->>'eventId'`, options.eventIds) : undefined,
       ),
     )
     .orderBy(desc(auditLog.createdAt), desc(auditLog.id))

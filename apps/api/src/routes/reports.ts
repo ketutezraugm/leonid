@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
+import { canSeeEvent } from '../db/events.js';
+import { loadSponsorWithEvent } from '../invoices/draft.js';
 import { errorLabel, getReportByToken, getReportLink } from '../reports/store.js';
 import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
@@ -15,7 +17,7 @@ export interface ReportsRouterOptions {
 //   GET /:shareToken        PUBLIC. The report at its unguessable link (what the /report/:shareToken page reads). Not found for a
 //                           token that is malformed or unknown. Never cached or indexed, and the link is not passed on in Referer.
 //   GET /link/:sponsorId    (treasurer) { shareToken, generatedAt }: the link to send the sponsor. 404 until a report is published
-//                           (start the "sponsor-reports" workflow).
+//                           (start the "sponsor-reports" workflow), and for a sponsor of an event the caller cannot see.
 const TOKEN = /^[A-Za-z0-9_-]{20,64}$/;
 
 export function reportsRouter(options: ReportsRouterOptions = {}) {
@@ -29,7 +31,12 @@ export function reportsRouter(options: ReportsRouterOptions = {}) {
       return;
     }
     try {
-      const link = await getReportLink((options.db ?? getDb)(), String(req.params.sponsorId));
+      const db = (options.db ?? getDb)();
+      const found = await loadSponsorWithEvent(db, String(req.params.sponsorId));
+      const link =
+        found && canSeeEvent(found.event, ownerOf(currentTreasurer(res)))
+          ? await getReportLink(db, found.sponsor.id)
+          : undefined;
       if (!link) {
         res.status(404).json({ error: 'No report is published for this sponsor yet' });
         return;

@@ -1,9 +1,9 @@
 import { InvoiceDraft, SponsorsResponse } from '@quartermaster/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
-import { getDemoEvent, getEvent, listSponsors } from '../db/events.js';
+import { canSeeEvent, getDemoEvent, getVisibleEvent, listSponsors } from '../db/events.js';
 import { draftForSponsor, loadSponsorWithEvent } from '../invoices/draft.js';
 import { InvoiceRefusedError, sendSponsorInvoice, type InvoiceRefusal } from '../invoices/send.js';
 import { getPayPalClient, type PayPalClient } from '../paypal/client.js';
@@ -39,7 +39,8 @@ const REFUSAL_STATUS: Record<InvoiceRefusal, number> = {
 //                                          With no eventId it is the seeded demo event (a read).
 //   GET  /:sponsorId/draft[?eventId=…]  -> { sponsor, draft }: the pledge as an invoice, for the treasurer to read
 //   POST /:sponsorId/send[?eventId=…]   body { draft, recipientEmail } -> creates and sends the PayPal invoice
-// A named eventId that is not the sponsor's event answers like an unknown sponsor (404).
+// A named eventId that is not the sponsor's event answers like an unknown sponsor (404), and so does a sponsor or event
+// the caller cannot see (canSeeEvent in db/events.ts).
 export function invoicesRouter(options: InvoicesRouterOptions = {}) {
   const env = options.env ?? process.env;
   const guard = requireTreasurer(env);
@@ -106,7 +107,7 @@ export function invoicesRouter(options: InvoicesRouterOptions = {}) {
     validEventQuery,
     handle(async (_req, res, { db }) => {
       const event = res.locals.eventId
-        ? await getEvent(db, res.locals.eventId)
+        ? await getVisibleEvent(db, res.locals.eventId, ownerOf(currentTreasurer(res)))
         : await getDemoEvent(db);
       if (!event) {
         res.status(404).json({ error: 'No such event' });
@@ -137,7 +138,11 @@ export function invoicesRouter(options: InvoicesRouterOptions = {}) {
     validEventQuery,
     handle(async (req, res, { db }) => {
       const found = await draftForSponsor(db, String(req.params.sponsorId));
-      if (!found || (res.locals.eventId && found.event.id !== res.locals.eventId)) {
+      if (
+        !found ||
+        !canSeeEvent(found.event, ownerOf(currentTreasurer(res))) ||
+        (res.locals.eventId && found.event.id !== res.locals.eventId)
+      ) {
         notFound(res);
         return;
       }
@@ -169,12 +174,14 @@ export function invoicesRouter(options: InvoicesRouterOptions = {}) {
           .json({ error: 'body must be { draft, recipientEmail }', issues: body.error.issues });
         return;
       }
-      if (res.locals.eventId) {
-        const found = await loadSponsorWithEvent(db, String(req.params.sponsorId));
-        if (!found || found.event.id !== res.locals.eventId) {
-          notFound(res);
-          return;
-        }
+      const found = await loadSponsorWithEvent(db, String(req.params.sponsorId));
+      if (
+        !found ||
+        !canSeeEvent(found.event, ownerOf(currentTreasurer(res))) ||
+        (res.locals.eventId && found.event.id !== res.locals.eventId)
+      ) {
+        notFound(res);
+        return;
       }
       let paypal: PayPalClient;
       try {

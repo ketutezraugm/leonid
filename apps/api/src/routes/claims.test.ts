@@ -3,7 +3,9 @@ import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { scriptedModel } from '../agents/testing.js';
+import { SESSION_COOKIE, sign } from '../auth/session.js';
 import type { Db } from '../db/client.js';
+import { createEvent } from '../db/events.js';
 import { recordLedgerEntry } from '../db/ledger.js';
 import { auditLog } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
@@ -45,7 +47,7 @@ beforeEach(async () => {
 });
 
 // The real executor and rules engine; only PayPal is faked (a claim makes no Procurement call).
-function appWith(script: string[] = [receipt()], opts: { payments?: boolean } = {}) {
+function appWith(script: string[] = [receipt()], opts: { payments?: boolean; env?: NodeJS.ProcessEnv } = {}) {
   const payouts: PayoutSender = {
     send: async (input) => {
       sent.push(input);
@@ -65,7 +67,7 @@ function appWith(script: string[] = [receipt()], opts: { payments?: boolean } = 
   app.use(
     '/api/claims',
     claimsRouter({
-      env: { TREASURER_TOKEN: 'secret' },
+      env: { TREASURER_TOKEN: 'secret', ...opts.env },
       db: () => db,
       model: () => scriptedModel(script.map((text) => ({ text }))),
       payments:
@@ -209,5 +211,44 @@ describe('receipt claims (F16)', () => {
     expect(image.status).toBe(200);
     expect(image.headers['content-type']).toBe('image/png');
     expect(Buffer.compare(image.body as Buffer, PNG)).toBe(0);
+  });
+});
+
+describe('claims per treasurer', () => {
+  const SECRET = 's'.repeat(40);
+  const ORIGIN = 'http://app.test';
+  const as = (sub: string) => ({
+    Cookie: `${SESSION_COOKIE}=${sign('session', { sub, via: 'demo' }, SECRET, 3600)}`,
+    Origin: ORIGIN,
+  });
+
+  it("never shows or reviews a claim of someone else's event", async () => {
+    const mine = await createEvent(
+      db,
+      { name: 'Alice meetup', date: '2027-05-20', people: 40, budget: 100_000, currency: 'USD' },
+      'demo:alice',
+    );
+    const app = appWith([receipt()], { env: { SESSION_SECRET: SECRET, APP_BASE_URL: ORIGIN } });
+    const made = await request(app)
+      .post('/api/claims/volunteers')
+      .set(as('alice'))
+      .send({ name: 'Ana', payoutEmail: 'ana@volunteer.test', eventId: mine.id });
+    expect(made.status).toBe(201);
+    const claim = ClaimView.parse((await submit(app, CreateVolunteerResponse.parse(made.body).claimToken)).body);
+
+    expect((await request(app).get(`/api/claims?eventId=${mine.id}`).set(as('bob'))).status).toBe(404);
+    expect(
+      (
+        await request(app)
+          .post('/api/claims/volunteers')
+          .set(as('bob'))
+          .send({ name: 'Eve', payoutEmail: 'eve@volunteer.test', eventId: mine.id })
+      ).status,
+    ).toBe(404);
+    expect((await request(app).get(`/api/claims/${claim.id}/receipt`).set(as('bob'))).status).toBe(404);
+    expect((await request(app).post(`/api/claims/${claim.id}/review`).set(as('bob')).send({ amount: 100 })).status).toBe(404);
+
+    expect((await request(app).get(`/api/claims?eventId=${mine.id}`).set(as('alice'))).status).toBe(200);
+    expect((await request(app).get(`/api/claims/${claim.id}/receipt`).set(as('alice'))).status).toBe(200);
   });
 });

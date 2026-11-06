@@ -1,9 +1,9 @@
 import { CreatePayoutRequest, PayoutsResponse } from '@quartermaster/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
-import { getDemoEvent, getEvent } from '../db/events.js';
+import { getDemoEvent, getVisibleEvent } from '../db/events.js';
 import { getPayments } from '../payments/context.js';
 import { createDbApprovals } from '../payments/db.js';
 import type { Executor } from '../payments/executor.js';
@@ -53,8 +53,11 @@ export function payoutsRouter(options: PayoutsRouterOptions = {}) {
       }
     };
 
-  const eventIdOf = async (db: Db, eventId: string | undefined) =>
-    eventId ? (await getEvent(db, eventId))?.id : (await getDemoEvent(db))?.id;
+  // The named event when the caller can see it (canSeeEvent in db/events.ts), else the seeded demo event.
+  const eventIdOf = async (db: Db, eventId: string | undefined, res: Response) =>
+    eventId
+      ? (await getVisibleEvent(db, eventId, ownerOf(currentTreasurer(res))))?.id
+      : (await getDemoEvent(db))?.id;
 
   router.post(
     '/',
@@ -66,7 +69,7 @@ export function payoutsRouter(options: PayoutsRouterOptions = {}) {
         return;
       }
       const { eventId: asked, ...input } = body.data;
-      const eventId = await eventIdOf(db, asked);
+      const eventId = await eventIdOf(db, asked, res);
       const row = eventId ? await createPayout(depsFor(db), eventId, input, treasurerActor(res)) : undefined;
       if (!row) {
         res.status(404).json({ error: 'No such event' });
@@ -85,7 +88,7 @@ export function payoutsRouter(options: PayoutsRouterOptions = {}) {
         res.status(400).json({ error: 'invalid query' });
         return;
       }
-      const eventId = await eventIdOf(db, query.data.eventId);
+      const eventId = await eventIdOf(db, query.data.eventId, res);
       if (!eventId) {
         res.status(404).json({ error: 'No such event' });
         return;
