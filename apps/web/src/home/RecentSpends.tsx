@@ -15,6 +15,7 @@ const decisions: Record<RuleDecision, { status: 'done' | 'risk' | 'blocked'; lab
 // How the spend ended, when that says more than the rules' decision (an allowed spend PayPal refused after the kill switch).
 const outcomes: Partial<Record<SpendEntry['status'], { status: 'progress' | 'blocked'; label: string }>> = {
   capturing: { status: 'progress', label: 'Paying' },
+  submitted: { status: 'progress', label: 'Sending' }, // a payout PayPal accepted and has not finished
   rejected: { status: 'blocked', label: 'Rejected' },
   refused: { status: 'blocked', label: 'Refused' },
   failed: { status: 'blocked', label: 'Failed' },
