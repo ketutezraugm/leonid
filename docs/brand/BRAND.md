@@ -22,7 +22,8 @@ Written for Abel (P4) and her coding agent. Decided by Ezra (P2) on Nov 6, 2026.
 
 - **Status never by color alone.** `approval` (#8F5600) and `blocked` (#B42318) are indistinguishable for deuteranopes (checked: CVD ΔE 0.4), and so were today's amber and red. Every status keeps its icon and its word.
 - **The meteor pink never colors text that could read as an error** (it sits near `blocked` in hue). In the app it appears only in the mark and the Gantt today line.
-- **Charts:** `chart-1` #3D46B8, `chart-2` #D65FA3, `chart-3` #93A6F7, in that order; a fourth series folds into `chart-other` #9A9CB8. Always direct-label (chart-3 is light). This set passed the colorblind validator and stays clear of every status color; the first candidate (with a teal and a rose) failed against the status green and red.
+- **Charts:** `chart-1` #3D46B8, `chart-2` #D65FA3, `chart-3` #93A6F7, in that order; a fourth series folds into `chart-other` #9A9CB8. Always direct-label (chart-3 is light). This set passed the colorblind validator and stays clear of every status color; the first candidate (with a teal and a rose) failed against the status green and red. If the app ever gets a dark mode, use the dark steps `chart-1` #7C86F2, `chart-2` #CC3F92, `chart-3` #E3E8FE (checked the same way against the dark status colors).
+- **Components:** the design system page shows live previews of Button (with the PayPal slot), StatusBadge, Card with the headline figure, Wordmark (plain in-app vs highlighted landing) and BudgetChart, each with its usage rules. Match those when restyling the app's own components.
 - **PayPal buttons keep PayPal's gold.** Don't restyle them or put streaks behind them.
 - Every text pair passes WCAG AA (body text 15.9:1, secondary 6.3:1, white on indigo 13.0:1, status labels on their badges 4.7 to 5.6:1).
 
