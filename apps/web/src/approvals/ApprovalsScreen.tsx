@@ -9,7 +9,7 @@ import { walletConsequence } from '../shell/wallet';
 import { formatMoney } from '../ui/money';
 import { PageState } from '../ui/PageState';
 import { ApprovalDetail } from './ApprovalDetail';
-import { waitingItems } from './capture';
+import { approvalTitle, waitingItems } from './capture';
 
 const parseConfig = {
   parse(value: unknown): { clientId: string } {
@@ -64,7 +64,10 @@ export function ApprovalsScreen() {
                 aria-current={item.id === current.id ? 'true' : undefined}
                 onClick={() => setSelected(item.id)}
               >
-                <span className="approval-row-title">{item.vendor ?? item.category ?? item.referenceId}</span>
+                <span className="approval-row-title">
+                  {approvalTitle(item)}
+                  {item.kind === 'payout' && <span className="muted"> · payout</span>}
+                </span>
                 <span className="num">{formatMoney(item.amountMinor, item.currency)}</span>
                 <small className="muted">{timeAgo(item.createdAt)}</small>
               </button>
