@@ -98,7 +98,7 @@ Replace the Geist link with:
 | `docs/demo-script.md` (2 voice-over lines) | "Quartermaster makes sure…", "Every guarantee in Quartermaster…" | Leonid / Leo |
 | `README.md` (H1 and 1 more), `LICENSE`, `AGENTS.md:7`, `apps/workflows/README.md` | Quartermaster | Leonid |
 
-Tests that assert the name and must change with it: `apps/web/src/App.test.tsx:47`, `apps/web/src/chat/AgentChat.test.tsx:253` (the "Questions from …" form name), `apps/api/src/payments/executor.test.ts:605` and `apps/api/src/payments/payoutSender.test.ts:18,29` (payout note).
+Tests that assert the name and must change with it: `apps/web/src/App.test.tsx:47`, `apps/web/src/chat/AgentChat.test.tsx:253` (the "Questions from …" form name), `apps/api/src/payments/executor.test.ts:605`, `apps/api/src/payments/payoutSender.test.ts:18,29` and `apps/api/src/routes/claims.test.ts:156` (payout note; the payout note and these tests are done, in P2's own PR).
 
 ## Do NOT rename (reasons)
 

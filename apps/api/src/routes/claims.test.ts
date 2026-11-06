@@ -153,7 +153,7 @@ describe('receipt claims (F16)', () => {
     const claim = ClaimView.parse((await submit(app, claimToken)).body);
 
     expect(claim.status).toBe('approved');
-    expect(sent[0]).toMatchObject({ recipientEmail: 'ana@volunteer.test', amountMinor: 1_200, note: 'Quartermaster claim' });
+    expect(sent[0]).toMatchObject({ recipientEmail: 'ana@volunteer.test', amountMinor: 1_200, note: 'Leonid claim' });
   });
 
   it('lets the treasurer confirm a reviewed amount, which still goes through the rules, and only once', async () => {

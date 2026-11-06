@@ -92,7 +92,7 @@ const isPayout = (s: Spend) => s.kind === 'claim' || s.kind === 'payout';
 const PAYOUT_EMAIL = z.email().max(127);
 const PAYOUT_REFERENCE = /^[A-Za-z0-9._:-]{1,63}$/;
 // The note the recipient reads in PayPal. Fixed on purpose: the agent's own words can carry text from untrusted pages.
-const payoutNote = (s: Spend) => (s.kind === 'claim' ? 'Quartermaster claim' : 'Quartermaster payout');
+const payoutNote = (s: Spend) => (s.kind === 'claim' ? 'Leonid claim' : 'Leonid payout');
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
