@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -82,6 +82,32 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
   });
 
+  it('opens an old link in the first real event when the remembered one is gone', async () => {
+    const meetup = crypto.randomUUID();
+    localStorage.setItem('quartermaster.lastEventId', 'demo');
+    stubApi({ events: [{ id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, budget: 120_000, currency: 'USD' }] });
+    render(
+      <MemoryRouter initialEntries={['/approvals']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
+    expect(screen.queryByText('This event isn’t here')).toBeNull();
+  });
+
+  it('sends a demo link to the same screen in the first real event', async () => {
+    const meetup = crypto.randomUUID();
+    stubApi({ events: [{ id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, budget: 120_000, currency: 'USD' }] });
+    render(
+      <MemoryRouter initialEntries={['/events/demo/approvals']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
+  });
+
   it('says so when the event in the link is not one of yours', async () => {
     render(
       <MemoryRouter initialEntries={['/events/not-mine']}>
@@ -158,19 +184,21 @@ describe('App', () => {
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
   });
 
-  it('starts the sidebar as a rail on Plan, Money and Agent only', () => {
+  it('starts the sidebar as a rail on Plan, Money and Agent only', async () => {
     const { container, unmount } = render(
       <MemoryRouter initialEntries={['/money']}>
         <App />
       </MemoryRouter>,
     );
-    expect(container.querySelector('.shell')).toHaveClass('shell--rail');
+    // Old links wait for the event list before opening the screen.
+    await waitFor(() => expect(container.querySelector('.shell')).toHaveClass('shell--rail'), { timeout: 5000 });
     unmount();
     const home = render(
       <MemoryRouter initialEntries={['/approvals']}>
         <App />
       </MemoryRouter>,
     );
+    await screen.findByRole('heading', { name: 'Approvals' }, { timeout: 5000 });
     expect(home.container.querySelector('.shell')).not.toHaveClass('shell--rail');
   });
 
