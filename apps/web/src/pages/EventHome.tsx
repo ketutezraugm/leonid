@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ApprovalsResponse } from '@quartermaster/shared';
 import { waitingItems } from '../approvals/capture';
 import { SAMPLE_ALERTS, SAMPLE_BUDGET } from '../home/budget';
@@ -6,8 +7,10 @@ import { NeedsYou } from '../home/NeedsYou';
 import { RecentSpends } from '../home/RecentSpends';
 import { RunwayStrip } from '../home/RunwayStrip';
 import { useFetch } from '../shell/api';
+import { DeleteEventDialog } from '../shell/DeleteEventDialog';
 import { daysUntil, formatEventDate, useEvent, useEventPath, withEvent } from '../shell/event';
 import { BudgetBar, unlockedToSpend } from '../ui/BudgetBar';
+import { Button } from '../ui/Button';
 import { formatMoney } from '../ui/money';
 import { PageHeader } from '../ui/PageHeader';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -22,6 +25,8 @@ export function EventHome() {
   const waiting = approvals.kind === 'ready' ? waitingItems(approvals.data.approvals) : [];
   const budget = SAMPLE_BUDGET;
   const days = daysUntil(event.date);
+  const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
 
   return (
     <section className="home">
@@ -71,6 +76,30 @@ export function EventHome() {
       </div>
 
       <RunwayStrip />
+
+      {/* The demo fallback has no API id, so there is nothing to delete. */}
+      {event.id && (
+        <section className="card event-delete" aria-labelledby="event-delete-title">
+          <div>
+            <h2 id="event-delete-title">Delete this event</h2>
+            <p className="muted">
+              Removes its plan, sponsors and agent chats. Only an event that has never taken or spent money can be
+              deleted.
+            </p>
+          </div>
+          <Button variant="danger" onClick={() => setDeleting(true)}>
+            Delete event
+          </Button>
+        </section>
+      )}
+
+      {deleting && (
+        <DeleteEventDialog
+          event={event}
+          onClose={() => setDeleting(false)}
+          onDeleted={() => navigate('/events', { replace: true })}
+        />
+      )}
     </section>
   );
 }

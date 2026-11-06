@@ -49,6 +49,12 @@ export async function sendJson<T>(
   return parser.parse(await res.json());
 }
 
+// For endpoints that answer 204 with no body, e.g. a delete.
+export async function sendNoContent(url: string, method = 'DELETE'): Promise<void> {
+  const res = await fetch(url, { method, credentials: 'same-origin' });
+  if (!res.ok) throw await readFailure(res);
+}
+
 export type FetchState<T> =
   | { kind: 'loading' }
   | { kind: 'ready'; data: T }

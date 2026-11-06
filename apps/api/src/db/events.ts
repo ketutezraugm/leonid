@@ -1,7 +1,19 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from 'drizzle-orm';
 import type { CreateEventRequest, EventSummary } from '@quartermaster/shared';
+import { writeAudit } from './audit.js';
 import type { Db } from './client.js';
-import { chatThreads, events, mandates, sponsors } from './schema.js';
+import {
+  approvals,
+  chatThreads,
+  events,
+  ledgerEntries,
+  mandateItems,
+  mandates,
+  spendReferences,
+  sponsorReports,
+  sponsors,
+  tasks,
+} from './schema.js';
 import { DEMO_EVENT_NAME } from './seed.js';
 
 export async function getEvent(db: Db, eventId: string) {
@@ -66,6 +78,92 @@ export async function createEvent(db: Db, input: CreateEventRequest): Promise<Ev
     .returning();
   if (!event) throw new Error('Could not create the event');
   return toSummary(event);
+}
+
+export type DeleteEventResult =
+  { kind: 'deleted' } | { kind: 'not_found' } | { kind: 'refused'; reason: string };
+
+// Deletes an event that never touched money, with its plan, sponsors and chats. Money history is never deleted:
+// an event with ledger entries, spends, approvals or a sponsor invoice sent through PayPal is refused, and so is the
+// seeded demo event (the seed script, video and hosted demo depend on it). The event row is locked first, so a spend
+// or webhook racing the delete either waits and then fails its foreign key, or lands first and makes this refuse.
+export async function deleteEvent(
+  db: Db,
+  eventId: string,
+  actor: string,
+): Promise<DeleteEventResult> {
+  return db.transaction(async (tx) => {
+    const [event] = await tx.select().from(events).where(eq(events.id, eventId)).for('update');
+    if (!event) return { kind: 'not_found' };
+
+    const demo = await getDemoEvent(tx);
+    if (demo?.id === eventId)
+      return { kind: 'refused', reason: 'The demo event cannot be deleted.' };
+
+    const moneyHistory = await Promise.all([
+      tx
+        .select({ id: ledgerEntries.id })
+        .from(ledgerEntries)
+        .where(eq(ledgerEntries.eventId, eventId))
+        .limit(1),
+      tx
+        .select({ id: approvals.id })
+        .from(approvals)
+        .where(eq(approvals.eventId, eventId))
+        .limit(1),
+      tx
+        .select({ id: spendReferences.referenceId })
+        .from(spendReferences)
+        .where(eq(spendReferences.eventId, eventId))
+        .limit(1),
+      tx
+        .select({ id: sponsors.id })
+        .from(sponsors)
+        .where(
+          and(
+            eq(sponsors.eventId, eventId),
+            or(isNotNull(sponsors.paypalInvoiceId), ne(sponsors.status, 'pledged')),
+          ),
+        )
+        .limit(1),
+    ]);
+    if (moneyHistory.some((rows) => rows.length > 0)) {
+      return {
+        kind: 'refused',
+        reason:
+          'This event has money history (payments, spends or sponsor invoices), so it cannot be deleted.',
+      };
+    }
+
+    const eventSponsors = tx
+      .select({ id: sponsors.id })
+      .from(sponsors)
+      .where(eq(sponsors.eventId, eventId));
+    const eventThreads = tx
+      .select({ id: chatThreads.id })
+      .from(chatThreads)
+      .where(eq(chatThreads.eventId, eventId));
+    const eventMandates = tx
+      .select({ id: mandates.id })
+      .from(mandates)
+      .where(or(eq(mandates.eventId, eventId), inArray(mandates.threadId, eventThreads)));
+    await tx.delete(mandateItems).where(inArray(mandateItems.mandateId, eventMandates));
+    await tx
+      .delete(mandates)
+      .where(or(eq(mandates.eventId, eventId), inArray(mandates.threadId, eventThreads)));
+    await tx.delete(chatThreads).where(eq(chatThreads.eventId, eventId));
+    await tx.delete(tasks).where(eq(tasks.eventId, eventId));
+    await tx.delete(sponsorReports).where(inArray(sponsorReports.sponsorId, eventSponsors));
+    await tx.delete(sponsors).where(eq(sponsors.eventId, eventId));
+    await tx.delete(events).where(eq(events.id, eventId));
+    await writeAudit(tx, {
+      actor,
+      action: 'event.delete',
+      input: { eventId, name: event.name, date: event.date.toISOString().slice(0, 10) },
+      reason: 'treasurer deleted an event with no money history',
+    });
+    return { kind: 'deleted' };
+  });
 }
 
 function toSummary(row: typeof events.$inferSelect): EventSummary {

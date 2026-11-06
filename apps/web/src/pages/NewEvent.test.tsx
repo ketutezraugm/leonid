@@ -20,7 +20,7 @@ const created = {
 };
 let posted: unknown;
 
-// POST /api/events answers with `createStatus`; the rest answers enough for the three steps.
+// POST /api/events answers with `createStatus`; the rest answers enough for the agent page to open.
 function stubApi(createStatus = 201, wallet = 'none') {
   posted = undefined;
   vi.stubGlobal(
@@ -46,6 +46,7 @@ function stubApi(createStatus = 201, wallet = 'none') {
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   stubApi();
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -58,29 +59,68 @@ function renderSetup() {
   );
 }
 
-function fill(label: RegExp, value: string) {
+const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+const pick = (name: string | RegExp) => fireEvent.click(screen.getByRole('radio', { name }));
+const type = (label: RegExp, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
+
+// Kind, intro, then the eight questions with the hackathon defaults.
+async function answerEverything() {
+  renderSetup();
+  fireEvent.click(await screen.findByRole('button', { name: /Workshop or hackathon/ }));
+  click('Continue');
+  click('I’m ready');
+  type(/What’s the event called/, '  Spring Meetup ');
+  click(/Confirm/);
+  type(/Which day does it start/, '2027-05-20');
+  click(/Confirm/);
+  click('Skip'); // duration: keeps the full day
+  pick(/Other/);
+  type(/Number of people/, '80');
+  click(/Confirm/);
+  pick(/Jakarta/);
+  click(/Confirm/);
+  click(/Confirm/); // venue: find me one
+  click(/Confirm/); // needs: the hackathon defaults
+  pick(/Other/);
+  type(/Budget in US dollars/, '1,500');
+  click(/Confirm/);
 }
 
-describe('New event (setup)', () => {
-  it('checks every field before saving anything', async () => {
+describe('New event (setup interview)', () => {
+  it('needs a kind before it starts', async () => {
     renderSetup();
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
-    expect(screen.getByText('Give the event a name.')).toBeInTheDocument();
-    expect(screen.getByText('Pick the event day.')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Budget/)).toHaveAttribute('aria-invalid', 'true');
-    expect(posted).toBeUndefined();
+    expect(await screen.findByRole('button', { name: 'Continue' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /Something else/ }));
+    expect(screen.getByLabelText(/What is it, in a few words/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
   });
 
-  it('saves the event in cents, confirms the treasury, then offers the shared wallet', async () => {
+  it('opens as a popup over All events and closes on Esc', async () => {
     renderSetup();
-    fill(/Event name/, '  Spring Meetup ');
-    fill(/Event day/, '2027-05-20');
-    fill(/People coming/, '80');
-    fill(/Budget/, '1,500');
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+    expect(await screen.findByRole('dialog', { name: 'New event' })).toBeInTheDocument();
+    // The list behind is there but hidden from assistive tech while the popup is open.
+    expect(screen.queryByRole('heading', { name: 'Your events' })).not.toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(await screen.findByRole('heading', { name: 'Your events' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 
-    expect(await screen.findByText(/Treasury connected/)).toBeInTheDocument();
+  it('will not move on without the required answers', async () => {
+    renderSetup();
+    fireEvent.click(await screen.findByRole('button', { name: /Meetup or small gathering/ }));
+    click('Continue');
+    click('I’m ready');
+    expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument();
+    click(/Confirm/);
+    expect(screen.getByRole('alert')).toHaveTextContent('Give the event a name.');
+    expect(screen.getByRole('button', { name: 'Next question' })).toBeDisabled();
+  });
+
+  it('saves the event in cents, then opens the agent with the answers as its first message', async () => {
+    await answerEverything();
+    expect(await screen.findByText(/Setting up Spring Meetup/)).toBeInTheDocument();
+    expect(screen.getByText('Workshop or hackathon')).toBeInTheDocument();
     expect(posted).toEqual({
       name: 'Spring Meetup',
       date: '2027-05-20',
@@ -88,27 +128,30 @@ describe('New event (setup)', () => {
       budget: 150_000,
       currency: 'USD',
     });
-    expect(screen.getByText(/\$1,500\.00 budget, 80 people/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(
-      await screen.findByText("The agent can't buy anything until you connect a wallet."),
+      await screen.findByRole(
+        'heading',
+        { name: 'What the agent finds shows up here' },
+        { timeout: 3000 },
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Connect wallet' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Skip for now' }));
-    expect(await screen.findByRole('heading', { name: 'Event home' })).toBeInTheDocument();
+    const kickoff = JSON.parse(sessionStorage.getItem('quartermaster.kickoff') ?? 'null');
+    expect(kickoff).toMatchObject({ eventId: created.id, eventName: 'Spring Meetup' });
+    expect(localStorage.getItem('quartermaster.threadId')).toBe(kickoff.threadId);
+    expect(kickoff.text).toContain(
+      'a hackathon for 80 people in Jakarta on Thursday, May 20, 2027',
+    );
+    expect(kickoff.text).toContain(
+      'Book for this event: Venue, Food & drinks, AV & Wi-Fi, Swag, Prizes',
+    );
   });
 
-  it('says so when the server cannot create events yet', async () => {
+  it('says what went wrong and lets the organizer try again', async () => {
     stubApi(404);
-    renderSetup();
-    fill(/Event name/, 'Spring Meetup');
-    fill(/Event day/, '2027-05-20');
-    fill(/People coming/, '80');
-    fill(/Budget/, '1500');
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'isn’t available on this server yet',
-    );
+    await answerEverything();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/./);
+    expect(screen.getByRole('button', { name: 'Change answers' })).toBeInTheDocument();
+    expect(sessionStorage.getItem('quartermaster.kickoff')).toBeNull();
   });
 });

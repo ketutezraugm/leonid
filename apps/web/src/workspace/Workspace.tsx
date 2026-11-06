@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { UIMessage } from 'ai';
 import { AgentChat } from '../chat/AgentChat';
+import type { EventInfo } from '../shell/event';
 import { venuePickText, type VenueCandidate } from '@quartermaster/shared';
 import { latestVenuePick, venueSearches } from '../chat/parts';
 import { VenueDepositPanel } from './VenueDeposit';
@@ -10,7 +11,13 @@ import './workspace.css';
 // The agent workspace: the chat is the right rail, across from the app sidebar, and drives
 // everything; the canvas shows what the agent found, like a search results page. The canvas never
 // starts work on its own.
-export function Workspace({ idle }: { idle?: ReactNode }) {
+export function Workspace({
+  idle,
+  inEvent = null,
+}: {
+  idle?: ReactNode;
+  inEvent?: Pick<EventInfo, 'id' | 'name'> | null;
+}) {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -50,6 +57,7 @@ export function Workspace({ idle }: { idle?: ReactNode }) {
           onViewSearch={setViewingId}
           onSendChange={onSendChange}
           onThreadChange={setThreadId}
+          inEvent={inEvent}
         />
       </div>
       <section className="workspace-canvas" aria-label="Results">

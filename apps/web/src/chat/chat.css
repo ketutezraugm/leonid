@@ -31,59 +31,7 @@
 .chat-empty {
   margin: auto 0;
   text-align: center;
-}
-
-.chat-empty-title {
-  margin: 0 0 var(--space-1);
-  font-weight: 600;
-}
-
-.chat-empty .muted {
-  max-width: 46ch;
-  margin: 0 auto var(--space-3);
   font-size: 0.875rem;
-  line-height: 1.45;
-}
-
-.chat-suggestions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-2);
-  text-align: left;
-}
-
-.chat-suggestions button {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  font: inherit;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  text-align: left;
-  color: var(--color-muted);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.chat-suggestions button strong {
-  font-size: 0.875rem;
-  color: var(--color-text);
-}
-
-.chat-suggestions button:hover:not(:disabled) {
-  border-color: var(--color-accent);
-}
-
-.chat-suggestions button:hover:not(:disabled) strong {
-  color: var(--color-accent);
-}
-
-.chat-suggestions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .chat-message {
@@ -454,23 +402,6 @@
   font-size: 0.8125rem;
 }
 
-.chat-event-pick {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  font-size: 0.875rem;
-}
-
-.chat-event-pick select {
-  font: inherit;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
 .ask-user {
   align-self: stretch;
   display: flex;
@@ -619,18 +550,6 @@
 .chat--rail .chat-message {
   max-width: 90%;
   font-size: 0.9375rem;
-}
-
-.chat--rail .chat-suggestions {
-  grid-template-columns: 1fr;
-}
-
-.chat--rail .chat-empty {
-  text-align: left;
-}
-
-.chat--rail .chat-empty .muted {
-  margin-left: 0;
 }
 
 /* A venue search in the chat; its results open on the canvas. */
