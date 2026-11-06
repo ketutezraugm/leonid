@@ -3,7 +3,7 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { isAllowed } from '../auth/paypalLogin.js';
-import { sign } from '../auth/session.js';
+import { sign, verify, type Session } from '../auth/session.js';
 import { authRouter, demoLoginEnabled } from './auth.js';
 import { createRateLimiter } from './rateLimit.js';
 
@@ -140,6 +140,17 @@ describe('Log in with PayPal', () => {
     expect((await request(on.app).get('/api/auth/me').set('Cookie', demoSession)).body).toEqual({ via: 'demo' });
     expect((await request(build({ APP_BASE_URL: env.APP_BASE_URL, SESSION_SECRET: 'short' }).app).get('/api/auth/paypal/login')).status).toBe(503);
     expect((await request(build({}).app).get('/api/secret')).status).toBe(503);
+  });
+
+  it('gives each demo visitor their own id, and keeps it when the same visitor enters again', async () => {
+    const on = build({ ...env, DEMO_LOGIN: 'true' });
+    const subOf = (cookie: string) => verify<Session>('session', cookie.split('=')[1], SECRET)?.sub;
+    const first = cookieOf(await request(on.app).post('/api/auth/demo-login'), 'qm_session')!;
+    const other = cookieOf(await request(on.app).post('/api/auth/demo-login'), 'qm_session')!;
+    expect(subOf(first)).toMatch(/^[0-9a-f-]{36}$/);
+    expect(subOf(other)).not.toBe(subOf(first));
+    const again = cookieOf(await request(on.app).post('/api/auth/demo-login').set('Cookie', first), 'qm_session')!;
+    expect(subOf(again)).toBe(subOf(first));
   });
 
   it('refuses demo login in production unless DEMO_LOGIN_ALLOW_PRODUCTION=true, and warns loudly when it is on', async () => {

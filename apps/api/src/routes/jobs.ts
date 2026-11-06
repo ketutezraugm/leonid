@@ -86,7 +86,7 @@ export function jobsRouter(options: JobsRouterOptions = {}) {
     const conn = db(res);
     if (!conn) return;
     try {
-      res.json({ eventIds: (await listEvents(conn)).map((e) => e.id) });
+      res.json({ eventIds: (await listEvents(conn, null)).map((e) => e.id) });
     } catch (err) {
       console.error('job events failed', err);
       res.status(500).json({ error: 'job failed' });

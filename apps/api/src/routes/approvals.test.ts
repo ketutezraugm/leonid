@@ -1,12 +1,16 @@
 import express from 'express';
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApprovalsResponse } from '@quartermaster/shared';
 import { createExecutor } from '../payments/executor.js';
 import { createMemoryApprovals, createMemoryAudit, createMemoryReferences, createMemoryWalletStore } from '../payments/memory.js';
 import { stubCheck } from '../payments/stub-check.js';
 import { createPayPalClient } from '../paypal/client.js';
-import { approvalsRouter } from './approvals.js';
+import { SESSION_COOKIE, sign } from '../auth/session.js';
+import type { Db } from '../db/client.js';
+import { createEvent } from '../db/events.js';
+import { createTestDb } from '../db/testing.js';
+import { approvalsRouter, type ApprovalsRouterOptions } from './approvals.js';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -14,7 +18,7 @@ const json = (status: number, body: unknown) =>
 const env = { TREASURER_TOKEN: 'letmein', PAYPAL_PROCUREMENT_CLIENT_ID: 'public-client-id' };
 const treasurer = { 'x-treasurer-token': 'letmein' };
 
-async function build(orderStatus: () => Response) {
+async function build(orderStatus: () => Response, options: ApprovalsRouterOptions = {}) {
   const calls: string[] = [];
   let orders = 0; // each spend gets its own PayPal order (ORD-1, ORD-2, ...): one approval per order
   const routes: Record<string, () => Response> = {
@@ -54,7 +58,7 @@ async function build(orderStatus: () => Response) {
   });
   const app = express();
   app.use(express.json()); // as in the real app
-  app.use('/api/approvals', approvalsRouter({ env, payments: () => ({ client, wallet, executor, approvals }) }));
+  app.use('/api/approvals', approvalsRouter({ env, payments: () => ({ client, wallet, executor, approvals }), ...options }));
   return { app, calls, executor, audit, approvals };
 }
 
@@ -189,5 +193,40 @@ describe('approvals routes', () => {
     expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer)).body).toEqual({ rejected: true });
     expect((await request(app).post('/api/approvals/approval-1/capture').set(treasurer)).status).toBe(409);
     expect((await request(app).post('/api/approvals/approval-1/reject').set(treasurer)).status).toBe(409);
+  });
+});
+
+describe('approvals per treasurer', () => {
+  const SECRET = 's'.repeat(40);
+  const ORIGIN = 'http://app.test';
+  const as = (sub: string) => ({
+    Cookie: `${SESSION_COOKIE}=${sign('session', { sub, via: 'demo' }, SECRET, 3600)}`,
+    Origin: ORIGIN,
+  });
+  let db: Db;
+  beforeEach(async () => {
+    db = await createTestDb();
+  });
+
+  it("never lists, approves or rejects a spend of someone else's event", async () => {
+    const mine = await createEvent(
+      db,
+      { name: 'Alice meetup', date: '2027-05-20', people: 40, budget: 100_000, currency: 'USD' },
+      'demo:alice',
+    );
+    const { app, calls, executor } = await build(approved, {
+      env: { ...env, SESSION_SECRET: SECRET, APP_BASE_URL: ORIGIN },
+      db: () => db,
+    });
+    await executor.requestSpend({ ...prizeSpend, eventId: mine.id });
+
+    expect(ApprovalsResponse.parse((await request(app).get('/api/approvals').set(as('bob'))).body).approvals).toEqual([]);
+    expect((await request(app).post('/api/approvals/approval-1/capture').set(as('bob'))).status).toBe(404);
+    expect((await request(app).post('/api/approvals/approval-1/reject').set(as('bob')).send({})).status).toBe(404);
+    expect(calls).not.toContain('POST /v2/checkout/orders/ORD-1/capture');
+
+    const list = ApprovalsResponse.parse((await request(app).get('/api/approvals').set(as('alice'))).body);
+    expect(list.approvals.map((a) => a.status)).toEqual(['pending']);
+    expect((await request(app).post('/api/approvals/approval-1/capture').set(as('alice'))).status).toBe(200);
   });
 });

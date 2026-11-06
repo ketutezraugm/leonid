@@ -21,10 +21,41 @@ export async function getEvent(db: Db, eventId: string) {
   return event;
 }
 
-// The seeded demo event, which any new chat may be linked to.
+// The seeded demo event, which any new chat may be linked to. It is the unowned one with the demo name, so an organizer who
+// names their own event the same neither shares theirs with everyone nor takes the demo's place.
 export async function getDemoEvent(db: Db) {
-  const [event] = await db.select().from(events).where(eq(events.name, DEMO_EVENT_NAME)).limit(1);
+  const [event] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.name, DEMO_EVENT_NAME), isNull(events.ownerSub)))
+    .limit(1);
   return event;
+}
+
+const isDemoEvent = (event: { name: string; ownerSub: string | null }) =>
+  event.name === DEMO_EVENT_NAME && event.ownerSub === null;
+
+// Who sees an event. owner is ownerOf() the treasurer: null is the ops token, which sees every event. Anyone else sees the
+// events they own plus the seeded demo event, which is shared by design. Unowned events from before owners existed are
+// seen by no one else. A route answers an event it cannot see exactly like one that does not exist.
+export function canSeeEvent(event: { name: string; ownerSub: string | null }, owner: string | null): boolean {
+  return owner === null || event.ownerSub === owner || isDemoEvent(event);
+}
+
+const visibleTo = (owner: string | null) =>
+  owner === null
+    ? undefined
+    : or(eq(events.ownerSub, owner), and(eq(events.name, DEMO_EVENT_NAME), isNull(events.ownerSub)));
+
+export async function getVisibleEvent(db: Db, eventId: string, owner: string | null) {
+  const event = await getEvent(db, eventId);
+  return event && canSeeEvent(event, owner) ? event : undefined;
+}
+
+// The ids of the events this owner sees, for filtering rows that only carry an event id (approvals, spends).
+export async function visibleEventIds(db: Db, owner: string | null): Promise<string[]> {
+  const rows = await db.select({ id: events.id }).from(events).where(visibleTo(owner));
+  return rows.map((r) => r.id);
 }
 
 export interface NewEvent {
@@ -39,13 +70,17 @@ export interface NewEvent {
 // A thread that already has an event keeps it, so a chat can never be moved onto another plan.
 export async function createEventForThread(db: Db, threadId: string, input: NewEvent) {
   const [thread] = await db
-    .select({ eventId: chatThreads.eventId })
+    .select({ eventId: chatThreads.eventId, ownerSub: chatThreads.ownerSub })
     .from(chatThreads)
     .where(eq(chatThreads.id, threadId));
   if (!thread) throw new Error('Chat not found');
   if (thread.eventId) throw new Error('This chat already has an event. Start a new chat for another.');
 
-  const [event] = await db.insert(events).values(input).returning();
+  // The event belongs to whoever owns the chat that made it.
+  const [event] = await db
+    .insert(events)
+    .values({ ...input, ownerSub: thread.ownerSub })
+    .returning();
   if (!event) throw new Error('Could not create the event');
   await db
     .update(chatThreads)
@@ -58,14 +93,22 @@ export async function createEventForThread(db: Db, threadId: string, input: NewE
   return event;
 }
 
-// Every event, soonest first, in the shared shape. There is one organisation per deployment, so no owner filter.
-export async function listEvents(db: Db): Promise<EventSummary[]> {
-  const rows = await db.select().from(events).orderBy(asc(events.date), asc(events.name));
+// The events this owner sees (canSeeEvent), soonest first, in the shared shape. Null: every event.
+export async function listEvents(db: Db, owner: string | null): Promise<EventSummary[]> {
+  const rows = await db
+    .select()
+    .from(events)
+    .where(visibleTo(owner))
+    .orderBy(asc(events.date), asc(events.name));
   return rows.map(toSummary);
 }
 
 // The setup flow's step 1. Sponsors, rules and the plan come later, each through its own screen or the agent.
-export async function createEvent(db: Db, input: CreateEventRequest): Promise<EventSummary> {
+export async function createEvent(
+  db: Db,
+  input: CreateEventRequest,
+  owner: string | null,
+): Promise<EventSummary> {
   const [event] = await db
     .insert(events)
     .values({
@@ -74,6 +117,7 @@ export async function createEvent(db: Db, input: CreateEventRequest): Promise<Ev
       headcount: input.people,
       budgetTotal: input.budget,
       currency: input.currency,
+      ownerSub: owner,
     })
     .returning();
   if (!event) throw new Error('Could not create the event');
@@ -87,17 +131,18 @@ export type DeleteEventResult =
 // an event with ledger entries, spends, approvals or a sponsor invoice sent through PayPal is refused, and so is the
 // seeded demo event (the seed script, video and hosted demo depend on it). The event row is locked first, so a spend
 // or webhook racing the delete either waits and then fails its foreign key, or lands first and makes this refuse.
+// An event this owner cannot see is not_found.
 export async function deleteEvent(
   db: Db,
   eventId: string,
   actor: string,
+  owner: string | null,
 ): Promise<DeleteEventResult> {
   return db.transaction(async (tx) => {
     const [event] = await tx.select().from(events).where(eq(events.id, eventId)).for('update');
-    if (!event) return { kind: 'not_found' };
+    if (!event || !canSeeEvent(event, owner)) return { kind: 'not_found' };
 
-    const demo = await getDemoEvent(tx);
-    if (demo?.id === eventId)
+    if (isDemoEvent(event))
       return { kind: 'refused', reason: 'The demo event cannot be deleted.' };
 
     const moneyHistory = await Promise.all([

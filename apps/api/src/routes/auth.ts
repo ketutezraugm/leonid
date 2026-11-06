@@ -1,4 +1,4 @@
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { SessionInfo } from '@quartermaster/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { isAllowed, authorizeUrl, loginWithCode, type PayPalProfile } from '../auth/paypalLogin.js';
@@ -94,7 +94,13 @@ export function authRouter(options: AuthRouterOptions = {}) {
         res.redirect(`${base}/?login=denied`);
         return;
       }
-      const sub = profile.user_id ?? profile.sub ?? profile.email ?? 'paypal';
+      // The id owns this treasurer's events, so a profile without one is refused rather than given a shared fallback.
+      const sub = profile.user_id ?? profile.sub ?? profile.email;
+      if (!sub) {
+        console.warn('login refused: PayPal profile has no user id or email');
+        res.redirect(`${base}/?login=error`);
+        return;
+      }
       setCookie(res, SESSION_COOKIE, sign('session', { sub, via: 'paypal', email: profile.email }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
       res.redirect(`${base}/?login=ok`);
     }),
@@ -132,7 +138,11 @@ export function authRouter(options: AuthRouterOptions = {}) {
         res.status(429).json({ error: 'Too many demo logins. Wait a few minutes and try again.' });
         return;
       }
-      setCookie(res, SESSION_COOKIE, sign('session', { sub: 'demo', via: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
+      // Each demo visitor is their own owner, so one judge never sees another's events. Entering again while still
+      // signed in keeps the same id, so the events made in this visit stay visible.
+      const current = readSession(req, secret);
+      const sub = current?.via === 'demo' ? current.sub : randomUUID();
+      setCookie(res, SESSION_COOKIE, sign('session', { sub, via: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
       res.json({ ok: true, demo: true });
     }),
   );

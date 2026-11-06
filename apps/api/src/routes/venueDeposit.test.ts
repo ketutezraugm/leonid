@@ -88,7 +88,7 @@ beforeEach(async () => {
 // A deposit is a spend and every spend needs an event: the thread gets the seeded one unless a test passes another or null (none).
 async function seedThread(messages: UIMessage[], eventId: string | null = demoEventId) {
   const id = crypto.randomUUID();
-  await getOrCreateThread(db, id, eventId);
+  await getOrCreateThread(db, id, eventId, null);
   await saveMessages(db, id, messages);
   return id;
 }
@@ -163,7 +163,7 @@ describe('venue deposit route', () => {
     const id = await seedThread(
       thread([small, big], { name: big.name, sourceUrl: listingUrl(big) }),
     );
-    const res = await request(app).get(`/api/venue-deposit/${id}`).expect(200);
+    const res = await request(app).get(`/api/venue-deposit/${id}`).set(treasurer).expect(200);
     expect(VenueDepositResponse.parse(res.body).deposit).toEqual({
       venue: big.name,
       area: `${big.area}, ${big.city}`,
@@ -175,22 +175,23 @@ describe('venue deposit route', () => {
   it('has no deposit before a pick, or for a venue the scout never returned', async () => {
     const { app } = await build();
     const none = await seedThread(thread([small]));
-    expect((await request(app).get(`/api/venue-deposit/${none}`).expect(200)).body).toEqual({
+    expect((await request(app).get(`/api/venue-deposit/${none}`).set(treasurer).expect(200)).body).toEqual({
       deposit: null,
     });
     const madeUp = await seedThread(
       thread([small], { name: big.name, sourceUrl: listingUrl(big) }),
     );
-    expect((await request(app).get(`/api/venue-deposit/${madeUp}`).expect(200)).body).toEqual({
+    expect((await request(app).get(`/api/venue-deposit/${madeUp}`).set(treasurer).expect(200)).body).toEqual({
       deposit: null,
     });
   });
 
-  it('only lets the treasurer pay', async () => {
+  it('only lets the treasurer see or pay', async () => {
     const { app, calls } = await build();
     const id = await seedThread(
       thread([small], { name: small.name, sourceUrl: listingUrl(small) }),
     );
+    await request(app).get(`/api/venue-deposit/${id}`).expect(401);
     await request(app).post(`/api/venue-deposit/${id}`).expect(401);
     expect(calls).toEqual([]);
   });

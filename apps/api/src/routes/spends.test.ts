@@ -2,7 +2,9 @@ import { SpendsResponse } from '@quartermaster/shared';
 import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SESSION_COOKIE, sign } from '../auth/session.js';
 import type { Db } from '../db/client.js';
+import { createEvent } from '../db/events.js';
 import { createTestDb } from '../db/testing.js';
 import { createDbAudit } from '../payments/db.js';
 import { spendsRouter } from './spends.js';
@@ -64,5 +66,40 @@ describe('GET /api/spends/recent', () => {
     const res = await request(app(() => broken)).get('/api/spends/recent').set(treasurer);
     expect(res.status).toBe(500);
     expect(JSON.stringify(res.body)).not.toContain('boom');
+  });
+});
+
+describe('GET /api/spends/recent per treasurer', () => {
+  const SECRET = 's'.repeat(40);
+  const as = (sub: string) => ({ Cookie: `${SESSION_COOKIE}=${sign('session', { sub, via: 'demo' }, SECRET, 3600)}` });
+  const appWith = () => {
+    const a = express();
+    a.use('/api/spends', spendsRouter({ env: { ...env, SESSION_SECRET: SECRET }, db: () => db }));
+    return a;
+  };
+
+  it("shows only spends of the caller's events, with or without an eventId", async () => {
+    const event = { date: '2027-05-20', people: 40, budget: 100_000, currency: 'USD' };
+    const alice = await createEvent(db, { ...event, name: 'Alice meetup' }, 'demo:alice');
+    const bob = await createEvent(db, { ...event, name: 'Bob summit' }, 'demo:bob');
+    const audit = createDbAudit(db);
+    for (const [eventId, amountMinor] of [[alice.id, 1_000], [bob.id, 2_000]] as const) {
+      await audit.record({
+        actor: 'agent',
+        action: 'spend.check',
+        input: { referenceId: `r${amountMinor}`, amountMinor, currency: 'USD', actor: 'agent', reason: 'x', eventId },
+        reason: 'x',
+        ruleResult: { decision: 'allow', reasons: ['ok'], ruleIds: ['r'] },
+      });
+    }
+    const amounts = async (path: string, headers: Record<string, string>) =>
+      SpendsResponse.parse((await request(appWith()).get(path).set(headers)).body).spends.map((s) => s.amountMinor);
+
+    expect(await amounts('/api/spends/recent', as('alice'))).toEqual([1_000]);
+    expect(await amounts('/api/spends/recent', as('carol'))).toEqual([]);
+    expect(await amounts(`/api/spends/recent?eventId=${alice.id}`, as('alice'))).toEqual([1_000]);
+    expect((await request(appWith()).get(`/api/spends/recent?eventId=${bob.id}`).set(as('alice'))).status).toBe(404);
+    // Both rows can share a timestamp, so only the set is fixed here.
+    expect((await amounts('/api/spends/recent', treasurer)).sort()).toEqual([1_000, 2_000]);
   });
 });

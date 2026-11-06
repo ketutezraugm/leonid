@@ -11,12 +11,18 @@ import {
   type ChatThreadResponse,
 } from '@quartermaster/shared';
 import { createOrchestrator } from '../agents/orchestrator.js';
+import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
 import { bookingChoiceOf } from '../agents/tools/bookings.js';
 import { venuePickOf } from '../agents/venuePick.js';
 import { DbNotConfiguredError, getDb } from '../db/client.js';
-import { getDemoEvent, getEvent } from '../db/events.js';
-import { getChecklist, getOrCreateThread, getThread, saveMessages } from '../db/mandates.js';
+import { getDemoEvent, getEvent, getVisibleEvent } from '../db/events.js';
+import {
+  getChecklist,
+  getOrCreateThread,
+  getVisibleThread,
+  saveMessages,
+} from '../db/mandates.js';
 import {
   deleteThread,
   listThreadSummaries,
@@ -51,10 +57,14 @@ function sendNotConfigured(res: Response, err: unknown) {
   return false;
 }
 
+// Treasurer only. Every chat belongs to the treasurer who started it: someone else's thread id answers like an unknown one.
 export function createChatRouter({
   limiter = createRateLimiter({ max: 30, windowMs: 10 * 60_000 }),
-}: { limiter?: RateLimiter } = {}) {
+  env = process.env,
+}: { limiter?: RateLimiter; env?: NodeJS.ProcessEnv } = {}) {
   const router = Router();
+  router.use(requireTreasurer(env));
+  const ownerOfRequest = (res: Response) => ownerOf(currentTreasurer(res));
 
   // Registered before /:threadId so "threads" is never parsed as an id.
   router.post('/threads/lookup', async (req, res) => {
@@ -63,7 +73,7 @@ export function createChatRouter({
     try {
       const db = getDb();
       const [threads, demo] = await Promise.all([
-        listThreadSummaries(db, parsed.data.ids),
+        listThreadSummaries(db, parsed.data.ids, ownerOfRequest(res)),
         getDemoEvent(db),
       ]);
       const body: ChatThreadListResponse = { threads, demoEvent: refOf(demo) };
@@ -81,7 +91,7 @@ export function createChatRouter({
     const patch = ChatThreadPatchRequest.safeParse(req.body);
     if (!patch.success) return fail(res, 400, 'Invalid request');
     try {
-      const found = await updateThread(getDb(), threadId.data, patch.data);
+      const found = await updateThread(getDb(), threadId.data, patch.data, ownerOfRequest(res));
       if (!found) return fail(res, 404, 'Conversation not found');
       res.status(204).end();
     } catch (err) {
@@ -95,7 +105,7 @@ export function createChatRouter({
     const threadId = z.uuid().safeParse(req.params.threadId);
     if (!threadId.success) return fail(res, 400, 'Invalid thread id');
     try {
-      const found = await deleteThread(getDb(), threadId.data);
+      const found = await deleteThread(getDb(), threadId.data, ownerOfRequest(res));
       if (!found) return fail(res, 404, 'Conversation not found');
       res.status(204).end();
     } catch (err) {
@@ -111,7 +121,7 @@ export function createChatRouter({
 
     try {
       const db = getDb();
-      const thread = await getThread(db, threadId.data);
+      const thread = await getVisibleThread(db, threadId.data, ownerOfRequest(res));
       const event = thread?.eventId ? await getEvent(db, thread.eventId) : undefined;
       const body: ChatThreadResponse = {
         messages: Array.isArray(thread?.messages) ? thread.messages : [],
@@ -140,11 +150,18 @@ export function createChatRouter({
       const db = getDb();
 
       // A chat sees only its own event: the one the user linked when starting it, or the one the
-      // agent creates later. The link is read only for a new thread, so a chat is never moved.
-      if (eventId && !(await getThread(db, threadId)) && !(await getEvent(db, eventId))) {
+      // agent creates later. The link is read only for a new thread, so a chat is never moved, and
+      // only to an event this treasurer can see.
+      const owner = ownerOfRequest(res);
+      if (
+        eventId &&
+        !(await getVisibleThread(db, threadId, owner)) &&
+        !(await getVisibleEvent(db, eventId, owner))
+      ) {
         return fail(res, 400, 'That event does not exist.');
       }
-      const thread = await getOrCreateThread(db, threadId, eventId ?? null);
+      const thread = await getOrCreateThread(db, threadId, eventId ?? null, owner);
+      if (!thread) return fail(res, 404, 'Conversation not found');
       await setTitleIfMissing(db, threadId, message.parts[0]?.text ?? '');
       const history = Array.isArray(thread.messages) ? thread.messages : [];
       let all;

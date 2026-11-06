@@ -14,7 +14,8 @@ import {
   sponsors,
   tasks,
 } from '../db/schema.js';
-import { DEMO_EVENT_NAME } from '../db/seed.js';
+import { SESSION_COOKIE, sign } from '../auth/session.js';
+import { DEMO_EVENT_NAME, seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { eventsRouter } from './events.js';
 
@@ -215,5 +216,69 @@ describe('/api/events', () => {
       expect((await del('00000000-0000-4000-8000-000000000000')).status).toBe(404);
       expect((await del('not-an-id')).status).toBe(404);
     });
+  });
+});
+
+describe('/api/events per treasurer', () => {
+  const SECRET = 's'.repeat(40);
+  const ORIGIN = 'http://app.test';
+  const sessions = { SESSION_SECRET: SECRET, APP_BASE_URL: ORIGIN };
+  const as = (sub: string, via: 'paypal' | 'demo' = 'demo') => ({
+    Cookie: `${SESSION_COOKIE}=${sign('session', { sub, via }, SECRET, 3600)}`,
+    Origin: ORIGIN,
+  });
+  const appWith = () => {
+    const a = express();
+    a.use(express.json());
+    a.use('/api/events', eventsRouter({ env: { ...env, ...sessions }, db: () => db }));
+    return a;
+  };
+  const names = async (headers: Record<string, string>) =>
+    EventsResponse.parse((await request(appWith()).get('/api/events').set(headers)).body).events.map(
+      (e) => e.name,
+    );
+
+  it('shows each treasurer only their own events, plus the shared demo event', async () => {
+    await seedDemoEvent(db);
+    await request(appWith()).post('/api/events').set(as('alice')).send(spring).expect(201);
+    await request(appWith())
+      .post('/api/events')
+      .set(as('PAYPAL-BOB', 'paypal'))
+      .send({ ...spring, name: 'Bob summit' })
+      .expect(201);
+
+    expect(await names(as('alice'))).toEqual([DEMO_EVENT_NAME, 'Spring Meetup']);
+    expect(await names(as('PAYPAL-BOB', 'paypal'))).toEqual([DEMO_EVENT_NAME, 'Bob summit']);
+    expect(await names(as('carol'))).toEqual([DEMO_EVENT_NAME]);
+    // A demo login and a PayPal login with the same id are still different people.
+    expect(await names(as('PAYPAL-BOB'))).toEqual([DEMO_EVENT_NAME]);
+    // The ops token (scripts, curl) sees every event.
+    expect(await names(treasurer)).toEqual([DEMO_EVENT_NAME, 'Bob summit', 'Spring Meetup']);
+  });
+
+  it("hides events made before owners existed, and does not share an event that copies the demo's name", async () => {
+    await db.insert(events).values({
+      name: 'Old unowned event',
+      date: new Date('2027-01-01'),
+      headcount: 10,
+      budgetTotal: 1_000,
+    });
+    await request(appWith())
+      .post('/api/events')
+      .set(as('mallory'))
+      .send({ ...openhack, name: DEMO_EVENT_NAME })
+      .expect(201);
+
+    expect(await names(as('alice'))).toEqual([]);
+    expect(await names(as('mallory'))).toEqual([DEMO_EVENT_NAME]);
+  });
+
+  it("answers 404 when deleting someone else's event, and keeps it", async () => {
+    const res = await request(appWith()).post('/api/events').set(as('alice')).send(spring).expect(201);
+    const id = EventSummary.parse(res.body).id;
+
+    expect((await request(appWith()).delete(`/api/events/${id}`).set(as('bob'))).status).toBe(404);
+    expect(await db.select().from(events).where(eq(events.id, id))).toHaveLength(1);
+    expect((await request(appWith()).delete(`/api/events/${id}`).set(as('alice'))).status).toBe(204);
   });
 });

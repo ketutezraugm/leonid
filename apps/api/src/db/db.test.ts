@@ -86,7 +86,7 @@ describe('mandates', () => {
   it('replaces the checklist and derives the mandate status', async () => {
     const event = await seedDemoEvent(db);
     const threadId = crypto.randomUUID();
-    await getOrCreateThread(db, threadId, event.id);
+    await getOrCreateThread(db, threadId, event.id, null);
     const args = { threadId, eventId: event.id, goal: 'Plan swag' };
 
     const blocked = await replaceChecklist(db, {
@@ -119,7 +119,7 @@ describe('chat events', () => {
 
   it('starts a thread with no event, then binds the one it creates', async () => {
     const threadId = crypto.randomUUID();
-    expect((await getOrCreateThread(db, threadId, null)).eventId).toBeNull();
+    expect((await getOrCreateThread(db, threadId, null, null))?.eventId).toBeNull();
     await replaceChecklist(db, {
       threadId,
       eventId: null,
@@ -137,7 +137,7 @@ describe('chat events', () => {
   it('never moves a thread that already has an event', async () => {
     const demo = await seedDemoEvent(db);
     const threadId = crypto.randomUUID();
-    await getOrCreateThread(db, threadId, demo.id);
+    await getOrCreateThread(db, threadId, demo.id, null);
 
     await expect(createEventForThread(db, threadId, meetup)).rejects.toThrow(/already has an event/);
     expect((await getThread(db, threadId))?.eventId).toBe(demo.id);

@@ -1,8 +1,9 @@
 import { SPEND_RECENT_MAX, type SpendsResponse } from '@quartermaster/shared';
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireTreasurer } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
+import { getVisibleEvent, visibleEventIds } from '../db/events.js';
 import { recentSpends } from '../payments/recent.js';
 
 export interface SpendsRouterOptions {
@@ -16,7 +17,8 @@ const Query = z.object({
 });
 
 // Read-only view of what the payment executor decided, for Event home's "Recent spends". Treasurer only.
-//   GET /recent?limit=20&eventId=<uuid>  -> SpendsResponse (shared)
+//   GET /recent?limit=20&eventId=<uuid>  -> SpendsResponse (shared); 404 for an event the caller cannot see.
+//                                           With no eventId: the spends of every event the caller can see.
 export function spendsRouter(options: SpendsRouterOptions = {}) {
   const env = options.env ?? process.env;
   const router = Router();
@@ -35,7 +37,13 @@ export function spendsRouter(options: SpendsRouterOptions = {}) {
       return;
     }
     try {
-      const body: SpendsResponse = { spends: await recentSpends(db, query.data) };
+      const owner = ownerOf(currentTreasurer(res));
+      if (query.data.eventId && !(await getVisibleEvent(db, query.data.eventId, owner))) {
+        res.status(404).json({ error: 'No such event' });
+        return;
+      }
+      const eventIds = owner === null || query.data.eventId ? undefined : await visibleEventIds(db, owner);
+      const body: SpendsResponse = { spends: await recentSpends(db, { ...query.data, eventIds }) };
       res.json(body);
     } catch (err) {
       console.error('recent spends failed', err);

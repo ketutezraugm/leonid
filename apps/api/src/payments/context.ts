@@ -13,7 +13,7 @@ import {
 } from './memory.js';
 import { createPayoutSender } from './payoutSender.js';
 import { createRulesCheck } from './rulesCheck.js';
-import type { CheckSpend } from './ports.js';
+import type { ApprovalsPort, CheckSpend } from './ports.js';
 import { stubCheck } from './stub-check.js';
 
 // The real rules engine whenever there is a database to read today's spend and the category totals from. The stand-in
@@ -25,7 +25,7 @@ export interface PaymentsContext {
   client: PayPalClient; // Procurement app
   wallet: WalletStore;
   executor: Executor;
-  approvals: { list(): Promise<ApprovalView[]>; findByOrder(paypalOrderId: string): Promise<string | null> };
+  approvals: Pick<ApprovalsPort, 'findByOrder' | 'get'> & { list(): Promise<ApprovalView[]> };
 }
 
 let context: PaymentsContext | undefined;
