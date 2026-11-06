@@ -96,6 +96,20 @@ describe('approvals routes', () => {
     });
   });
 
+  it('lists only one event\'s approvals when asked, and everything when not', async () => {
+    const { app, executor } = await build(approved);
+    const a = crypto.randomUUID();
+    const b = crypto.randomUUID();
+    await executor.requestSpend({ ...prizeSpend, referenceId: 'a-1', eventId: a });
+    await executor.requestSpend({ ...prizeSpend, referenceId: 'b-1', eventId: b });
+    const refs = async (q: string) =>
+      (await request(app).get(`/api/approvals${q}`).set(treasurer)).body.approvals.map((x: { referenceId: string }) => x.referenceId);
+    expect(await refs('')).toEqual(['a-1', 'b-1']);
+    expect(await refs(`?eventId=${a}`)).toEqual(['a-1']);
+    expect(await refs(`?eventId=${crypto.randomUUID()}`)).toEqual([]);
+    expect((await request(app).get('/api/approvals?eventId=nope').set(treasurer)).status).toBe(422);
+  });
+
   it('lists the oldest approval first', async () => {
     const { app, executor } = await build(approved);
     await executor.requestSpend(prizeSpend);

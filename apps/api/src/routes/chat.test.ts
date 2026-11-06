@@ -6,7 +6,9 @@ import { createApp } from '../app.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
 import { scriptedModel, type ScriptStep } from '../agents/testing.js';
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
+import { sign, SESSION_COOKIE } from '../auth/session.js';
 import { getThread } from '../db/mandates.js';
+import { events } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { createChatRouter } from './chat.js';
@@ -144,6 +146,35 @@ describe('POST /api/chat', () => {
     const res = await request(createApp()).post('/api/chat').send(body);
     expect(res.status).toBe(200);
     expect((await getThread(db, body.threadId))?.eventId).toBeNull();
+  });
+
+  it('stamps the session\'s identity on an event the agent creates, and no owner without one', async () => {
+    const secret = 's'.repeat(40);
+    const app = express();
+    app.use(express.json());
+    app.use('/api/chat', createChatRouter({ env: { SESSION_SECRET: secret } }));
+    const create = (name: string) => ({
+      tool: 'create_event',
+      input: { name, date: '2999-05-01', headcount: 40, budgetTotalCents: 100_000, categories: ['Venue'] },
+    });
+
+    useScript([create('Owned Meetup'), { text: 'Created.' }]);
+    const cookie = `${SESSION_COOKIE}=${sign('session', { sub: 'demo:abc', via: 'demo' }, secret, 3600)}`;
+    expect((await request(app).post('/api/chat').set('Cookie', cookie).send(userMessage('Plan a meetup'))).status).toBe(200);
+
+    useScript([create('Orphan Meetup'), { text: 'Created.' }]);
+    const forged = `${SESSION_COOKIE}=${sign('session', { sub: 'demo:abc', via: 'demo' }, 'x'.repeat(40), 3600)}`;
+    await request(app).post('/api/chat').set('Cookie', forged).send(userMessage('Plan another'));
+
+    await vi.waitFor(async () => {
+      const rows = await db.select().from(events);
+      expect(rows.map((r) => [r.name, r.ownerSub, r.categories])).toEqual(
+        expect.arrayContaining([
+          ['Owned Meetup', 'demo:abc', ['venue']],
+          ['Orphan Meetup', null, ['venue']],
+        ]),
+      );
+    });
   });
 
   it('rate limits per client', async () => {

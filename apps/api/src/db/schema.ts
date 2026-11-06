@@ -7,11 +7,19 @@ export const events = pgTable('events', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   date: timestamp('date', { withTimezone: true }).notNull(),
+  // Last day of a multi-day event. Null means a one-day event on `date`.
+  endDate: timestamp('end_date', { withTimezone: true }),
   headcount: integer('headcount').notNull(),
   budgetTotal: integer('budget_total').notNull(),
   currency: text('currency').notNull().default('USD'),
   treasuryMerchantId: text('treasury_merchant_id'),
-}).enableRLS();
+  // Who made the event (the session's sub). Null for the seeded demo event, older rows and chats with no session;
+  // those are never listed by GET /api/events.
+  ownerSub: text('owner_sub'),
+  categories: text('categories').array().notNull().default(sql`'{}'::text[]`),
+  // Where the event is; the venue search uses it. Null when the organiser did not say.
+  city: text('city'),
+}, (t) => [index('events_owner_idx').on(t.ownerSub)]).enableRLS();
 
 export const sponsors = pgTable('sponsors', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -10,21 +10,25 @@ export function newThreadId(): string {
   return crypto.randomUUID();
 }
 
-export function loadActiveId(): string {
+// Each event remembers its own open chat. The demo event, and screens outside any event, keep the original key, so a
+// browser that already has a chat open still finds it.
+const activeKey = (scope?: string | null) => (scope && scope !== 'demo' ? `${ACTIVE_KEY}.${scope}` : ACTIVE_KEY);
+
+export function loadActiveId(scope?: string | null): string {
   try {
-    const stored = localStorage.getItem(ACTIVE_KEY);
+    const stored = localStorage.getItem(activeKey(scope));
     if (stored) return stored;
   } catch {
     // fall through to a fresh id
   }
   const id = newThreadId();
-  saveActiveId(id);
+  saveActiveId(id, scope);
   return id;
 }
 
-export function saveActiveId(id: string) {
+export function saveActiveId(id: string, scope?: string | null) {
   try {
-    localStorage.setItem(ACTIVE_KEY, id);
+    localStorage.setItem(activeKey(scope), id);
   } catch {
     // ignore
   }

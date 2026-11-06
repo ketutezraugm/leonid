@@ -1,4 +1,4 @@
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { SessionInfo } from '@quartermaster/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { isAllowed, authorizeUrl, loginWithCode, type PayPalProfile } from '../auth/paypalLogin.js';
@@ -120,12 +120,16 @@ export function authRouter(options: AuthRouterOptions = {}) {
 
   router.post(
     '/demo-login',
-    handle((_req, res, { secret, secure }) => {
+    handle((req, res, { secret, secure }) => {
       if (!demoLogin) {
         res.status(404).json({ error: 'not found' });
         return;
       }
-      setCookie(res, SESSION_COOKIE, sign('session', { sub: 'demo', via: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
+      // Each demo login is its own person, so what one judge creates (events) is not listed for the next. A visitor
+      // who still holds a valid demo session keeps theirs, so pressing the button twice does not lose their events.
+      const held = readSession(req, secret);
+      const sub = held?.via === 'demo' && held.sub.startsWith('demo:') ? held.sub : `demo:${randomUUID()}`;
+      setCookie(res, SESSION_COOKIE, sign('session', { sub, via: 'demo' }, secret, SESSION_TTL_S), SESSION_TTL_S, secure);
       res.json({ ok: true, demo: true });
     }),
   );

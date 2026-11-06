@@ -1,18 +1,20 @@
-import { Router, type Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { pipeAgentUIStreamToResponse, validateUIMessages } from 'ai';
 import { z } from 'zod';
 import {
   AgentChatRequest,
   ChatThreadLookupRequest,
   ChatThreadPatchRequest,
+  isEventPlanRequest,
   type ApiError,
   type ChatEventRef,
   type ChatThreadListResponse,
   type ChatThreadResponse,
 } from '@quartermaster/shared';
+import { readSession, sessionSecret } from '../auth/session.js';
 import { createOrchestrator } from '../agents/orchestrator.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
-import { bookingChoiceOf } from '../agents/tools/bookings.js';
+import { bookingChoiceOf, eventPlanRequestOf } from '../agents/tools/bookings.js';
 import { venuePickOf } from '../agents/venuePick.js';
 import { DbNotConfiguredError, getDb } from '../db/client.js';
 import { getDemoEvent, getEvent } from '../db/events.js';
@@ -29,6 +31,8 @@ import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 // Only the most recent messages go to the model; the full history stays in the thread.
 const MODEL_WINDOW = 30;
 const RUN_TIMEOUT_MS = 90_000;
+// Planning a whole event and then searching venues takes longer than a normal turn.
+const PLAN_RUN_TIMEOUT_MS = 180_000;
 
 const refOf = (event: { id: string; name: string } | undefined): ChatEventRef | null =>
   event ? { id: event.id, name: event.name } : null;
@@ -51,9 +55,17 @@ function sendNotConfigured(res: Response, err: unknown) {
   return false;
 }
 
+// The chat stays open to anyone (no treasurer guard), so a session here only says who owns an event the agent creates.
+// A missing, expired or forged cookie is just "no owner": it never grants or removes access to anything.
+function ownerOf(req: Request, env: NodeJS.ProcessEnv): string | null {
+  const secret = sessionSecret(env);
+  return secret ? (readSession(req, secret)?.sub ?? null) : null;
+}
+
 export function createChatRouter({
   limiter = createRateLimiter({ max: 30, windowMs: 10 * 60_000 }),
-}: { limiter?: RateLimiter } = {}) {
+  env = process.env,
+}: { limiter?: RateLimiter; env?: NodeJS.ProcessEnv } = {}) {
   const router = Router();
 
   // Registered before /:threadId so "threads" is never parsed as an id.
@@ -162,10 +174,12 @@ export function createChatRouter({
         search: createCatalogSearchClient(),
         eventId: thread.eventId,
         threadId,
+        ownerSub: ownerOf(req, env),
         goal: message.parts[0]?.text ?? '',
         // Read from the whole thread, not the model window, so an early choice is not forgotten.
         bookings: bookingChoiceOf(all),
         venuePick: venuePickOf(all),
+        planRequested: eventPlanRequestOf(all),
       });
 
       // Stop the run if the browser goes away mid-stream.
@@ -179,7 +193,7 @@ export function createChatRouter({
         agent,
         uiMessages: windowed,
         abortSignal: abort.signal,
-        timeout: RUN_TIMEOUT_MS,
+        timeout: isEventPlanRequest(message.parts[0]?.text ?? '') ? PLAN_RUN_TIMEOUT_MS : RUN_TIMEOUT_MS,
         onError: (error) => {
           console.error('Agent run failed', error);
           return 'The agent could not finish. Try again.';

@@ -12,6 +12,8 @@ export interface AgentContext {
   // tools read it at call time and never fall back to another event.
   eventId: string | null;
   threadId: string;
+  // Who is chatting (the session's sub), stamped on an event this chat creates so it lists for them. Null with no session.
+  ownerSub?: string | null;
   // The user's latest message, used as the mandate's goal when the checklist is first created.
   goal: string;
   model: LanguageModel;
@@ -22,6 +24,9 @@ export interface AgentContext {
   bookings?: BookingChoice | null;
   // The venue the organizer picked from the scout's results, read from their own messages.
   venuePick?: VenuePick | null;
+  // True when the organizer's own messages include the plan kickoff (EVENT_PLAN_REQUEST): the event was just set up and
+  // the agent plans it whole without the booking checklist. Read by the route, never set by a tool.
+  planRequested?: boolean;
   // The run's clock, so tests can pin "today". Defaults to the real time.
   now?: Date;
 }

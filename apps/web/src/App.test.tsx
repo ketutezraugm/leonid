@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -57,29 +57,49 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Your events' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('href', '/events/demo');
     expect(screen.getByText(/Showing the demo event/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('switches events from the sidebar and stays on the same screen', async () => {
-    const hack = crypto.randomUUID();
-    const meetup = crypto.randomUUID();
+    const spring = crypto.randomUUID();
+    const autumn = crypto.randomUUID();
     stubApi({
       events: [
-        { id: hack, name: 'OpenHack 2027', date: '2027-03-14', people: 200, currency: 'USD' },
-        { id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, currency: 'USD' },
+        { id: spring, name: 'Spring Meetup', date: '2027-05-02', endDate: '2027-05-02', people: 60, currency: 'USD', budgetTotalMinor: 300_000, categories: [] },
+        { id: autumn, name: 'Autumn Summit', date: '2027-10-09', endDate: '2027-10-09', people: 120, currency: 'USD', budgetTotalMinor: 900_000, categories: ['venue'] },
       ],
     });
     render(
-      <MemoryRouter initialEntries={[`/events/${hack}/approvals`]}>
+      <MemoryRouter initialEntries={[`/events/${spring}/approvals`]}>
         <App />
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole('button', { name: /OpenHack 2027.*Switch event/ }));
-    const other = screen.getByRole('link', { name: /Spring Meetup/ });
-    expect(other).toHaveAttribute('href', `/events/${meetup}/approvals`);
-    expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('aria-current', 'true');
+    fireEvent.click(await screen.findByRole('button', { name: /Spring Meetup.*Switch event/ }));
+    // The demo event is always in the list, ahead of the person's own.
+    expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('href', '/events/demo/approvals');
+    expect(screen.getByRole('link', { name: /Spring Meetup/ })).toHaveAttribute('aria-current', 'true');
+    const other = screen.getByRole('link', { name: /Autumn Summit/ });
+    expect(other).toHaveAttribute('href', `/events/${autumn}/approvals`);
     fireEvent.click(other);
-    expect(await screen.findByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Autumn Summit.*Switch event/ })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+  });
+
+  it('shows an event the person made its own Event home, never the demo\'s sample figures', async () => {
+    const id = crypto.randomUUID();
+    stubApi({
+      events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budgetTotalMinor: 300_000, categories: ['venue', 'swag'] }],
+    });
+    render(
+      <MemoryRouter initialEntries={[`/events/${id}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Budget target' })).toBeInTheDocument();
+    expect(screen.getByText('$3,000.00')).toBeInTheDocument();
+    expect(screen.getByText(/venue, swag/)).toBeInTheDocument();
+    expect(screen.queryByText('Sample figures')).not.toBeInTheDocument();
+    expect(screen.queryByText('Alerts')).not.toBeInTheDocument();
   });
 
   it('says so when the event in the link is not one of yours', async () => {
@@ -158,20 +178,50 @@ describe('App', () => {
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
   });
 
-  it('starts the sidebar as a rail on Plan, Money and Agent only', () => {
+  it('starts the sidebar as a rail on Plan, Money and Agent only', async () => {
+    // An old link (/money) waits for the event list, then opens the screen inside the event.
     const { container, unmount } = render(
       <MemoryRouter initialEntries={['/money']}>
         <App />
       </MemoryRouter>,
     );
-    expect(container.querySelector('.shell')).toHaveClass('shell--rail');
+    await waitFor(() => expect(container.querySelector('.shell')).toHaveClass('shell--rail'), { timeout: 5000 });
     unmount();
     const home = render(
       <MemoryRouter initialEntries={['/approvals']}>
         <App />
       </MemoryRouter>,
     );
+    await screen.findByRole('heading', { name: 'Approvals' }, { timeout: 5000 });
     expect(home.container.querySelector('.shell')).not.toHaveClass('shell--rail');
+  });
+
+  it('keeps an old link waiting for the event list instead of opening the demo', async () => {
+    const id = crypto.randomUUID();
+    localStorage.setItem('quartermaster.lastEventId', id);
+    let release: (r: Response) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        String(url).startsWith('/api/events')
+          ? new Promise<Response>((resolve) => (release = resolve))
+          : new Promise(() => {}),
+      ),
+    );
+    render(
+      <MemoryRouter initialEntries={['/plan']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Opening your event…')).toBeInTheDocument();
+    release(
+      new Response(
+        JSON.stringify({ events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budgetTotalMinor: 0, categories: [] }] }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    expect(await screen.findByRole('heading', { name: 'Plan' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
   });
 
   it('opens and closes the sidebar from its button, and remembers it across screens', async () => {

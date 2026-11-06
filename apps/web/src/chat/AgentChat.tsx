@@ -13,6 +13,7 @@ import {
   CHAT_MESSAGE_MAX_LENGTH,
   ChatThreadListResponse,
   ChatThreadResponse,
+  EVENT_PLAN_REQUEST,
   type ChatEventRef,
   type ChatThreadSummary,
   type ChecklistItem,
@@ -32,6 +33,7 @@ import {
   venueSearchOf,
   type VenueSearch,
 } from './parts';
+import { useEvents } from '../shell/event';
 import { loadActiveId, loadIds, newThreadId, saveActiveId, saveIds, withId } from './sessions';
 import { ThreadList } from './ThreadList';
 import './chat.css';
@@ -89,8 +91,21 @@ export function AgentChat({
   viewLeavesChat = false,
   onSendChange,
   onThreadChange,
-}: { variant?: 'panel' | 'rail' } & CanvasLink = {}) {
-  const [threadId, setThreadId] = useState(loadActiveId);
+  eventScope = null,
+  currentEvent = null,
+  autoPlan = false,
+}: {
+  variant?: 'panel' | 'rail';
+  // The /events/:eventId the screen is on (the route id), or null outside an event. Each event keeps its own open chat.
+  // Passed in because this component renders without a router in tests and in the workspace.
+  eventScope?: string | null;
+  // That event, when it is one of the person's own (not the demo): a new chat is linked to it. The demo event stays
+  // unlinked, because the demo's example prompts have the agent create an event of its own.
+  currentEvent?: ChatEventRef | null;
+  // Send the plan kickoff once when this event's chat is empty (right after New event).
+  autoPlan?: boolean;
+} & CanvasLink = {}) {
+  const [threadId, setThreadId] = useState(() => loadActiveId(eventScope));
   const [ids, setIds] = useState(() => withId(loadIds(), threadId));
   const [threads, setThreads] = useState<ChatThreadSummary[] | null>(null);
   const [demoEvent, setDemoEvent] = useState<ChatEventRef | null>(null);
@@ -167,22 +182,40 @@ export function AgentChat({
     };
   }, [ids, threadId, refreshCount]);
 
+  // In one of the person's own events the chat list shows only that event's chats; the demo and other screens show all.
+  const visibleThreads = currentEvent
+    ? (threads ?? []).filter((t) => t.event?.id === currentEvent.id)
+    : (threads ?? []);
+
   const refreshThreads = useCallback(() => setRefreshCount((n) => n + 1), []);
 
   // Events a new chat may be linked to: the demo event and the ones this browser's chats work on.
-  const eventOptions = [demoEvent, ...(threads ?? []).map((t) => t.event)].filter(
+  const eventOptions = [demoEvent, currentEvent, ...(threads ?? []).map((t) => t.event)].filter(
     (event, index, all): event is ChatEventRef =>
       !!event && all.findIndex((other) => other?.id === event.id) === index,
   );
 
   function open(id: string) {
     setThreadId(id);
-    saveActiveId(id);
+    saveActiveId(id, eventScope);
     const next = withId(ids, id);
     setIds(next);
     saveIds(next);
     setShowList(false);
   }
+
+  // Moving to another event opens that event's chat. It waits while a run is going and keeps the open chat when the
+  // screen leaves every event, so the drawer does not jump under the person.
+  const lastScope = useRef(eventScope);
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  });
+  useEffect(() => {
+    if (eventScope === lastScope.current) return;
+    lastScope.current = eventScope;
+    if (eventScope !== null && !busy) openRef.current(loadActiveId(eventScope));
+  }, [eventScope, busy]);
 
   function startNew() {
     // An unsent chat is not in the list, so reuse it instead of piling up empty ones.
@@ -208,7 +241,7 @@ export function AgentChat({
     if (!(await patch(id, { archived: true }))) return;
     if (thread) setUndo(thread);
     if (id === threadId) {
-      const next = threads?.find((t) => t.id !== id);
+      const next = visibleThreads.find((t) => t.id !== id);
       open(next?.id ?? newThreadId());
     } else {
       refreshThreads();
@@ -222,9 +255,9 @@ export function AgentChat({
     if (undo?.id === id) setUndo(null);
     const rest = ids.filter((existing) => existing !== id);
     if (id === threadId) {
-      const next = threads?.find((t) => t.id !== id)?.id ?? newThreadId();
+      const next = visibleThreads.find((t) => t.id !== id)?.id ?? newThreadId();
       setThreadId(next);
-      saveActiveId(next);
+      saveActiveId(next, eventScope);
       setIds(withId(rest, next));
       saveIds(withId(rest, next));
       setShowList(false);
@@ -262,7 +295,7 @@ export function AgentChat({
       <div className={`chat-body${showList ? ' chat-body--list' : ''}`}>
         <div className="chat-sidebar">
           <ThreadList
-            threads={threads ?? []}
+            threads={visibleThreads}
             activeId={threadId}
             disabled={busy}
             onSelect={open}
@@ -289,6 +322,8 @@ export function AgentChat({
               initialChecklist={ready.thread.checklist}
               initialEvent={ready.thread.event}
               eventOptions={eventOptions}
+              currentEvent={currentEvent}
+              autoPlan={autoPlan}
               loadError={ready.error}
               onBusyChange={setBusy}
               onSettled={refreshThreads}
@@ -313,6 +348,8 @@ function ChatPanel({
   initialChecklist,
   initialEvent,
   eventOptions,
+  currentEvent,
+  autoPlan = false,
   loadError,
   onBusyChange,
   onSettled,
@@ -327,6 +364,8 @@ function ChatPanel({
   initialChecklist: ChecklistItem[];
   initialEvent: ChatEventRef | null;
   eventOptions: ChatEventRef[];
+  currentEvent: ChatEventRef | null;
+  autoPlan?: boolean;
   loadError: string | null;
   onBusyChange: (busy: boolean) => void;
   onSettled: () => void;
@@ -335,8 +374,10 @@ function ChatPanel({
   const lastSent = useRef('');
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  // An existing event this new chat may see, chosen by the user before the first message.
-  const [linked, setLinked] = useState<ChatEventRef | null>(null);
+  // An existing event this new chat may see: the one the screen is on unless the user picks another (or none) before
+  // the first message. undefined means "not picked", which follows the screen's event for an empty chat.
+  const [picked, setPicked] = useState<ChatEventRef | null | undefined>(undefined);
+  const { refresh: refreshEvents } = useEvents();
 
   const { messages, setMessages, sendMessage, status, error, clearError } = useChat({
     id: threadId,
@@ -352,10 +393,20 @@ function ChatPanel({
   });
 
   const busy = status === 'submitted' || status === 'streaming';
+  const linked = picked !== undefined ? picked : initialMessages.length === 0 ? currentEvent : null;
   const checklist = latestChecklist(messages) ?? initialChecklist;
   const started = messages.length > 0;
   const event = initialEvent ?? createdEvent(messages) ?? (started ? linked : null);
   const venuePick = latestVenuePick(messages);
+
+  // An event the agent creates in this chat joins the person's list, so its screens open without a reload.
+  const createdId = createdEvent(messages)?.id;
+  const knownCreatedId = useRef(createdId);
+  useEffect(() => {
+    if (!createdId || createdId === knownCreatedId.current) return;
+    knownCreatedId.current = createdId;
+    refreshEvents();
+  }, [createdId, refreshEvents]);
 
   // Tell the list when a run starts (lock switching) and ends (refresh title and order).
   const wasBusy = useRef(false);
@@ -388,8 +439,20 @@ function ChatPanel({
     lastSent.current = content;
     clearError();
     setDraft('');
+    // Fixes the link at the first send, so moving to another event mid-chat never relabels this chat.
+    setPicked(linked);
     void sendMessage({ text: content }, linked ? { body: { eventId: linked.id } } : undefined);
   }
+
+  // Right after New event, plan the event from its saved details. Only into an empty chat, and only once even when
+  // StrictMode runs the effect twice or the person reloads (the guard is the thread being empty on the server).
+  const autoPlanned = useRef(false);
+  useEffect(() => {
+    if (!autoPlan || autoPlanned.current || !currentEvent || initialMessages.length > 0) return;
+    autoPlanned.current = true;
+    send(EVENT_PLAN_REQUEST);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlan, currentEvent]);
 
   // Hand the canvas the current send, or null while a run is going so it cannot pick mid-run.
   const sendRef = useRef(send);
@@ -436,19 +499,39 @@ function ChatPanel({
       <div className="chat-log" ref={logRef} role="log" aria-live="polite">
         {messages.length === 0 ? (
           <div className="chat-empty">
-            <p className="chat-empty-title">What do you want to do?</p>
-            <p className="muted">
-              Tell me about your event in your own words: the city, how many people, the date and
-              your budget. Or pick an example, change the details, then press Send.
-            </p>
-            {eventOptions.length > 0 && (
+            {currentEvent ? (
+              <>
+                <p className="chat-empty-title">Plan {currentEvent.name}</p>
+                <p className="muted">
+                  I plan this event from the details you entered: the dates, the headcount, the
+                  budget and the categories. Or ask me anything about it below.
+                </p>
+                <button
+                  type="button"
+                  className="chat-plan"
+                  disabled={busy}
+                  onClick={() => send(EVENT_PLAN_REQUEST)}
+                >
+                  Plan this event
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="chat-empty-title">What do you want to do?</p>
+                <p className="muted">
+                  Tell me about your event in your own words: the city, how many people, the date
+                  and your budget. Or pick an example, change the details, then press Send.
+                </p>
+              </>
+            )}
+            {!currentEvent && eventOptions.length > 0 && (
               <label className="chat-event-pick">
                 Event for this chat
                 <select
                   value={linked?.id ?? ''}
                   disabled={busy}
                   onChange={(e) =>
-                    setLinked(eventOptions.find((option) => option.id === e.target.value) ?? null)
+                    setPicked(eventOptions.find((option) => option.id === e.target.value) ?? null)
                   }
                 >
                   <option value="">None, start fresh</option>
@@ -460,19 +543,21 @@ function ChatPanel({
                 </select>
               </label>
             )}
-            <div className="chat-suggestions">
-              {suggestions.map((suggestion) => (
-                <button
-                  key={suggestion.title}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => pickSuggestion(suggestion.prompt)}
-                >
-                  <strong>{suggestion.title}</strong>
-                  <span>{suggestion.prompt}</span>
-                </button>
-              ))}
-            </div>
+            {!currentEvent && (
+              <div className="chat-suggestions">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.title}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => pickSuggestion(suggestion.prompt)}
+                  >
+                    <strong>{suggestion.title}</strong>
+                    <span>{suggestion.prompt}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           messages.map((message, index) => (

@@ -1,3 +1,10 @@
+import {
+  EVENT_BUDGET_MAX_MINOR,
+  EVENT_CATEGORIES_MAX,
+  EVENT_CATEGORY_MAX_LENGTH,
+  EVENT_CITY_MAX_LENGTH,
+  EVENT_PEOPLE_MAX,
+} from '@quartermaster/shared';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { createEventForThread, getEvent, listSponsors } from '../../db/events.js';
@@ -13,7 +20,7 @@ const Input = z.object({
 export function readEventTool(ctx: AgentContext, actor: string) {
   return tool({
     description:
-      "Read this chat's event: name, date, headcount, total budget, sponsors (pledged amount and " +
+      "Read this chat's event: name, date, headcount, total budget, categories, sponsors (pledged amount and " +
       'invoice status) and plan tasks. Amounts are integer cents. It does NOT include unlocked ' +
       'budget or cleared income; do not state those figures. Returns event: null when this chat ' +
       'has no event yet.',
@@ -36,9 +43,12 @@ export function readEventTool(ctx: AgentContext, actor: string) {
         event: {
           name: event.name,
           date: event.date.toISOString().slice(0, 10),
+          endDate: (event.endDate ?? event.date).toISOString().slice(0, 10),
+          city: event.city,
           headcount: event.headcount,
           budgetTotalCents: event.budgetTotal,
           currency: event.currency,
+          categories: event.categories,
         },
         sponsors: sponsors.map((s) => ({
           name: s.name,
@@ -62,17 +72,24 @@ export function readEventTool(ctx: AgentContext, actor: string) {
 const CreateEventInput = z.object({
   name: z.string().trim().min(1).max(120),
   date: z.iso.date().describe('Event day, YYYY-MM-DD'),
-  headcount: z.number().int().positive().max(100_000),
+  headcount: z.number().int().positive().max(EVENT_PEOPLE_MAX),
   budgetTotalCents: z
     .number()
     .int()
     .nonnegative()
+    .max(EVENT_BUDGET_MAX_MINOR)
     .describe('Planned total budget in minor units (cents). A target, not spendable money.'),
   currency: z
     .string()
     .regex(/^[A-Z]{3}$/)
     .default('USD')
     .describe('ISO 4217 code'),
+  categories: z
+    .array(z.string().trim().min(1).max(EVENT_CATEGORY_MAX_LENGTH))
+    .max(EVENT_CATEGORIES_MAX)
+    .optional()
+    .describe('Spend categories the organizer named, such as venue or swag. Omit when they gave none.'),
+  city: z.string().trim().min(1).max(EVENT_CITY_MAX_LENGTH).optional().describe('City the event is in, when the organizer named one'),
   reason: z.string().max(300).optional().describe('One sentence: why'),
 });
 
@@ -97,6 +114,9 @@ export function createEventTool(ctx: AgentContext) {
         headcount: input.headcount,
         budgetTotal: input.budgetTotalCents,
         currency: input.currency,
+        categories: [...new Set((input.categories ?? []).map((c) => c.toLowerCase()))],
+        city: input.city ?? null,
+        ownerSub: ctx.ownerSub ?? null,
       });
       ctx.eventId = event.id;
       return { event: { id: event.id, name: event.name } };

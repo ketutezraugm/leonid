@@ -12,7 +12,7 @@ export const STATE_TTL_S = 10 * 60;
 export const MIN_SECRET_LENGTH = 32;
 
 export interface Session {
-  sub: string; // PayPal user_id, or 'demo'
+  sub: string; // PayPal user_id, or 'demo:<uuid>' (one per demo login; older cookies carry plain 'demo')
   via: 'paypal' | 'demo'; // how the session was obtained; goes into the audit actor
   email?: string;
 }

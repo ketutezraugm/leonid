@@ -141,6 +141,23 @@ describe('Log in with PayPal', () => {
     expect((await request(build({}).app).get('/api/secret')).status).toBe(503);
   });
 
+  it('gives every demo login its own identity, and keeps it for a visitor who still has a session', async () => {
+    const on = build({ ...env, DEMO_LOGIN: 'true' });
+    const first = await request(on.app).post('/api/auth/demo-login');
+    const second = await request(on.app).post('/api/auth/demo-login');
+    const subOf = (res: request.Response) => {
+      const body = cookieOf(res, 'qm_session')!.split('=')[1]!.split('.')[0]!;
+      return (JSON.parse(Buffer.from(body, 'base64url').toString()) as { sub: string }).sub;
+    };
+    expect(subOf(first)).toMatch(/^demo:[0-9a-f-]{36}$/);
+    expect(subOf(second)).not.toBe(subOf(first));
+
+    const again = await request(on.app).post('/api/auth/demo-login').set('Cookie', cookieOf(first, 'qm_session')!);
+    expect(subOf(again)).toBe(subOf(first));
+    // the audit actor does not carry the sub, so nothing downstream changed
+    expect((await request(on.app).get('/api/secret').set('Cookie', cookieOf(first, 'qm_session')!)).body).toEqual({ actor: 'treasurer:demo' });
+  });
+
   it('refuses demo login in production unless DEMO_LOGIN_ALLOW_PRODUCTION=true, and warns loudly when it is on', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

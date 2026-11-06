@@ -17,6 +17,14 @@ export function listTasks(db: Db, eventId: string) {
 
 export async function createTasks(db: Db, eventId: string, input: NewTask[]) {
   const idByName = new Map((await listTasks(db, eventId)).map((t) => [t.name, t.id]));
+  // Check the whole batch first, so a bad name halfway through never leaves half the tasks written for a retry to repeat.
+  const known = new Set(idByName.keys());
+  for (const task of input) {
+    for (const name of task.dependsOnNames ?? []) {
+      if (!known.has(name)) throw new Error(`Unknown dependency "${name}" for task "${task.name}"`);
+    }
+    known.add(task.name);
+  }
   const created = [];
   for (const task of input) {
     const dependsOn = (task.dependsOnNames ?? []).map((name) => {

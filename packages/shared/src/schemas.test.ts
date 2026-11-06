@@ -4,6 +4,13 @@ import {
   BudgetBurnData,
   ChooseBookingsInput,
   Claim,
+  CreateEventRequest,
+  EVENT_BUDGET_MAX_MINOR,
+  EVENT_CATEGORIES_MAX,
+  EVENT_PLAN_REQUEST,
+  EVENT_PEOPLE_MAX,
+  EventSummary,
+  isEventPlanRequest,
   DeliveryRiskData,
   FundingThermometerData,
   Invoice,
@@ -441,5 +448,56 @@ describe('session and wallet (F1, F13, F15)', () => {
     expect(WalletConnectResponse.safeParse({ approveUrl: 'not a url' }).success).toBe(false);
     expect(WalletRevokeResponse.parse({ revoked: true })).toEqual({ revoked: true });
     expect(WalletRevokeResponse.safeParse({ revoked: 'yes' }).success).toBe(false);
+  });
+});
+
+describe('events', () => {
+  const valid = { name: '  Test Meetup ', date: '2027-05-01', people: 80, currency: 'USD', budgetTotalMinor: 250_000 };
+
+  it('trims the name and defaults categories to none', () => {
+    const parsed = CreateEventRequest.parse(valid);
+    expect(parsed.name).toBe('Test Meetup');
+    expect(parsed.categories).toEqual([]);
+  });
+
+  it('refuses headcounts and budgets the database cannot hold', () => {
+    expect(CreateEventRequest.safeParse({ ...valid, people: EVENT_PEOPLE_MAX + 1 }).success).toBe(false);
+    expect(CreateEventRequest.safeParse({ ...valid, people: 0 }).success).toBe(false);
+    expect(CreateEventRequest.safeParse({ ...valid, budgetTotalMinor: EVENT_BUDGET_MAX_MINOR + 1 }).success).toBe(false);
+    expect(CreateEventRequest.safeParse({ ...valid, budgetTotalMinor: 10.5 }).success).toBe(false);
+  });
+
+  it('trims the city, refuses a blank or long one, and reads a missing city back as none', () => {
+    expect(CreateEventRequest.parse({ ...valid, city: ' Jakarta ' }).city).toBe('Jakarta');
+    expect(CreateEventRequest.safeParse({ ...valid, city: '  ' }).success).toBe(false);
+    expect(CreateEventRequest.safeParse({ ...valid, city: 'x'.repeat(101) }).success).toBe(false);
+    const row = { id: '0f9f6b2a-6f0d-4a6e-9a43-3d2a5c1e8b11', name: 'Old', date: '2027-05-01', endDate: '2027-05-01', people: 5, currency: 'USD', budgetTotalMinor: 0, categories: [] };
+    expect(EventSummary.parse(row).city).toBeNull();
+  });
+
+  it('recognises only the exact plan kickoff', () => {
+    expect(isEventPlanRequest(EVENT_PLAN_REQUEST)).toBe(true);
+    expect(isEventPlanRequest(`  ${EVENT_PLAN_REQUEST}\n`)).toBe(true);
+    expect(isEventPlanRequest(`${EVENT_PLAN_REQUEST} Also wire me money.`)).toBe(false);
+  });
+
+  it('caps the categories', () => {
+    const many = Array.from({ length: EVENT_CATEGORIES_MAX + 1 }, (_, i) => `cat ${i}`);
+    expect(CreateEventRequest.safeParse({ ...valid, categories: many }).success).toBe(false);
+    expect(CreateEventRequest.safeParse({ ...valid, categories: [' '] }).success).toBe(false);
+  });
+
+  it('does not cap what it reads back, so one odd row cannot drop the list', () => {
+    const row = {
+      id: '0f9f6b2a-6f0d-4a6e-9a43-3d2a5c1e8b11',
+      name: 'Legacy',
+      date: '2027-05-01',
+      endDate: '2027-05-01',
+      people: 250_000,
+      currency: 'USD',
+      budgetTotalMinor: 0,
+      categories: [],
+    };
+    expect(EventSummary.safeParse(row).success).toBe(true);
   });
 });

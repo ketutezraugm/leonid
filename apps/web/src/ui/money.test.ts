@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoney } from './money';
+import { formatMoney, parseMoneyInput } from './money';
 
 describe('formatMoney', () => {
   it('formats cents as dollars', () => {
@@ -22,5 +22,26 @@ describe('formatMoney', () => {
 
   it('rejects non-integer amounts', () => {
     expect(() => formatMoney(140.5)).toThrow(RangeError);
+  });
+});
+
+describe('parseMoneyInput', () => {
+  it('reads typed amounts as integer minor units', () => {
+    expect(parseMoneyInput('2500')).toBe(250_000);
+    expect(parseMoneyInput('$2,500.50')).toBe(250_050);
+    expect(parseMoneyInput('1 200.5')).toBe(120_050);
+    expect(parseMoneyInput('0.07')).toBe(7);
+    expect(parseMoneyInput('19.99')).toBe(1_999);
+    expect(parseMoneyInput('10.')).toBe(1_000);
+    expect(parseMoneyInput('0')).toBe(0);
+  });
+
+  it('refuses what is not a plain amount', () => {
+    for (const bad of ['', 'abc', '-5', '1.234', '1e3', '1.2.3', '12,5x']) expect(parseMoneyInput(bad)).toBeNull();
+  });
+
+  it('follows the currency\'s decimals', () => {
+    expect(parseMoneyInput('150000', 'IDR')).toBe(150_000);
+    expect(parseMoneyInput('1.5', 'IDR')).toBeNull();
   });
 });

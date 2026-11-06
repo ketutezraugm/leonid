@@ -4,7 +4,7 @@ import { AgentButton } from '../ui/AgentButton';
 import { Drawer } from '../ui/Drawer';
 import { useToast } from '../ui/Toast';
 import { ShellDataProvider } from './data';
-import { useEventPath } from './event';
+import { useChatEvent, useEventPath } from './event';
 import { clearReturnPath, peekReturnPath } from './returnPath';
 import { useSession } from './session';
 import { Sidebar } from './Sidebar';
@@ -27,6 +27,7 @@ const returnMessages: Record<string, { kind: 'success' | 'error'; text: string }
 };
 
 export function OrganizerLayout() {
+  const chatEvent = useChatEvent();
   const { pathname, search } = useLocation();
   const { session } = useSession();
   const navigate = useNavigate();
@@ -117,7 +118,7 @@ export function OrganizerLayout() {
               {everOpened && (
                 <Suspense fallback={<p className="muted drawer-loading">Loading the agent…</p>}>
                   {/* Venue results need the full-width canvas, so they open in the workspace. */}
-                  <AgentChat onViewSearch={openWorkspace} viewLeavesChat />
+                  <AgentChat {...chatEvent} onViewSearch={openWorkspace} viewLeavesChat />
                 </Suspense>
               )}
             </Drawer>

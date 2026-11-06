@@ -1,19 +1,24 @@
-import { createContext, createElement, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMatch } from 'react-router-dom';
-import { EventsResponse } from '@quartermaster/shared';
-import { useFetch } from './api';
+import { EventsResponse, type EventSummary } from '@quartermaster/shared';
+import { getJson } from './api';
 
 // Quartermaster runs several events (UX plan 3, "Multiple events"). Every event screen lives under
 // /events/:eventId/ and reads its event through useEvent(), never a constant, so the API and a switcher
 // change only this file.
 
-// The seeded demo event (OpenHack 2027), shown under the route id "demo" until GET /api/events exists.
+// The seeded demo event (OpenHack 2027), always the first event, under the route id "demo". GET /api/events lists
+// only the events a person made, so the demo is never in it and a fresh database without the seed still works.
 export const EVENT = {
   name: 'OpenHack 2027',
   date: '2027-03-14',
+  endDate: '2027-03-14',
   people: 200,
   currency: 'USD',
-} as const;
+  budgetTotalMinor: 800_000,
+  categories: [] as string[],
+  city: null as string | null,
+};
 
 export const DEMO_ROUTE_ID = 'demo';
 
@@ -25,12 +30,22 @@ export interface EventInfo {
   name: string;
   /** ISO date, e.g. 2027-03-14. */
   date: string;
+  /** ISO date of the last day; equals `date` for a one-day event. */
+  endDate: string;
   people: number;
   /** ISO 4217 currency code, e.g. USD. */
   currency: string;
+  /** The planned total in minor units: a target, not spendable money. */
+  budgetTotalMinor: number;
+  categories: string[];
+  /** Where the event is, when the organiser said. */
+  city: string | null;
 }
 
 const DEMO_EVENT: EventInfo = { id: null, routeId: DEMO_ROUTE_ID, ...EVENT };
+
+/** The seeded demo event has no API id; every other event does. Its screens keep the sample data they always had. */
+export const isDemoEvent = (event: Pick<EventInfo, 'id'>) => event.id === null;
 
 const DAY_MS = 86_400_000;
 
@@ -46,6 +61,11 @@ export function formatEventDate(isoDate: string): string {
     day: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${isoDate}T00:00:00Z`));
+}
+
+/** "Mar 14" for a one-day event, "Mar 14 – Mar 16" for a longer one. */
+export function formatDateRange(start: string, end: string): string {
+  return end > start ? `${formatEventDate(start)} – ${formatEventDate(end)}` : formatEventDate(start);
 }
 
 export function formatLongDate(isoDate: string): string {
@@ -81,22 +101,65 @@ export function withEvent(url: string, event: Pick<EventInfo, 'id'>): string {
 // --- The list of events
 
 export interface EventsState {
-  /** loading; ready (from the API, possibly empty); fallback (the API is missing or failed: the demo event). */
+  /** loading; ready (the demo event plus the person's own); fallback (the API is missing or failed: the demo event only). */
   kind: 'loading' | 'ready' | 'fallback';
   events: EventInfo[];
+  /** Fetches the list again. A failure keeps the list the screen already has. */
+  refresh: () => void;
+  /** Adds an event the person just created, so its screens open at once, then refreshes. Works when the list never loaded. */
+  add: (event: EventSummary) => void;
 }
 
-const FALLBACK: EventsState = { kind: 'fallback', events: [DEMO_EVENT] };
+const noop = () => {};
+const FALLBACK: EventsState = { kind: 'fallback', events: [DEMO_EVENT], refresh: noop, add: noop };
 const EventsContext = createContext<EventsState>(FALLBACK);
 
+const toInfo = (e: EventSummary): EventInfo => ({ ...e, routeId: e.id });
+
+interface OwnEvents {
+  kind: EventsState['kind'];
+  own: EventInfo[];
+}
+
 export function EventsProvider({ children }: { children: ReactNode }) {
-  const list = useFetch('/api/events', EventsResponse);
-  const data = list.kind === 'ready' ? list.data : null;
-  const value = useMemo<EventsState>(() => {
-    if (list.kind === 'loading') return { kind: 'loading', events: [] };
-    if (data) return { kind: 'ready', events: data.events.map((e) => ({ ...e, routeId: e.id })) };
-    return FALLBACK;
-  }, [list.kind, data]);
+  const [state, setState] = useState<OwnEvents>({ kind: 'loading', own: [] });
+
+  // A load merges into what is shown: an event added a moment ago stays even if a slower, older response lacks it
+  // (events are never deleted here, so nothing shown can be stale-but-gone).
+  const load = useCallback(() => {
+    getJson('/api/events', EventsResponse).then(
+      (data) =>
+        setState((prev) => {
+          const fresh = data.events.map(toInfo);
+          const kept = prev.own.filter((e) => !fresh.some((f) => f.id === e.id));
+          return { kind: 'ready', own: [...fresh, ...kept] };
+        }),
+      () => setState((prev) => (prev.kind === 'ready' ? prev : { kind: 'fallback', own: [] })),
+    );
+  }, []);
+
+  useEffect(load, [load]);
+
+  const add = useCallback(
+    (event: EventSummary) => {
+      setState((prev) => ({
+        kind: 'ready',
+        own: prev.own.some((e) => e.id === event.id) ? prev.own : [...prev.own, toInfo(event)],
+      }));
+      load();
+    },
+    [load],
+  );
+
+  const value = useMemo<EventsState>(
+    () => ({
+      kind: state.kind,
+      events: state.kind === 'loading' ? [] : [DEMO_EVENT, ...state.own],
+      refresh: load,
+      add,
+    }),
+    [state, load, add],
+  );
   return createElement(EventsContext.Provider, { value }, children);
 }
 
@@ -153,4 +216,11 @@ export function useEvent(): EventInfo {
 export function useEventPath(): (sub?: string) => string {
   const { routeId } = useEvent();
   return useCallback((sub = '') => eventPath(routeId, sub), [routeId]);
+}
+
+/** What the agent chat needs to follow the screen's event: its route id, and the event itself unless it is the demo. */
+export function useChatEvent(): { eventScope: string | null; currentEvent: { id: string; name: string } | null } {
+  const eventScope = useEventRouteId();
+  const current = useCurrentEvent();
+  return { eventScope, currentEvent: current?.id ? { id: current.id, name: current.name } : null };
 }

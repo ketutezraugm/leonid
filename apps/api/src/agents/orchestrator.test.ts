@@ -1,6 +1,6 @@
 import { desc } from 'drizzle-orm';
 import type { UIMessage } from 'ai';
-import { bookingChoiceText, type BookingChoice } from '@quartermaster/shared';
+import { EVENT_PLAN_REQUEST, bookingChoiceText, type BookingChoice } from '@quartermaster/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../db/client.js';
 import { auditLog } from '../db/schema.js';
@@ -9,7 +9,7 @@ import { seedDemoEvent } from '../db/seed.js';
 import { listTasks } from '../db/tasks.js';
 import { createTestDb } from '../db/testing.js';
 import { ORCHESTRATOR_MAX_STEPS, createOrchestrator } from './orchestrator.js';
-import { bookingChoiceOf } from './tools/bookings.js';
+import { bookingChoiceOf, eventPlanRequestOf } from './tools/bookings.js';
 import { scriptedModel, type ScriptStep } from './testing.js';
 
 let db: Db;
@@ -242,6 +242,37 @@ describe('orchestrator', () => {
     expect(rows.find((r) => r.action === 'delegate_to_planning')?.reason).toMatch(
       /not chosen what to book/,
     );
+  });
+
+  it('plans the whole event without the booking checklist once the organizer sent the kickoff', async () => {
+    const model = scriptedModel([
+      { tool: 'delegate_to_planning', input: { task: 'Plan the whole event' } },
+      {
+        tool: 'create_tasks',
+        input: {
+          tasks: [
+            { name: 'Book venue', start: '2999-01-04', end: '2999-01-10' },
+            { name: 'Order swag', start: '2999-01-11', end: '2999-01-20', dependsOnNames: ['Book venue'] },
+          ],
+        },
+      },
+      { text: 'Added the venue and swag tasks.' },
+      { text: 'The event is planned.' },
+    ]);
+    const agent = createOrchestrator({ db, model, eventId, threadId, goal: 'Plan', bookings: null, planRequested: true });
+    await agent.generate({ prompt: 'Plan this event from the details I entered.' });
+    expect((await listTasks(db, eventId)).map((t) => t.name).sort()).toEqual(['Book venue', 'Order swag']);
+  });
+
+  it('reads the kickoff from the organizer\'s own messages only', () => {
+    const text = (role: 'user' | 'assistant', t: string): UIMessage => ({
+      id: crypto.randomUUID(),
+      role,
+      parts: [{ type: 'text', text: t }],
+    });
+    expect(eventPlanRequestOf([text('user', EVENT_PLAN_REQUEST)])).toBe(true);
+    expect(eventPlanRequestOf([text('assistant', EVENT_PLAN_REQUEST)])).toBe(false);
+    expect(eventPlanRequestOf([text('user', 'please plan it')])).toBe(false);
   });
 
   it('ends the turn after choose_bookings so the organizer can tick the list', async () => {

@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { EVENT_PLAN_REQUEST } from '@quartermaster/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { EventsProvider } from '../shell/event';
 import { AgentChat } from './AgentChat';
 
 beforeEach(() => localStorage.clear());
@@ -118,6 +120,104 @@ describe('AgentChat', () => {
       ([url, init]) => url === '/api/chat' && init?.method === 'POST',
     );
     expect(JSON.parse(String(post?.[1]?.body))).not.toHaveProperty('eventId');
+  });
+
+  it('links a fresh chat to the event the screen is on, and sends nothing for the demo', async () => {
+    const own = { id: crypto.randomUUID(), name: 'Spring Meetup' };
+    const fetchMock = stubFetch({ reply: () => sse([{ type: 'start' }]) });
+    render(<AgentChat eventScope={own.id} currentEvent={own} />);
+
+    // Inside the person's own event there is nothing to pick: the chat is that event's.
+    expect(await screen.findByRole('button', { name: 'Plan this event' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Event for this chat')).not.toBeInTheDocument();
+    type('Plan the swag');
+    await screen.findByText('Event: Spring Meetup');
+    const post = fetchMock.mock.calls.find(([url, init]) => url === '/api/chat' && init?.method === 'POST');
+    expect(JSON.parse(String(post?.[1]?.body)).eventId).toBe(own.id);
+  });
+
+  it('sends the plan kickoff once into an empty chat when asked to auto-plan, linked to the event', async () => {
+    const own = { id: crypto.randomUUID(), name: 'Spring Meetup' };
+    const fetchMock = stubFetch({ reply: () => sse([{ type: 'start' }]) });
+    render(<AgentChat eventScope={own.id} currentEvent={own} autoPlan />);
+
+    await screen.findByText('Event: Spring Meetup');
+    const posts = fetchMock.mock.calls.filter(([url, init]) => url === '/api/chat' && init?.method === 'POST');
+    expect(posts).toHaveLength(1);
+    const body = JSON.parse(String(posts[0]?.[1]?.body));
+    expect(body.eventId).toBe(own.id);
+    expect(body.message.parts[0].text).toBe(EVENT_PLAN_REQUEST);
+  });
+
+  it('does not auto-plan a chat that already has messages', async () => {
+    const own = { id: crypto.randomUUID(), name: 'Spring Meetup' };
+    const fetchMock = stubFetch({
+      thread: () =>
+        Response.json({
+          messages: [{ id: 'm1', role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
+          checklist: [],
+          event: own,
+        }),
+    });
+    render(<AgentChat eventScope={own.id} currentEvent={own} autoPlan />);
+    await screen.findByText('hello');
+    expect(fetchMock.mock.calls.some(([url, init]) => url === '/api/chat' && init?.method === 'POST')).toBe(false);
+  });
+
+  it('keeps each event\'s open chat apart, and the demo on the original key', async () => {
+    const a = crypto.randomUUID();
+    localStorage.setItem('quartermaster.threadId', 'demo-thread');
+    localStorage.setItem(`quartermaster.threadId.${a}`, 'a-thread');
+    const fetchMock = stubFetch({});
+    const { unmount } = render(<AgentChat eventScope={a} currentEvent={{ id: a, name: 'A' }} />);
+    await screen.findByLabelText('Message');
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/chat/a-thread')).toBe(true);
+    unmount();
+    render(<AgentChat eventScope="demo" currentEvent={null} />);
+    await screen.findByLabelText('Message');
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/chat/demo-thread')).toBe(true);
+  });
+
+  it('opens the other event\'s chat when the screen moves to it', async () => {
+    const a = crypto.randomUUID();
+    const b = crypto.randomUUID();
+    localStorage.setItem(`quartermaster.threadId.${a}`, 'a-thread');
+    localStorage.setItem(`quartermaster.threadId.${b}`, 'b-thread');
+    const fetchMock = stubFetch({});
+    const { rerender } = render(<AgentChat eventScope={a} currentEvent={{ id: a, name: 'A' }} />);
+    await screen.findByLabelText('Message');
+    rerender(<AgentChat eventScope={b} currentEvent={{ id: b, name: 'B' }} />);
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url === '/api/chat/b-thread')).toBe(true));
+    // Leaving every event keeps the chat that is open: no other conversation is loaded.
+    const threadLoads = () =>
+      fetchMock.mock.calls.filter(([url]) => /^\/api\/chat\/[^/]+$/.test(String(url)) && url !== '/api/chat/threads').length;
+    const before = threadLoads();
+    rerender(<AgentChat eventScope={null} currentEvent={null} />);
+    await screen.findByLabelText('Message');
+    expect(threadLoads()).toBe(before);
+  });
+
+  it('refreshes the person\'s events when the agent creates one', async () => {
+    const created = { id: crypto.randomUUID(), name: 'Jakarta meetup' };
+    const fetchMock = stubFetch({
+      reply: () =>
+        sse([
+          { type: 'start' },
+          { type: 'tool-input-available', toolCallId: 'e1', toolName: 'create_event', input: { name: created.name } },
+          { type: 'tool-output-available', toolCallId: 'e1', output: { event: created } },
+          { type: 'finish' },
+        ]),
+    });
+    render(
+      <EventsProvider>
+        <AgentChat />
+      </EventsProvider>,
+    );
+    await screen.findByLabelText('Message');
+    const listCalls = () => fetchMock.mock.calls.filter(([url]) => url === '/api/events').length;
+    await waitFor(() => expect(listCalls()).toBe(1));
+    type('Plan a meetup in Jakarta');
+    await waitFor(() => expect(listCalls()).toBe(2));
   });
 
   it('shows the checklist the agent writes and a step line for delegation', async () => {

@@ -1,8 +1,8 @@
 import type { Request } from 'express';
 
 export interface RateLimiter {
-  // True when the request is allowed.
-  take(req: Request): boolean;
+  // True when the request is allowed. The window is kept per key, the client IP unless the caller names one.
+  take(req: Request, key?: string): boolean;
 }
 
 // In-memory fixed window per client IP. Enough to stop judges exhausting the hosted demo's LLM
@@ -18,8 +18,8 @@ export function createRateLimiter({
 }): RateLimiter {
   const windows = new Map<string, { resetAt: number; count: number }>();
   return {
-    take(req) {
-      const key = req.ip ?? 'unknown';
+    take(req, named) {
+      const key = named ?? req.ip ?? 'unknown';
       const t = now();
       const current = windows.get(key);
       if (!current || current.resetAt <= t) {

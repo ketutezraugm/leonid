@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
+import { useEvent } from '../shell/event';
 import { PageHeader } from '../ui/PageHeader';
 import { PageState } from '../ui/PageState';
 import { TabPanel, Tabs } from '../ui/Tabs';
@@ -13,7 +14,21 @@ const tabs = [
 ];
 
 export function Money() {
+  const event = useEvent();
   const [tab, setTab] = useState('command');
+  // The command center's widgets are sample data for any event id, so another event gets an honest empty state
+  // until its sponsors, invoices and payouts exist.
+  if (event.id !== null) {
+    return (
+      <section>
+        <PageHeader title="Money" description="Where the event's money came from and where it went." />
+        <PageState kind="empty" title="No money yet">
+          This event has no sponsors, invoices or payments. Money appears here once sponsor money clears, and Event home
+          shows the unlocked budget.
+        </PageState>
+      </section>
+    );
+  }
   return (
     <section>
       <PageHeader

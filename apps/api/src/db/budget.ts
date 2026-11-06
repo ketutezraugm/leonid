@@ -116,3 +116,21 @@ async function loadFunds(
       .map((s) => s.id),
   };
 }
+
+// The unlocked budget of one event for display: the same figure check() gates a spend on, read through a zero-amount
+// spend that is never recorded. Never negative; pledged and invoiced money is not in it (money-safety.md).
+export async function loadUnlocked(db: Db, event: { id: string; currency: string }, now: Date): Promise<number> {
+  const budget = await loadBudget(
+    db,
+    {
+      referenceId: `display:${event.id}`,
+      amountMinor: 0,
+      currency: event.currency,
+      actor: 'display',
+      reason: 'Unlocked budget shown on the event screen',
+      eventId: event.id,
+    },
+    now,
+  );
+  return Math.max(0, budget.funds?.unlockedMinor ?? 0);
+}

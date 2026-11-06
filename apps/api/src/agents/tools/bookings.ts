@@ -4,6 +4,7 @@ import {
   BOOKING_ITEMS,
   ChooseBookingsInput,
   isBookingAvailable,
+  isEventPlanRequest,
   parseBookingChoice,
   type BookingChoice,
 } from '@quartermaster/shared';
@@ -69,5 +70,14 @@ export function bookingChoiceLine(choice: BookingChoice | null | undefined): str
     `The organizer chose to book: ${label(choice.chosen)}. Not needed: ${label(skipped)}. ` +
     `Still in development, so not offered yet: ${label(inDevelopment)}.` +
     (choice.extra ? ' They also named other items in their own words; see their message.' : '')
+  );
+}
+
+// True when the organizer sent the plan kickoff. Only user messages count, like bookingChoiceOf.
+export function eventPlanRequestOf(messages: readonly UIMessage[]): boolean {
+  return messages.some(
+    (message) =>
+      message.role === 'user' &&
+      message.parts.some((part) => part.type === 'text' && isEventPlanRequest(part.text)),
   );
 }

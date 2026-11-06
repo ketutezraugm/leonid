@@ -6,6 +6,7 @@ import { NeedsYou } from '../home/NeedsYou';
 import { RecentSpends } from '../home/RecentSpends';
 import { RunwayStrip } from '../home/RunwayStrip';
 import { useFetch } from '../shell/api';
+import { EventOverview } from '../home/EventOverview';
 import { daysUntil, formatEventDate, useEvent, useEventPath, withEvent } from '../shell/event';
 import { BudgetBar, unlockedToSpend } from '../ui/BudgetBar';
 import { formatMoney } from '../ui/money';
@@ -16,6 +17,12 @@ import { StatusBadge } from '../ui/StatusBadge';
 // plan follow. Waiting approvals and recent spends are live; the budget and alerts are sample data until P1's
 // budget endpoint and the delivery feed exist, and each says so.
 export function EventHome() {
+  const event = useEvent();
+  // Only the seeded demo event shows sample figures; every other event shows its own, or says what is not there yet.
+  return event.id === null ? <DemoHome /> : <EventOverview event={event} eventId={event.id} />;
+}
+
+function DemoHome() {
   const event = useEvent();
   const path = useEventPath();
   const approvals = useFetch(withEvent('/api/approvals', event), ApprovalsResponse);

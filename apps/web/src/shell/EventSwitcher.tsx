@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { countdown, eventPath, formatEventDate, useEvents, type EventInfo } from './event';
+import { countdown, eventPath, formatDateRange, useEvents, type EventInfo } from './event';
 
 // The sidebar's event block, as a button: it opens every event (the current one checked), then All events and
 // New event. Choosing an event keeps the same screen (Plan stays Plan) and changes only the event in the URL.
@@ -64,7 +64,7 @@ export function EventSwitcher({ current }: { current: EventInfo }) {
         <span className="event-switch-text shell-label">
           <strong>{current.name}</strong>
           <span className="muted">
-            {formatEventDate(current.date)} · {countdown(current.date)}
+            {formatDateRange(current.date, current.endDate)} · {countdown(current.date)}
           </span>
         </span>
         <svg className="event-switch-chevron shell-label" viewBox="0 0 24 24" aria-hidden="true">
@@ -85,7 +85,7 @@ export function EventSwitcher({ current }: { current: EventInfo }) {
                 >
                   <span className="event-menu-name">{e.name}</span>
                   <span className="muted">
-                    {formatEventDate(e.date)} · {countdown(e.date)}
+                    {formatDateRange(e.date, e.endDate)} · {countdown(e.date)}
                   </span>
                 </Link>
               </li>

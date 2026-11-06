@@ -12,10 +12,11 @@ import { Rules } from './pages/Rules';
 import { Settings } from './pages/Settings';
 import { SignIn } from './pages/SignIn';
 import { SponsorReport } from './pages/SponsorReport';
-import { eventPath, EventsProvider, useEvent } from './shell/event';
+import { eventPath, EventsProvider, useEvent, useEvents } from './shell/event';
 import { EventScope } from './shell/EventScope';
 import { OrganizerLayout } from './shell/OrganizerLayout';
 import { SessionProvider } from './shell/session';
+import { PageState } from './ui/PageState';
 import { ToastProvider } from './ui/Toast';
 
 // Sponsor reports are shared outside the team, so they get no organizer navigation.
@@ -37,7 +38,10 @@ function ToAllEvents() {
 // Links from before events had their own URLs (/plan, /agent …) open that screen in the last-opened event.
 function ToEventScreen({ screen }: { screen: string }) {
   const { search } = useLocation();
+  const { kind } = useEvents();
   const { routeId } = useEvent();
+  // While the list loads, useEvent can only say "demo": wait, so a PayPal return from another event is not sent there.
+  if (kind === 'loading') return <PageState kind="loading" title="Opening your event…" />;
   return <Navigate to={`${eventPath(routeId, screen)}${search}`} replace />;
 }
 

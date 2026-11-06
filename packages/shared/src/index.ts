@@ -171,6 +171,14 @@ export function parseBookingChoice(text: string): BookingChoice | null {
   };
 }
 
+// Sent as the first message of a new event's chat so the agent plans the whole event from the details already saved.
+// It travels as a normal user message, so the server reads it back from the organizer's own messages only.
+export const EVENT_PLAN_REQUEST = 'Plan this event from the details I entered.';
+
+export function isEventPlanRequest(text: string): boolean {
+  return text.trim() === EVENT_PLAN_REQUEST;
+}
+
 // The event a chat works on. Each chat sees only its own event, never another chat's plan.
 export const ChatEventRef = z.object({ id: z.uuid(), name: z.string() });
 export type ChatEventRef = z.infer<typeof ChatEventRef>;

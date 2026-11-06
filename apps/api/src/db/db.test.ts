@@ -1,7 +1,16 @@
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from './client.js';
-import { createEventForThread, getDemoEvent, getEvent, listSponsors } from './events.js';
+import {
+  createEventForThread,
+  createOwnedEvent,
+  getDemoEvent,
+  getEvent,
+  insertEvent,
+  listOwnedEvents,
+  listSponsors,
+  ReservedEventNameError,
+} from './events.js';
 import {
   getActiveMandate,
   getChecklist,
@@ -9,7 +18,9 @@ import {
   getThread,
   replaceChecklist,
 } from './mandates.js';
-import { sponsors } from './schema.js';
+import { loadUnlocked } from './budget.js';
+import { recordLedgerEntry } from './ledger.js';
+import { auditLog, sponsors } from './schema.js';
 import { seedDemoEvent } from './seed.js';
 import { createTasks, linkTaskToSponsor, listTasks } from './tasks.js';
 import { createTestDb } from './testing.js';
@@ -49,6 +60,15 @@ describe('seed', () => {
 describe('tasks', () => {
   it('resolves dependencies by name and gates a task on a sponsor', async () => {
     const event = await seedDemoEvent(db);
+    const before = (await listTasks(db, event.id)).length;
+    await expect(
+      createTasks(db, event.id, [
+        { name: 'Fine', start: new Date('2027-01-01'), end: new Date('2027-01-02') },
+        { name: 'Broken', start: new Date('2027-01-01'), end: new Date('2027-01-02'), dependsOnNames: ['Nope'] },
+      ]),
+    ).rejects.toThrow(/Unknown dependency/);
+    expect(await listTasks(db, event.id)).toHaveLength(before);
+
     const [venue, swag] = await createTasks(db, event.id, [
       { name: 'Venue deposit', start: new Date('2026-12-01'), end: new Date('2026-12-05') },
       {
@@ -141,5 +161,79 @@ describe('chat events', () => {
 
     await expect(createEventForThread(db, threadId, meetup)).rejects.toThrow(/already has an event/);
     expect((await getThread(db, threadId))?.eventId).toBe(demo.id);
+  });
+});
+
+describe('events made by a person', () => {
+  const input = {
+    name: ' Test Meetup ',
+    date: new Date('2027-05-01T09:00:00Z'),
+    headcount: 80,
+    budgetTotal: 250_000,
+    currency: 'USD',
+    categories: ['venue', 'swag'],
+  };
+
+  it('stores the owner and categories, and lists only the owner\'s events (never the demo)', async () => {
+    await seedDemoEvent(db);
+    const mine = await createOwnedEvent(db, { ...input, ownerSub: 'demo:a' }, 'treasurer:demo');
+    await createOwnedEvent(db, { ...input, name: 'Other', ownerSub: 'demo:b' }, 'treasurer:demo');
+
+    expect(mine).toMatchObject({ name: 'Test Meetup', ownerSub: 'demo:a', categories: ['venue', 'swag'] });
+    const listed = await listOwnedEvents(db, 'demo:a');
+    expect(listed.map((e) => e.id)).toEqual([mine.id]);
+    expect(await listOwnedEvents(db, 'nobody')).toEqual([]);
+  });
+
+  it('stores the city, and none when it is blank', async () => {
+    const withCity = await createOwnedEvent(db, { ...input, city: ' Jakarta ', ownerSub: 'demo:a' }, 'treasurer:demo');
+    const without = await createOwnedEvent(db, { ...input, name: 'No city', city: '  ', ownerSub: 'demo:a' }, 'treasurer:demo');
+    expect(withCity.city).toBe('Jakarta');
+    expect(without.city).toBeNull();
+  });
+
+  it('writes the audit row with the event', async () => {
+    const event = await createOwnedEvent(db, { ...input, ownerSub: 'demo:a' }, 'treasurer:demo');
+    const rows = await db.select().from(auditLog).where(eq(auditLog.action, 'event.create'));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ actor: 'treasurer:demo', input: { eventId: event.id, ownerSub: 'demo:a' } });
+  });
+
+  it('keeps the demo name for the demo, whatever the case, on both creation paths', async () => {
+    await seedDemoEvent(db);
+    await expect(insertEvent(db, { ...input, name: 'openhack 2027 ' })).rejects.toBeInstanceOf(ReservedEventNameError);
+    await expect(createOwnedEvent(db, { ...input, name: 'OPENHACK 2027', ownerSub: 'x' }, 'a')).rejects.toBeInstanceOf(
+      ReservedEventNameError,
+    );
+    const threadId = crypto.randomUUID();
+    await getOrCreateThread(db, threadId, null);
+    await expect(createEventForThread(db, threadId, { ...input, name: 'OpenHack 2027' })).rejects.toBeInstanceOf(
+      ReservedEventNameError,
+    );
+    expect(await db.select().from(auditLog).where(eq(auditLog.action, 'event.create'))).toHaveLength(0);
+  });
+});
+
+describe('loadUnlocked', () => {
+  const input = { name: 'Test Meetup', date: new Date('2027-05-01T09:00:00Z'), headcount: 80, budgetTotal: 250_000, currency: 'USD' };
+
+  it('is zero for an event with only a budget target and a sponsor pledge', async () => {
+    const event = await insertEvent(db, input);
+    expect(await loadUnlocked(db, event, new Date())).toBe(0);
+    const demo = await seedDemoEvent(db);
+    expect(await loadUnlocked(db, demo, new Date())).toBe(0);
+  });
+
+  it('is the cleared income, once it clears', async () => {
+    const event = await insertEvent(db, input);
+    await recordLedgerEntry(db, {
+      eventId: event.id,
+      direction: 'in',
+      amount: 120_000,
+      currency: 'USD',
+      source: 'donation',
+      paypalId: 'CAP-1',
+    });
+    expect(await loadUnlocked(db, event, new Date())).toBe(120_000);
   });
 });

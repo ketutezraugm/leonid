@@ -34,7 +34,7 @@ If read_event returns no event and the organizer describes a new one, call creat
 When something you need is missing or unclear (date, headcount, budget, city, format), do not guess and do not ask in plain text: call ask_user once with every open question together, each with 2-4 likely options, your recommended one first. Then stop and wait for the answers.
 Before any planning or venue search, the organizer chooses what to book. If they have not chosen yet, call choose_bookings once the event exists (right after create_event is fine), pre-ticking what usually fits this kind of event, then stop and wait. delegate_to_planning refuses until they have chosen.
 Once they have chosen, plan and search only for the chosen items. Call choose_bookings again only if they ask to change the list.
-Only the venue can be booked today. Everything else on the checklist (food & drinks, AV & Wi-Fi, swag, prizes, speakers & volunteers, printing & signage, photo & video) is still in development: if the organizer asks for one, or names other items in their own words, say it is coming soon and do not plan or search for it.
+Only the venue can be booked today. Everything else on the checklist (food & drinks, AV & Wi-Fi, swag, prizes, speakers & volunteers, printing & signage, photo & video) is still in development: you may plan tasks for them when the whole event is being planned, but if the organizer asks you to search for or book one, say it is coming soon.
 So start with the venue. When the venue scout returns venues, your turn ends so the organizer can pick one in the results; do not pick for them.
 After they pick a venue, call delegate_to_planning to add the tasks for booking that venue (name it in the task), say whether the picked venue's page mentions catering, then tell them the next step is paying the venue's deposit with PayPal from the results panel. Stop there.
 If there is no event and they ask about "my event", say this chat has no event yet: they can describe one, or start a new chat linked to an existing event.
@@ -59,11 +59,20 @@ const venueToolLine =
   'spending rules decide whether it is paid from the agent wallet or goes to the treasurer to approve. You ' +
   'cannot pay it, book it or message the venue yourself.';
 
+// The organizer just set the event up and asked for it to be planned (EVENT_PLAN_REQUEST). The details are already saved,
+// so there is nothing to ask first; the booking checklist is skipped for this run.
+const kickoffLine =
+  'The organizer just set this event up and asked you to plan it. Call read_event, then call delegate_to_planning ' +
+  'once to plan the whole event from the saved details: do not call choose_bookings or ask_user first. If read_event ' +
+  'shows a city, then call delegate_to_venue_scout for that city and headcount. If it shows no city, call ask_user ' +
+  'for the city after the plan is written.';
+
 // The orchestrator holds no money tools. Each specialist is a subagent with exactly its PRD §7 row.
 export function createOrchestrator(ctx: AgentContext) {
   const planning = createPlanningAgent(ctx);
   const search = ctx.search;
-  const instructions = `${todayLine(ctx)}\n${bookingChoiceLine(ctx.bookings)}\n${venuePickLine(ctx.venuePick)}\n\n${baseInstructions.replace(
+  const kickoff = ctx.planRequested && !ctx.bookings ? `${kickoffLine}\n` : '';
+  const instructions = `${todayLine(ctx)}\n${bookingChoiceLine(ctx.bookings)}\n${venuePickLine(ctx.venuePick)}\n${kickoff}\n${baseInstructions.replace(
     'VENUE_TOOL_LINE\n',
     search ? `${venueToolLine}\n` : '',
   )}`;
@@ -87,7 +96,7 @@ export function createOrchestrator(ctx: AgentContext) {
         }),
         execute: auditedExecute(ctx, 'orchestrator', 'delegate_to_planning', async ({ task }) => {
           // Enforced here, not only in the prompt: a first-time organizer picks the items first.
-          if (!ctx.bookings) {
+          if (!ctx.bookings && !ctx.planRequested) {
             throw new Error(
               'The organizer has not chosen what to book yet. Call choose_bookings first.',
             );

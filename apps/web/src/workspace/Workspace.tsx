@@ -10,7 +10,19 @@ import './workspace.css';
 // The agent workspace: the chat is the right rail, across from the app sidebar, and drives
 // everything; the canvas shows what the agent found, like a search results page. The canvas never
 // starts work on its own.
-export function Workspace({ idle }: { idle?: ReactNode }) {
+export function Workspace({
+  idle,
+  eventScope = null,
+  currentEvent = null,
+  autoPlan = false,
+}: {
+  idle?: ReactNode;
+  // The event the screen is on, handed to the chat; see AgentChat. Props, not a hook, because this renders without a router in tests.
+  eventScope?: string | null;
+  currentEvent?: { id: string; name: string } | null;
+  // True right after New event: the chat sends the plan kickoff once.
+  autoPlan?: boolean;
+}) {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -44,6 +56,9 @@ export function Workspace({ idle }: { idle?: ReactNode }) {
     <div className="workspace">
       <div className="workspace-rail">
         <AgentChat
+          eventScope={eventScope}
+          currentEvent={currentEvent}
+          autoPlan={autoPlan}
           variant="rail"
           onMessagesChange={onMessagesChange}
           viewingSearchId={viewing?.id ?? null}
