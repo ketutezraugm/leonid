@@ -13,7 +13,7 @@ import { Rules } from './pages/Rules';
 import { Settings } from './pages/Settings';
 import { SignIn } from './pages/SignIn';
 import { SponsorReport } from './pages/SponsorReport';
-import { eventPath, EventsProvider, useEvent } from './shell/event';
+import { eventPath, EventsProvider, useEvent, useEvents } from './shell/event';
 import { EventScope } from './shell/EventScope';
 import { OrganizerLayout } from './shell/OrganizerLayout';
 import { SessionProvider } from './shell/session';
@@ -35,10 +35,13 @@ function ToAllEvents() {
   return <Navigate to={`/events${search}`} replace />;
 }
 
-// Links from before events had their own URLs (/plan, /agent …) open that screen in the last-opened event.
+// Links from before events had their own URLs (/plan, /agent …) open that screen in the last-opened event, or the
+// first one when that event is gone. It waits for the list: redirecting earlier would pick the demo placeholder.
 function ToEventScreen({ screen }: { screen: string }) {
   const { search } = useLocation();
   const { routeId } = useEvent();
+  const { kind } = useEvents();
+  if (kind === 'loading') return null;
   return <Navigate to={`${eventPath(routeId, screen)}${search}`} replace />;
 }
 
