@@ -72,8 +72,8 @@ export function createDbAudit(db: Db): AuditPort {
 
 export function createDbReferences(db: Db): ReferencePort {
   return {
-    async claim(referenceId, fingerprint) {
-      const inserted = await db.insert(spendReferences).values({ referenceId, fingerprint }).onConflictDoNothing().returning();
+    async claim(referenceId, fingerprint, eventId) {
+      const inserted = await db.insert(spendReferences).values({ referenceId, fingerprint, eventId }).onConflictDoNothing().returning();
       if (inserted.length > 0) return 'new';
       const [existing] = await db.select().from(spendReferences).where(eq(spendReferences.referenceId, referenceId));
       return existing?.fingerprint === fingerprint ? 'same' : 'conflict';
@@ -104,7 +104,7 @@ export function createDbApprovals(db: Db): ApprovalsPort & { list(): Promise<App
     async create(spend, result, auditId) {
       const [row] = await db
         .insert(approvalsTable)
-        .values({ spend, reasons: result.reasons, auditId })
+        .values({ spend, eventId: spend.eventId, reasons: result.reasons, auditId })
         .returning({ id: approvalsTable.id });
       return row!.id;
     },

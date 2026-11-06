@@ -12,6 +12,8 @@ export const events = pgTable('events', {
   headcount: integer('headcount').notNull(),
   budgetTotal: integer('budget_total').notNull(),
   currency: text('currency').notNull().default('USD'),
+  // Price of one ticket in minor units. Null: this event sells no tickets, and the public checkout refuses them.
+  ticketPrice: integer('ticket_price'),
   treasuryMerchantId: text('treasury_merchant_id'),
   // Who made the event (the session's sub). Null for the seeded demo event, older rows and chats with no session;
   // those are never listed by GET /api/events.
@@ -136,10 +138,35 @@ export const walletSetups = pgTable('wallet_setups', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 
+// The hosted demo's pool of pre-approved vault tokens (all one payer, created with permit_multiple_payment_tokens).
+// payment_token_id null = an approval link still waiting; set = a token on standby. Nothing ever charges a standby token:
+// a treasurer's Reset moves the oldest one into agent_wallet (deleting its pool row), and "end demo" deletes them all.
+export const demoTokenPool = pgTable('demo_token_pool', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  setupTokenId: text('setup_token_id').notNull().unique(),
+  paymentTokenId: text('payment_token_id').unique(),
+  customerId: text('customer_id'),
+  payerEmail: text('payer_email'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+// The published sponsor spend report (F22): one per sponsor, regenerated in place. share_token is the bearer secret in the public
+// link /report/:shareToken, so it stays the same when the report is regenerated and is never written to the audit log.
+export const sponsorReports = pgTable('sponsor_reports', {
+  sponsorId: uuid('sponsor_id')
+    .primaryKey()
+    .references(() => sponsors.id),
+  shareToken: text('share_token').notNull().unique(),
+  content: jsonb('content').notNull(),
+  generatedAt: timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
 // One reference id = one spend; PayPal's idempotency key comes from it. The fingerprint detects reuse for a different spend.
 export const spendReferences = pgTable('spend_references', {
   referenceId: text('reference_id').primaryKey(),
   fingerprint: text('fingerprint').notNull(),
+  // The event that spend belongs to. Null only for rows made before every spend needed an event.
+  eventId: uuid('event_id').references(() => events.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 
@@ -148,6 +175,8 @@ export const approvals = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     spend: jsonb('spend').notNull(),
+    // Same event as spend.eventId, as a column so it has a foreign key and approvals can be listed per event. Null only for old rows.
+    eventId: uuid('event_id').references(() => events.id),
     reasons: text('reasons').array().notNull().default([]),
     // pending -> capturing -> paid, or pending -> rejected; see ApprovalsPort in payments/ports.ts
     status: text('status', { enum: ['pending', 'capturing', 'rejected', 'paid'] })

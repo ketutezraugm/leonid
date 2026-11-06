@@ -164,3 +164,24 @@ export async function searchInvoicesByReference(
   });
   return (found.items ?? []).filter((i) => i.detail.reference === reference).map(toView);
 }
+
+export interface InvoiceReminderInput {
+  subject: string;
+  note: string;
+}
+
+// POST /v2/invoicing/invoices/{id}/remind: PayPal emails the payer a reminder for a sent, unpaid invoice (204, no body).
+// Asks for money and moves none, like sendInvoice. The request shape comes from PayPal's Invoicing v2 reference, not
+// the APIMatic plugin (it has no Invoicing coverage).
+export async function sendInvoiceReminder(
+  client: PayPalClient,
+  invoiceId: string,
+  input: InvoiceReminderInput,
+): Promise<void> {
+  await client.request({
+    method: 'POST',
+    path: `/v2/invoicing/invoices/${encodeURIComponent(invoiceId)}/remind`,
+    schema: z.unknown(),
+    body: { subject: input.subject, note: input.note, send_to_invoicer: true },
+  });
+}

@@ -10,7 +10,7 @@ const summary = (name: string) => ({
   endDate: '2999-05-02',
   people: 50,
   currency: 'USD',
-  budgetTotalMinor: 100_000,
+  budget: 100_000,
   categories: [], city: null,
 });
 

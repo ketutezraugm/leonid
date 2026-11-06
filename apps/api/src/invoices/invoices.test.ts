@@ -1,16 +1,22 @@
+import { SponsorsResponse } from '@quartermaster/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.js';
-import { auditLog, sponsors } from '../db/schema.js';
+import { auditLog, events, sponsors } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import type { PayPalClient, PayPalRequest } from '../paypal/client.js';
 import { PayPalApiError } from '../paypal/errors.js';
 import { invoicesRouter } from '../routes/invoices.js';
 import { buildSponsorInvoiceDraft, draftForSponsor } from './draft.js';
-import { CREATE_LEASE_SECONDS, InvoiceRefusedError, markSponsorInvoiced, sendSponsorInvoice } from './send.js';
+import {
+  CREATE_LEASE_SECONDS,
+  InvoiceRefusedError,
+  markSponsorInvoiced,
+  sendSponsorInvoice,
+} from './send.js';
 
 interface Call {
   method: string;
@@ -61,7 +67,12 @@ function fakePayPal() {
       if (req.method === 'POST' && req.path === '/v2/invoicing/invoices') {
         await state.onCreate?.();
         if (state.failCreate) {
-          throw new PayPalApiError({ status: 422, errorName: 'UNPROCESSABLE_ENTITY', issue: 'INVALID_EMAIL', debugId: 'dbg-1' });
+          throw new PayPalApiError({
+            status: 422,
+            errorName: 'UNPROCESSABLE_ENTITY',
+            issue: 'INVALID_EMAIL',
+            debugId: 'dbg-1',
+          });
         }
         const body = req.body as CreateBody;
         const cents = body.items.reduce(
@@ -87,14 +98,20 @@ function fakePayPal() {
       }
       if (req.method === 'POST' && req.path.startsWith('/v2/invoicing/search-invoices')) {
         const { reference } = req.body as { reference: string };
-        const items = [...state.invoices].filter(([, inv]) => inv.reference === reference).map(([id, inv]) => view(id, inv));
+        const items = [...state.invoices]
+          .filter(([, inv]) => inv.reference === reference)
+          .map(([id, inv]) => view(id, inv));
         return req.schema.parse({ items });
       }
       const send = /^\/v2\/invoicing\/invoices\/([^/]+)\/send$/.exec(req.path);
       if (req.method === 'POST' && send?.[1]) {
         if (state.failNextSend) {
           state.failNextSend = false;
-          throw new PayPalApiError({ status: 500, errorName: 'INTERNAL_SERVER_ERROR', debugId: 'dbg-2' });
+          throw new PayPalApiError({
+            status: 500,
+            errorName: 'INTERNAL_SERVER_ERROR',
+            debugId: 'dbg-2',
+          });
         }
         const inv = state.invoices.get(decodeURIComponent(send[1]));
         if (inv) inv.status = 'SENT';
@@ -104,7 +121,12 @@ function fakePayPal() {
       if (req.method === 'GET' && get?.[1]) {
         const id = decodeURIComponent(get[1]);
         const inv = state.invoices.get(id);
-        if (!inv) throw new PayPalApiError({ status: 404, errorName: 'RESOURCE_NOT_FOUND', debugId: 'dbg-3' });
+        if (!inv)
+          throw new PayPalApiError({
+            status: 404,
+            errorName: 'RESOURCE_NOT_FOUND',
+            debugId: 'dbg-3',
+          });
         return req.schema.parse(view(id, inv));
       }
       throw new Error(`unexpected PayPal call ${req.method} ${req.path}`);
@@ -118,8 +140,15 @@ function fakePayPal() {
     state,
     // An invoice that already exists at PayPal, for the Harbor Cloud pledge unless overridden.
     put: (id: string, status: string, over: Partial<FakeInvoice> = {}) =>
-      state.invoices.set(id, { status, reference: sponsorId, value: '3000.00', currency: 'USD', ...over }),
-    creates: () => calls.filter((c) => c.method === 'POST' && c.path === '/v2/invoicing/invoices').length,
+      state.invoices.set(id, {
+        status,
+        reference: sponsorId,
+        value: '3000.00',
+        currency: 'USD',
+        ...over,
+      }),
+    creates: () =>
+      calls.filter((c) => c.method === 'POST' && c.path === '/v2/invoicing/invoices').length,
     searches: () => calls.filter((c) => c.path.startsWith('/v2/invoicing/search-invoices')).length,
     sends: () => count('POST', '/send'),
   };
@@ -147,7 +176,8 @@ beforeEach(async () => {
   paypal = fakePayPal();
 });
 
-const sponsorRow = async () => (await db.select().from(sponsors).where(eq(sponsors.id, sponsorId)))[0];
+const sponsorRow = async () =>
+  (await db.select().from(sponsors).where(eq(sponsors.id, sponsorId)))[0];
 const auditActions = async () => (await db.select().from(auditLog)).map((r) => r.action).sort();
 const draft = async () => {
   const row = await sponsorRow();
@@ -196,7 +226,10 @@ describe('sendSponsorInvoice', () => {
       recipientViewUrl: 'https://www.sandbox.paypal.com/invoice/p/#INV2-TEST-1',
       resumed: false,
     });
-    expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: 'INV2-TEST-1', status: 'invoiced' });
+    expect(await sponsorRow()).toMatchObject({
+      paypalInvoiceId: 'INV2-TEST-1',
+      status: 'invoiced',
+    });
     expect(paypal.calls.map((c) => `${c.method} ${c.path}`)).toEqual([
       'POST /v2/invoicing/invoices',
       'POST /v2/invoicing/invoices/INV2-TEST-1/send',
@@ -218,9 +251,15 @@ describe('sendSponsorInvoice', () => {
     expect(created.detail.payment_term).toEqual({ due_date: '2026-11-15' });
     // The sponsor id is the reference that finds this invoice again if its create response is lost.
     expect(created.detail.reference).toBe(sponsorId);
-    expect(created.primary_recipients[0]?.billing_info).toEqual({ business_name: 'Harbor Cloud', email_address: EMAIL });
+    expect(created.primary_recipients[0]?.billing_info).toEqual({
+      business_name: 'Harbor Cloud',
+      email_address: EMAIL,
+    });
     expect(created.invoicer.business_name).toBe('OpenHack 2027');
-    expect(paypal.calls[1]?.body).toMatchObject({ subject: 'Invoice from OpenHack 2027', send_to_recipient: true });
+    expect(paypal.calls[1]?.body).toMatchObject({
+      subject: 'Invoice from OpenHack 2027',
+      send_to_recipient: true,
+    });
   });
 
   it('makes a zero-day draft due on receipt', async () => {
@@ -233,7 +272,10 @@ describe('sendSponsorInvoice', () => {
     await send();
     const before = paypal.calls.length;
 
-    await expect(send()).rejects.toMatchObject({ name: 'InvoiceRefusedError', code: 'already_invoiced' });
+    await expect(send()).rejects.toMatchObject({
+      name: 'InvoiceRefusedError',
+      code: 'already_invoiced',
+    });
     expect(paypal.calls).toHaveLength(before);
   });
 
@@ -244,18 +286,37 @@ describe('sendSponsorInvoice', () => {
   });
 
   it('refuses an unknown sponsor', async () => {
-    await expect(send({ sponsorId: '00000000-0000-4000-8000-000000000000' })).rejects.toMatchObject({
-      code: 'sponsor_not_found',
-    });
+    await expect(send({ sponsorId: '00000000-0000-4000-8000-000000000000' })).rejects.toMatchObject(
+      {
+        code: 'sponsor_not_found',
+      },
+    );
   });
 
   it.each([
-    ['an amount that is not the pledge', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, items: [{ name: 'x', quantity: 1, unitAmount: 1 }] })],
-    ['a quantity that changes the total', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, items: [{ name: 'x', quantity: 2, unitAmount: 300_000 }] })],
+    [
+      'an amount that is not the pledge',
+      (d: Awaited<ReturnType<typeof draft>>) => ({
+        ...d,
+        items: [{ name: 'x', quantity: 1, unitAmount: 1 }],
+      }),
+    ],
+    [
+      'a quantity that changes the total',
+      (d: Awaited<ReturnType<typeof draft>>) => ({
+        ...d,
+        items: [{ name: 'x', quantity: 2, unitAmount: 300_000 }],
+      }),
+    ],
     ['another currency', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, currency: 'EUR' })],
-    ['another sponsor', (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, sponsorId: 'someone-else' })],
+    [
+      'another sponsor',
+      (d: Awaited<ReturnType<typeof draft>>) => ({ ...d, sponsorId: 'someone-else' }),
+    ],
   ])('refuses a draft with %s', async (_name, tamper) => {
-    await expect(send({ draft: tamper(await draft()) })).rejects.toMatchObject({ code: 'draft_mismatch' });
+    await expect(send({ draft: tamper(await draft()) })).rejects.toMatchObject({
+      code: 'draft_mismatch',
+    });
     expect(paypal.calls).toHaveLength(0);
     expect((await sponsorRow())?.status).toBe('pledged');
   });
@@ -297,7 +358,10 @@ describe('sendSponsorInvoice', () => {
 
   it('does not send again when PayPal already sent the invoice but the sponsor was not updated', async () => {
     paypal.put('INV2-TEST-9', 'SENT');
-    await db.update(sponsors).set({ paypalInvoiceId: 'INV2-TEST-9' }).where(eq(sponsors.id, sponsorId));
+    await db
+      .update(sponsors)
+      .set({ paypalInvoiceId: 'INV2-TEST-9' })
+      .where(eq(sponsors.id, sponsorId));
 
     const result = await send();
 
@@ -309,7 +373,10 @@ describe('sendSponsorInvoice', () => {
 
   it('refuses to resume an invoice PayPal has cancelled', async () => {
     paypal.put('INV2-TEST-9', 'CANCELLED');
-    await db.update(sponsors).set({ paypalInvoiceId: 'INV2-TEST-9' }).where(eq(sponsors.id, sponsorId));
+    await db
+      .update(sponsors)
+      .set({ paypalInvoiceId: 'INV2-TEST-9' })
+      .where(eq(sponsors.id, sponsorId));
 
     await expect(send()).rejects.toMatchObject({ code: 'stale_invoice' });
     expect(paypal.sends()).toBe(0);
@@ -319,7 +386,9 @@ describe('sendSponsorInvoice', () => {
   it('commits the invoice.create audit row before PayPal creates the invoice, then adds the PayPal id', async () => {
     let seenAtCreate: { action: string; paypalId: string | null }[] = [];
     paypal.state.onCreate = async () => {
-      seenAtCreate = await db.select({ action: auditLog.action, paypalId: auditLog.paypalId }).from(auditLog);
+      seenAtCreate = await db
+        .select({ action: auditLog.action, paypalId: auditLog.paypalId })
+        .from(auditLog);
     };
 
     await send();
@@ -340,8 +409,16 @@ describe('sendSponsorInvoice', () => {
     expect(retried).toMatchObject({ paypalInvoiceId: 'INV2-TEST-1', resumed: true });
     expect(paypal.creates()).toBe(1);
     expect(paypal.sends()).toBe(1);
-    expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: 'INV2-TEST-1', status: 'invoiced' });
-    expect(await auditActions()).toEqual(['invoice.create', 'invoice.failed', 'invoice.recovered', 'invoice.sent']);
+    expect(await sponsorRow()).toMatchObject({
+      paypalInvoiceId: 'INV2-TEST-1',
+      status: 'invoiced',
+    });
+    expect(await auditActions()).toEqual([
+      'invoice.create',
+      'invoice.failed',
+      'invoice.recovered',
+      'invoice.sent',
+    ]);
     const [created] = await db.select().from(auditLog).where(eq(auditLog.action, 'invoice.create'));
     expect(created?.paypalId).toBe('INV2-TEST-1');
   });
@@ -364,13 +441,18 @@ describe('sendSponsorInvoice', () => {
       await expect(send()).rejects.toMatchObject({ code: 'in_progress' });
       expect(paypal.calls).toHaveLength(0);
 
-      await db.update(auditLog).set({ createdAt: new Date(Date.now() - (CREATE_LEASE_SECONDS + 60) * 1000) });
+      await db
+        .update(auditLog)
+        .set({ createdAt: new Date(Date.now() - (CREATE_LEASE_SECONDS + 60) * 1000) });
       const result = await send();
 
       expect(result).toMatchObject({ paypalInvoiceId: 'INV2-TEST-7', resumed: true });
       expect(paypal.creates()).toBe(0);
       expect(paypal.sends()).toBe(1);
-      expect(await sponsorRow()).toMatchObject({ paypalInvoiceId: 'INV2-TEST-7', status: 'invoiced' });
+      expect(await sponsorRow()).toMatchObject({
+        paypalInvoiceId: 'INV2-TEST-7',
+        status: 'invoiced',
+      });
     });
 
     it('ignores a cancelled invoice it finds and creates a new one', async () => {
@@ -407,7 +489,10 @@ describe('sendSponsorInvoice', () => {
     ['sponsor', { reference: '00000000-0000-4000-8000-000000000000' }],
   ])('refuses to resume an invoice whose %s is not the pledge', async (_name, over) => {
     paypal.put('INV2-TEST-9', 'DRAFT', over);
-    await db.update(sponsors).set({ paypalInvoiceId: 'INV2-TEST-9' }).where(eq(sponsors.id, sponsorId));
+    await db
+      .update(sponsors)
+      .set({ paypalInvoiceId: 'INV2-TEST-9' })
+      .where(eq(sponsors.id, sponsorId));
 
     await expect(send()).rejects.toMatchObject({ code: 'invoice_mismatch' });
     expect(paypal.sends()).toBe(0);
@@ -451,7 +536,10 @@ describe('invoices routes', () => {
   const appWith = (env: NodeJS.ProcessEnv = { TREASURER_TOKEN: 'secret' }) => {
     const app = express();
     app.use(express.json());
-    app.use('/api/sponsors', invoicesRouter({ env, db: () => db, client: () => paypal.client, now: NOW }));
+    app.use(
+      '/api/sponsors',
+      invoicesRouter({ env, db: () => db, client: () => paypal.client, now: NOW }),
+    );
     return app;
   };
 
@@ -473,7 +561,11 @@ describe('invoices routes', () => {
     const res = await request(appWith()).get(`/api/sponsors/${sponsorId}/draft`).set(TOKEN);
 
     expect(res.status).toBe(200);
-    expect(res.body.sponsor).toMatchObject({ name: 'Harbor Cloud', pledged: 300_000, status: 'pledged' });
+    expect(res.body.sponsor).toMatchObject({
+      name: 'Harbor Cloud',
+      pledged: 300_000,
+      status: 'pledged',
+    });
     expect(res.body.draft.items[0].unitAmount).toBe(300_000);
     expect(paypal.calls).toHaveLength(0);
   });
@@ -481,7 +573,9 @@ describe('invoices routes', () => {
   it('answers 400 to an id that is not a UUID and 404 to an unknown sponsor', async () => {
     const app = appWith();
     expect((await request(app).get('/api/sponsors/not-a-uuid/draft').set(TOKEN)).status).toBe(400);
-    const missing = await request(app).get('/api/sponsors/00000000-0000-4000-8000-000000000000/draft').set(TOKEN);
+    const missing = await request(app)
+      .get('/api/sponsors/00000000-0000-4000-8000-000000000000/draft')
+      .set(TOKEN);
     expect(missing.status).toBe(404);
   });
 
@@ -500,7 +594,9 @@ describe('invoices routes', () => {
     });
     expect((await sponsorRow())?.status).toBe('invoiced');
     // the actor is whoever passed the treasurer guard, not a fixed label
-    expect(new Set((await db.select().from(auditLog)).map((r) => r.actor))).toEqual(new Set(['treasurer:ops-token']));
+    expect(new Set((await db.select().from(auditLog)).map((r) => r.actor))).toEqual(
+      new Set(['treasurer:ops-token']),
+    );
   });
 
   it('answers 422 to a body without a valid draft and email, before calling PayPal', async () => {
@@ -546,5 +642,149 @@ describe('invoices routes', () => {
 
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: 'PayPal rejected the invoice request', debugId: 'dbg-1' });
+  });
+});
+
+describe('sponsor list and event scope', () => {
+  const TOKEN = { 'x-treasurer-token': 'secret' };
+  const UNKNOWN = '00000000-0000-4000-8000-000000000000';
+  const appWith = (env: NodeJS.ProcessEnv = { TREASURER_TOKEN: 'secret' }) => {
+    const app = express();
+    app.use(express.json());
+    app.use(
+      '/api/sponsors',
+      invoicesRouter({ env, db: () => db, client: () => paypal.client, now: NOW }),
+    );
+    return app;
+  };
+
+  // A second event with one sponsor of its own.
+  const sideEvent = async () => {
+    const [created] = await db
+      .insert(events)
+      .values({
+        name: 'Side Event',
+        date: new Date('2027-05-01T09:00:00Z'),
+        headcount: 50,
+        budgetTotal: 100_000,
+        currency: 'EUR',
+      })
+      .returning();
+    const [sponsor] = await db
+      .insert(sponsors)
+      .values({ eventId: created!.id, name: 'Side Sponsor', tier: 'gold', pledged: 50_000 })
+      .returning();
+    return { eventId: created!.id, sponsorId: sponsor!.id };
+  };
+
+  it('lists the demo event sponsors by name, with status and invoice, when no event is named', async () => {
+    const res = await request(appWith()).get('/api/sponsors').set(TOKEN);
+
+    expect(res.status).toBe(200);
+    expect(SponsorsResponse.parse(res.body).sponsors).toEqual([
+      expect.objectContaining({
+        name: 'Harbor Cloud',
+        tier: 'gold',
+        pledged: 300_000,
+        currency: 'USD',
+        status: 'pledged',
+        paypalInvoiceId: null,
+      }),
+      expect.objectContaining({ name: 'Lumen Labs', pledged: 250_000 }),
+      expect.objectContaining({ name: 'Pixel Foundry', pledged: 250_000 }),
+    ]);
+  });
+
+  it('shows a sponsor as invoiced, with the PayPal invoice id, once the invoice is sent', async () => {
+    await send();
+
+    const { sponsors: list } = SponsorsResponse.parse(
+      (await request(appWith()).get('/api/sponsors').set(TOKEN)).body,
+    );
+
+    expect(list.find((s) => s.name === 'Harbor Cloud')).toMatchObject({
+      status: 'invoiced',
+      paypalInvoiceId: 'INV2-TEST-1',
+    });
+  });
+
+  it("lists only the named event's sponsors, in that event's currency", async () => {
+    const side = await sideEvent();
+
+    const res = await request(appWith()).get(`/api/sponsors?eventId=${side.eventId}`).set(TOKEN);
+
+    expect(SponsorsResponse.parse(res.body).sponsors).toEqual([
+      expect.objectContaining({ id: side.sponsorId, name: 'Side Sponsor', currency: 'EUR' }),
+    ]);
+  });
+
+  it('answers 400 to a bad event id and 404 to an unknown event, and 404 with no demo event to fall back on', async () => {
+    const app = appWith();
+    expect((await request(app).get('/api/sponsors?eventId=nope').set(TOKEN)).status).toBe(400);
+    expect((await request(app).get(`/api/sponsors?eventId=${UNKNOWN}`).set(TOKEN)).status).toBe(
+      404,
+    );
+    await db.execute(sql`truncate table audit_log, events restart identity cascade`);
+    expect((await request(app).get('/api/sponsors').set(TOKEN)).status).toBe(404);
+  });
+
+  it('fails closed without a token and refuses a wrong one', async () => {
+    expect((await request(appWith({})).get('/api/sponsors')).status).toBe(503);
+    expect(
+      (await request(appWith()).get('/api/sponsors').set('x-treasurer-token', 'nope')).status,
+    ).toBe(401);
+  });
+
+  it("drafts for a sponsor of the named event, and answers 404 when it is another event's", async () => {
+    const side = await sideEvent();
+    const app = appWith();
+    const own = await request(app)
+      .get(`/api/sponsors/${sponsorId}/draft?eventId=${(await sponsorRow())!.eventId}`)
+      .set(TOKEN);
+    const other = await request(app)
+      .get(`/api/sponsors/${sponsorId}/draft?eventId=${side.eventId}`)
+      .set(TOKEN);
+
+    expect(own.status).toBe(200);
+    expect(other.status).toBe(404);
+    expect(other.body.code).toBe('sponsor_not_found');
+  });
+
+  it("does not invoice another event's sponsor, and does not call PayPal", async () => {
+    const side = await sideEvent();
+
+    const res = await request(appWith())
+      .post(`/api/sponsors/${sponsorId}/send?eventId=${side.eventId}`)
+      .set(TOKEN)
+      .send({ draft: await draft(), recipientEmail: EMAIL });
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('sponsor_not_found');
+    expect(paypal.calls).toHaveLength(0);
+    expect((await sponsorRow())?.status).toBe('pledged');
+  });
+
+  it('sends when the named event is the sponsor’s own', async () => {
+    const own = (await sponsorRow())!.eventId;
+    const res = await request(appWith())
+      .post(`/api/sponsors/${sponsorId}/send?eventId=${own}`)
+      .set(TOKEN)
+      .send({ draft: await draft(), recipientEmail: EMAIL });
+
+    expect(res.status).toBe(200);
+    expect(paypal.creates()).toBe(1);
+  });
+
+  it('answers 400 to a bad event id on the draft and send routes, before doing anything', async () => {
+    const app = appWith();
+    expect(
+      (await request(app).get(`/api/sponsors/${sponsorId}/draft?eventId=nope`).set(TOKEN)).status,
+    ).toBe(400);
+    const sent = await request(app)
+      .post(`/api/sponsors/${sponsorId}/send?eventId=nope`)
+      .set(TOKEN)
+      .send({ draft: await draft(), recipientEmail: EMAIL });
+    expect(sent.status).toBe(400);
+    expect(paypal.calls).toHaveLength(0);
   });
 });

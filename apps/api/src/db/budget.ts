@@ -3,7 +3,7 @@ import { and, eq, gte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Spend } from '../payments/ports.js';
 import { committedSpends, sumMinor, unlockedBudget, type SpendRecord } from '../rules/budget.js';
-import { normalizeName, type Budget } from '../rules/check.js';
+import { normalizeName, payeeKey, type Budget } from '../rules/check.js';
 import type { Db } from './client.js';
 import { listSponsors } from './events.js';
 import { clearedIncome, clearedIncomeBySponsor } from './ledger.js';
@@ -20,6 +20,7 @@ const Input = z.looseObject({
   eventId: z.string().optional(),
   kind: z.string().optional(),
   payee: z.string().optional(),
+  payeeEmail: z.string().optional(),
 });
 
 const startOfUtcDay = (now: Date) =>
@@ -74,9 +75,10 @@ export async function loadBudget(db: Db, spend: Spend, now: Date): Promise<Budge
 
   const todays = parsed.filter((p) => p.isToday);
   const autoPaidToday = committedSpends(todays.map((p) => p.record)).filter((s) => s.autoPaid);
+  const who = payeeKey(spend);
   const claimsToday = committedSpends(
     todays
-      .filter((p) => p.input.kind === 'claim' && p.input.payee === spend.payee)
+      .filter((p) => p.input.kind === 'claim' && who !== undefined && payeeKey(p.input) === who)
       .map((p) => p.record),
   );
 
@@ -85,6 +87,36 @@ export async function loadBudget(db: Db, spend: Spend, now: Date): Promise<Budge
     autoPaidTodayMinor: sumMinor(autoPaidToday),
     claimedTodayMinor: sumMinor(claimsToday),
   };
+}
+
+// Every spend.check record of one event, in the shape committedSpends() reads: the rows loadFunds counts for that event.
+// The budget burn widget (P3, F20) reads this so it shows the same committed spend that check() enforces.
+export async function loadEventSpendRecords(db: Db, eventId: string, currency: string): Promise<SpendRecord[]> {
+  const rows = await db
+    .select({ input: auditLog.input, ruleResult: auditLog.ruleResult, outcome: auditLog.outcome, approval: approvals.status })
+    .from(auditLog)
+    .leftJoin(approvals, sql`${approvals.spend}->>'referenceId' = ${auditLog.input}->>'referenceId'`)
+    .where(
+      and(
+        eq(auditLog.action, 'spend.check'),
+        sql`${auditLog.input}->>'currency' = ${currency}`,
+        sql`${auditLog.input}->>'eventId' = ${eventId}`,
+      ),
+    );
+  return rows.flatMap((row) => {
+    const input = Input.safeParse(row.input);
+    if (!input.success) return [];
+    return [
+      {
+        referenceId: input.data.referenceId,
+        amountMinor: input.data.amountMinor,
+        category: input.data.category ?? null,
+        decision: decisionOf(row.ruleResult),
+        outcome: row.outcome,
+        approval: row.approval,
+      },
+    ];
+  });
 }
 
 async function loadFunds(

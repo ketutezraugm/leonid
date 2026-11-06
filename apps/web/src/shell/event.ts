@@ -15,7 +15,7 @@ export const EVENT = {
   endDate: '2027-03-14',
   people: 200,
   currency: 'USD',
-  budgetTotalMinor: 800_000,
+  budget: 800_000,
   categories: [] as string[],
   city: null as string | null,
 };
@@ -36,7 +36,7 @@ export interface EventInfo {
   /** ISO 4217 currency code, e.g. USD. */
   currency: string;
   /** The planned total in minor units: a target, not spendable money. */
-  budgetTotalMinor: number;
+  budget: number;
   categories: string[];
   /** Where the event is, when the organiser said. */
   city: string | null;

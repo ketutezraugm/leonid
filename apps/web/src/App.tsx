@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Agent } from './pages/Agent';
 import { Approvals } from './pages/Approvals';
+import { Checkout } from './pages/Checkout';
 import { Claims } from './pages/Claims';
 import { EventHome } from './pages/EventHome';
 import { Events } from './pages/Events';
@@ -74,6 +75,14 @@ export function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
+            <Route
+              path="/e/:eventId"
+              element={
+                <PublicLayout>
+                  <Checkout />
+                </PublicLayout>
+              }
+            />
             <Route
               path="/report/:shareToken"
               element={

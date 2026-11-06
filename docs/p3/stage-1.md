@@ -2,14 +2,14 @@
 
 Owner: P3. Source: PRD §7 (treasury agent), §14 (day-1 tests) and the Stage 1 plan. Reader: the team (P1, P2, P4) and P3.
 
-**Status: the code is merged into `development` (PRs #20, #21 and #22), and the end-to-end check ran on staging on 2026-10-29 (run by P2): steps 1 to 7 pass. Stage 1 is complete except step 8, unlocked budget rising, which waits on P1's budget function.** Items that are not done are marked as such throughout.
+**Status: the code is merged into `development` (PRs #20, #21 and #22), and the end-to-end check ran on staging on 2026-10-29 (run by P2): steps 1 to 7 pass. Step 8, unlocked budget rising, is shown by an automated test on the real sandbox webhook event (P1's budget merged in #46); the same check on staging is still to run.** Items that are not done are marked as such throughout.
 
 The Stage 1 goal was: an invoice arrives in the sponsor's sandbox account, and paying it raises the unlocked budget.
 
 | Half of the goal | State |
 | --- | --- |
 | An invoice arrives in the sponsor's sandbox account | Shown. On 2026-10-29 staging sent a real $1.00 invoice for a throwaway sponsor and the sandbox payer paid it (see the evidence section). The current invoice shape was also checked on its own earlier that day. |
-| Paying it raises the unlocked budget | **Half shown.** Paying it wrote one ledger row of 100 USD minor units, marked the sponsor `paid` and audited it, and a replay changed nothing (end-to-end check, steps 5 to 7). The "unlocked budget rises" half needs P1's budget function, which does not exist yet (step 8). |
+| Paying it raises the unlocked budget | **Shown in a test; staging re-run pending.** Paying it wrote one ledger row of 100 USD minor units, marked the sponsor `paid` and audited it, and a replay changed nothing (end-to-end check, steps 5 to 7). Step 8: `apps/api/src/widgets/budget-burn.test.ts` feeds the same sandbox `INVOICING.INVOICE.PAID` event through the handler, and unlocked budget goes from 0 to 100 while a $1.00 spend goes from blocked to allowed. |
 
 ## How a sponsor invoice flows
 
@@ -23,7 +23,7 @@ organizer: "invoice Harbor Cloud"
    -> sponsor pays on PayPal
    -> PayPal fires INVOICING.INVOICE.PAID -> POST /api/webhooks/paypal/treasury
         handler: fully paid? -> one ledger row (cleared income) + sponsor -> 'paid'
-   -> P1's budget: unlocked = cleared income - committed spend     (not built yet)
+   -> P1's budget: unlocked = cleared income - committed spend     (F10, merged in #46)
    -> P4's Gantt: tasks funded by that sponsor are released        (P4)
 ```
 
@@ -59,6 +59,8 @@ The branches did not all merge cleanly. The ledger migration was first numbered 
 ## The API
 
 Both routes need the `x-treasurer-token` header. With no `TREASURER_TOKEN` configured they answer 503, so they fail closed. This is an interim guard: Log in with PayPal sessions (F1, PR #16) are coming and will replace it.
+
+`GET /api/sponsors[?eventId=]` lists the event's sponsors (`SponsorsResponse`: name, tier, pledged, currency, status, `paypalInvoiceId`) for the Money screen's "Sponsors and invoices" tab; with no `eventId` it is the seeded demo event. `GET /api/sponsors/:sponsorId/draft` and `POST .../send` accept an optional `?eventId=`; if it is not the sponsor's event, they answer 404 `sponsor_not_found` and send nothing.
 
 `GET /api/sponsors/:sponsorId/draft` returns `{ sponsor, event, draft }`. The draft is the shared `InvoiceDraft`, with amounts in cents. Nothing is sent.
 
@@ -136,7 +138,7 @@ The agent has been tested with a scripted model only, as the project rules requi
 | P2 | Done 2026-10-29: migrations `0003` to `0005` applied by hand on the shared database, and staging runs the merged code | The ledger table and handlers must exist where the webhook lands |
 | P2 | Add the Treasury webhook subscription to `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED` (not there as of 2026-10-29) | Otherwise refunds never reduce cleared income |
 | P2 | Set `custom_id` with `buildCaptureTag()` when creating Treasury orders for tickets and donations | Otherwise those captures cannot be credited to an event |
-| P1 | Build the funds-gated budget (F10) on `clearedIncome(db, eventId, currency)` | "Unlocked budget" does not exist yet, so the second half of the goal cannot be shown |
+| P1 | Build the funds-gated budget (F10) on `clearedIncome(db, eventId, currency)` | Done in #46 |
 | P1 / P2 | Decide whether `sponsors` gets a `contact_email` column | The treasurer types the email until then |
 | P4 | Release Gantt tasks funded by a sponsor whose status becomes `paid` | The demo payoff of a paid invoice |
 | P4 | Decide where the invoice confirm screen lives | There is none yet |
@@ -147,7 +149,7 @@ The agent has been tested with a scripted model only, as the project rules requi
 2. Done: P2 applied migrations `0003` to `0005` and staging runs the merged code (2026-10-29).
 3. Done: the current invoice shape was verified in the sandbox (2026-10-29).
 4. Done except step 8: the end-to-end check ran on staging (2026-10-29).
-5. **Step 8, waiting on P1:** once the funds-gated budget exists, check that unlocked budget rose by the invoice amount. This is the other half of the Stage 1 goal.
+5. **Step 8:** shown by the automated test above. On staging: read `GET /api/widgets/budget-burn` before and after paying a throwaway sponsor's invoice; `unlocked` should rise by the invoice amount.
 6. P2 adds the `PAYMENT.CAPTURE.REFUNDED` and `REVERSED` subscriptions to the Treasury webhook.
 7. Build the confirm screen with P4 (otherwise the demo confirms through the API).
 8. Done: Invoicing and the ledger handlers are in the README "PayPal capabilities used" table.
@@ -164,10 +166,10 @@ Run once staging is deployed from the merged code.
 5. Open the `recipientViewUrl` in a private window, log in as the sandbox personal account, and pay.
 6. Wait for the webhook. In the database, expect one `ledger_entries` row (`sponsor_invoice`, the invoice id as `paypal_id`), the sponsor `paid`, and an `ledger.income_recorded` audit row.
 7. Replay the event from the PayPal developer dashboard. Expect still one ledger row.
-8. When P1's budget exists, check that unlocked budget rose by the invoice amount.
+8. Read `GET /api/widgets/budget-burn?eventId=<event>` before and after paying; `unlocked` should rise by the invoice amount.
 
 If step 6 shows nothing, look for `ledger.invoice_unmatched` in the audit log (the invoice id is not on any sponsor) and check the staging logs for the webhook.
 
 ### Result
 
-Run on 2026-10-29 by P2 on staging, with a throwaway sponsor: steps 1 to 7 pass (details in the evidence table). Step 8 waits for P1's budget function. Use a throwaway sponsor for any repeat: a paid seeded sponsor would show up in the demo.
+Run on 2026-10-29 by P2 on staging, with a throwaway sponsor: steps 1 to 7 pass (details in the evidence table). Step 8 has not been run on staging yet; the automated test covers it locally. Use a throwaway sponsor for any repeat: a paid seeded sponsor would show up in the demo.

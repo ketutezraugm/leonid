@@ -19,7 +19,7 @@ const order = (status: string, payerId = TREASURER) => () =>
     payment_source: { paypal: { account_id: payerId } },
     links: [],
   });
-const spend = { referenceId: 'prizes-1', amountMinor: 42000, currency: 'USD', actor: 'procurement-agent', reason: 'prize cart' };
+const spend = { referenceId: 'prizes-1', amountMinor: 42000, currency: 'USD', actor: 'procurement-agent', reason: 'prize cart', eventId: '11111111-1111-4111-8111-111111111111' };
 const event = (orderId = 'ORD-1'): WebhookEvent => ({ id: 'WH-1', event_type: 'CHECKOUT.ORDER.APPROVED', resource: { id: orderId } });
 
 async function build(

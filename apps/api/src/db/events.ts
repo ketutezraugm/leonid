@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import type { EventSummary } from '@quartermaster/shared';
 import { writeAudit } from './audit.js';
 import type { Db } from './client.js';
 import { chatThreads, events, mandates, sponsors } from './schema.js';
@@ -98,6 +99,29 @@ export async function createOwnedEvent(db: Db, input: NewEvent & { ownerSub: str
 // The events a person made, newest first. The seeded demo event is never in it: it has no owner.
 export function listOwnedEvents(db: Db, ownerSub: string) {
   return db.select().from(events).where(eq(events.ownerSub, ownerSub)).orderBy(desc(events.date), asc(events.name));
+}
+
+const day = (d: Date) => d.toISOString().slice(0, 10);
+
+// One events row in the shared shape.
+export function toSummary(row: typeof events.$inferSelect): EventSummary {
+  return {
+    id: row.id,
+    name: row.name,
+    date: day(row.date),
+    endDate: day(row.endDate ?? row.date),
+    people: row.headcount,
+    currency: row.currency,
+    budget: row.budgetTotal,
+    categories: row.categories,
+    city: row.city,
+  };
+}
+
+// Every event, soonest first, in the shared shape, whoever made it. For jobs that run over all events (budget recompute).
+export async function listEvents(db: Db): Promise<EventSummary[]> {
+  const rows = await db.select().from(events).orderBy(asc(events.date), asc(events.name));
+  return rows.map(toSummary);
 }
 
 export function listSponsors(db: Db, eventId: string) {

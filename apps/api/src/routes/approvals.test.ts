@@ -60,7 +60,7 @@ async function build(orderStatus: () => Response) {
 
 const approved = () => json(200, { id: 'ORD-1', status: 'APPROVED', purchase_units: [{ amount: { currency_code: 'USD', value: '420.00' } }], links: [] });
 const notYet = () => json(200, { id: 'ORD-1', status: 'PAYER_ACTION_REQUIRED', purchase_units: [{ amount: { currency_code: 'USD', value: '420.00' } }], links: [] });
-const prizeSpend = { referenceId: 'prizes-1', amountMinor: 42000, currency: 'USD', actor: 'procurement-agent', reason: 'prize cart' };
+const prizeSpend = { referenceId: 'prizes-1', amountMinor: 42000, currency: 'USD', actor: 'procurement-agent', reason: 'prize cart', eventId: '11111111-1111-4111-8111-111111111111' };
 
 describe('approvals routes', () => {
   it('serves the public PayPal client id without a token, and 503 when it is missing', async () => {
@@ -108,6 +108,23 @@ describe('approvals routes', () => {
     expect(await refs(`?eventId=${a}`)).toEqual(['a-1']);
     expect(await refs(`?eventId=${crypto.randomUUID()}`)).toEqual([]);
     expect((await request(app).get('/api/approvals?eventId=nope').set(treasurer)).status).toBe(422);
+  });
+
+  it("tells purchases from payouts with `kind`, and a payout has no PayPal order to approve", async () => {
+    const { app, executor, approvals } = await build(approved);
+    await executor.requestSpend(prizeSpend);
+    await approvals.create(
+      { ...prizeSpend, referenceId: 'claim-1', kind: 'claim', payee: 'Dana', payeeEmail: 'dana@example.com' },
+      { decision: 'needs_approval', reasons: ['over the $200 approval threshold'], ruleIds: [] },
+      'audit-1',
+    );
+    const items = ApprovalsResponse.parse((await request(app).get('/api/approvals').set(treasurer)).body).approvals;
+    expect(items.map((a) => [a.referenceId, a.kind, a.paypalOrderId])).toEqual([
+      ['prizes-1', 'purchase', 'ORD-1'],
+      ['claim-1', 'payout', undefined],
+    ]);
+    // the treasurer sees who a payout goes to, since there is no PayPal popup showing it
+    expect(items[1]).toMatchObject({ payee: 'Dana', payeeEmail: 'dana@example.com' });
   });
 
   it('lists the oldest approval first', async () => {

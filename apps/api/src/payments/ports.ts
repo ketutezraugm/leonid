@@ -10,14 +10,22 @@ export interface Spend {
   reason: string; // the agent's reasoning summary, shown on the Approvals screen
   category?: string;
   vendor?: string;
-  // The event this spend belongs to. Optional so existing callers keep working; it lands in the audit row's input,
-  // which the rules-health widget reads to scope its counts per event. Not part of the retry fingerprint on purpose,
-  // so a retry that adds it is not refused as a different spend. Callers that know their event should set it.
+  // The event this spend belongs to. requestSpend refuses a spend without one ('no_event'). It lands in the audit row's input,
+  // which the rules-health widget reads to scope its counts per event, in PayPal's custom_id, and in the approval and
+  // reference rows. Not part of the retry fingerprint on purpose, so a retry that adds it is not refused as a different spend.
+  // Optional in the type only because old approval rows have none.
   eventId?: string;
   // What check() needs beyond a plain purchase. kind defaults to 'purchase'.
   kind?: 'purchase' | 'claim' | 'payout';
   payee?: string; // the person a claim or payout is for
+  payeeEmail?: string; // where a claim or payout is sent: the person's PayPal email
   fundedBySponsorId?: string; // tasks.funded_by_sponsor_id: this spend waits on that sponsor's paid invoice
+}
+
+// Sends one payout from the Treasury app (paypal/payouts.ts, P3). referenceId must become PayPal's sender_batch_id, so one
+// spend can only ever be sent once. PayPal pays out later: this only says it accepted the batch.
+export interface PayoutSender {
+  send(input: { referenceId: string; recipientEmail: string; amountMinor: number; currency: string; note: string }): Promise<{ batchId: string }>;
 }
 
 // Same shape as money-safety.md: { decision, reasons, ruleIds }.
@@ -45,7 +53,7 @@ export interface WalletPort {
 // spend would silently return the first spend's order. Back this with a unique constraint in the DB.
 export interface ReferencePort {
   // 'same': an identical spend is being retried (safe, PayPal returns the same order); 'conflict': id used for something else
-  claim(referenceId: string, fingerprint: string): Promise<'new' | 'same' | 'conflict'>;
+  claim(referenceId: string, fingerprint: string, eventId?: string): Promise<'new' | 'same' | 'conflict'>;
 }
 
 // The treasurer's approval is the PayPal popup: the approval row points at a PayPal order that only the treasurer

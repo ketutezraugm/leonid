@@ -35,6 +35,7 @@
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.79",
     "@quartermaster/shared": "workspace:*",
+    "@renderinc/sdk": "^1.7.0",
     "ai": "7.0.154",
     "cors": "^2.8.6",
     "drizzle-orm": "^0.45.4",

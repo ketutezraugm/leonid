@@ -15,10 +15,12 @@ import {
   sign,
   verify,
 } from '../auth/session.js';
+import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
 export interface AuthRouterOptions {
   env?: NodeJS.ProcessEnv;
   fetch?: typeof fetch;
+  demoLimiter?: RateLimiter;
 }
 
 // Log in with PayPal for the treasurer (F1):
@@ -32,6 +34,7 @@ export function authRouter(options: AuthRouterOptions = {}) {
   const env = options.env ?? process.env;
   const router = Router();
   const demoLogin = demoLoginEnabled(env);
+  const demoLimiter = options.demoLimiter ?? createRateLimiter({ max: 20, windowMs: 10 * 60_000 });
 
   const handle =
     (fn: (req: Request, res: Response, c: { base: string; secret: string; secure: boolean }) => Promise<void> | void): RequestHandler =>
@@ -123,6 +126,10 @@ export function authRouter(options: AuthRouterOptions = {}) {
     handle((req, res, { secret, secure }) => {
       if (!demoLogin) {
         res.status(404).json({ error: 'not found' });
+        return;
+      }
+      if (!demoLimiter.take(req)) {
+        res.status(429).json({ error: 'Too many demo logins. Wait a few minutes and try again.' });
         return;
       }
       // Each demo login is its own person, so what one judge creates (events) is not listed for the next. A visitor

@@ -20,7 +20,7 @@ describe('validateEventForm', () => {
         endDate: '2027-05-03',
         people: 80,
         currency: 'USD',
-        budgetTotalMinor: 250_050,
+        budget: 250_050,
         categories: ['venue', 'swag'],
         city: 'Jakarta',
       },
@@ -47,7 +47,7 @@ describe('validateEventForm', () => {
   it('allows a zero budget and no categories', () => {
     expect(validateEventForm({ ...good, budget: '0', categories: '' }, NOW)).toMatchObject({
       ok: true,
-      request: { budgetTotalMinor: 0, categories: [] },
+      request: { budget: 0, categories: [] },
     });
   });
 });

@@ -1,6 +1,6 @@
 {
-  "id": "2f5e23eb-6835-49f2-8fc9-5136e685d679",
-  "prevId": "3694f61c-600d-4667-9bfa-caa9fb7927ec",
+  "id": "5c0ae30b-595e-4bbd-b711-7a73e6882c7f",
+  "prevId": "e6c724aa-105c-4377-ab51-90263a1cb99a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -103,6 +103,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "reasons": {
           "name": "reasons",
           "type": "text[]",
@@ -176,6 +182,19 @@
         }
       },
       "foreignKeys": {
+        "approvals_event_id_events_id_fk": {
+          "name": "approvals_event_id_events_id_fk",
+          "tableFrom": "approvals",
+          "tableTo": "events",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "approvals_audit_id_audit_log_id_fk": {
           "name": "approvals_audit_id_audit_log_id_fk",
           "tableFrom": "approvals",
@@ -375,6 +394,72 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
+    "public.demo_token_pool": {
+      "name": "demo_token_pool",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "setup_token_id": {
+          "name": "setup_token_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_token_id": {
+          "name": "payment_token_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payer_email": {
+          "name": "payer_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "demo_token_pool_setup_token_id_unique": {
+          "name": "demo_token_pool_setup_token_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "setup_token_id"
+          ]
+        },
+        "demo_token_pool_payment_token_id_unique": {
+          "name": "demo_token_pool_payment_token_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "payment_token_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
     "public.events": {
       "name": "events",
       "schema": "",
@@ -398,12 +483,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "end_date": {
-          "name": "end_date",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "headcount": {
           "name": "headcount",
           "type": "integer",
@@ -423,49 +502,20 @@
           "notNull": true,
           "default": "'USD'"
         },
+        "ticket_price": {
+          "name": "ticket_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "treasury_merchant_id": {
           "name": "treasury_merchant_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "owner_sub": {
-          "name": "owner_sub",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "categories": {
-          "name": "categories",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::text[]"
-        },
-        "city": {
-          "name": "city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
-      "indexes": {
-        "events_owner_idx": {
-          "name": "events_owner_idx",
-          "columns": [
-            {
-              "expression": "owner_sub",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -822,6 +872,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -831,7 +887,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "spend_references_event_id_events_id_fk": {
+          "name": "spend_references_event_id_events_id_fk",
+          "tableFrom": "spend_references",
+          "tableTo": "events",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

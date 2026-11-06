@@ -1,5 +1,15 @@
 import type { Request } from 'express';
 
+// How many proxies sit between a visitor and the app on Render, so Express picks the visitor from X-Forwarded-For and not a proxy.
+// Measured on staging on Nov 5 2026 with a spoofed X-Forwarded-For: the header reached the app as
+//   <spoofed>, <visitor>, <Cloudflare edge>, <Render internal proxy>
+// and the connection itself came from one more Render hop, so the visitor is the third address counted from the right. A trust
+// proxy of 1 (the earlier guess) resolved to the Render internal address for everyone, putting every judge in one rate-limit bucket.
+// Anything the visitor sent as X-Forwarded-For stays left of the visitor entry and is ignored. Re-measure if the service gets a custom
+// domain or another CDN in front: the temporary probe (a treasurer-only route echoing req.ip, req.ips and the forwarding headers)
+// is in git history, PR #79; verified on staging after the fix, req.ip was the caller's own public address.
+export const TRUSTED_PROXY_HOPS = 3;
+
 export interface RateLimiter {
   // True when the request is allowed. The window is kept per key, the client IP unless the caller names one.
   take(req: Request, key?: string): boolean;

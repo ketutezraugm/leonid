@@ -387,6 +387,22 @@
   margin-top: var(--space-4);
 }
 
+/* Legend on the left, the sample preview buttons on the right; they stack on a phone. */
+.plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.plan-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /* --- Approvals: queue on the left, the selected item on the right --- */
 .approvals-layout {
   display: grid;
@@ -549,4 +565,54 @@
 
 .card .btn-row {
   margin-top: var(--space-3);
+}
+
+/* --- Event setup: three steps, the current one in forest, done ones ticked in the badge's green --- */
+.setup-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  color: var(--color-muted);
+}
+
+.setup-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.setup-step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.setup-steps li[aria-current='step'] {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.setup-steps li[aria-current='step'] .setup-step-num {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.setup-steps li[data-done] .setup-step-num {
+  border-color: var(--color-status-done);
+  background: var(--color-status-done-soft);
+  color: var(--color-status-done-text);
+}
+
+.setup-form {
+  display: grid;
+  gap: var(--space-4);
 }

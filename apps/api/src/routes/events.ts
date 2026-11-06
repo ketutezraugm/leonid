@@ -2,7 +2,6 @@ import {
   CreateEventRequest,
   type CreateEventResponse,
   type EventOverview,
-  type EventSummary,
   type EventsResponse,
 } from '@quartermaster/shared';
 import { Router, type RequestHandler } from 'express';
@@ -10,8 +9,7 @@ import { z } from 'zod';
 import { currentTreasurer, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { loadUnlocked } from '../db/budget.js';
 import { getDb, type Db } from '../db/client.js';
-import { createOwnedEvent, getEvent, listOwnedEvents, ReservedEventNameError } from '../db/events.js';
-import type { events } from '../db/schema.js';
+import { createOwnedEvent, getEvent, listOwnedEvents, ReservedEventNameError, toSummary } from '../db/events.js';
 import { listTasks } from '../db/tasks.js';
 import { createRateLimiter, type RateLimiter } from './rateLimit.js';
 
@@ -25,20 +23,6 @@ export interface EventsRouterOptions {
 }
 
 const day = (d: Date) => d.toISOString().slice(0, 10);
-
-export function toSummary(row: typeof events.$inferSelect): EventSummary {
-  return {
-    id: row.id,
-    name: row.name,
-    date: day(row.date),
-    endDate: day(row.endDate ?? row.date),
-    people: row.headcount,
-    currency: row.currency,
-    budgetTotalMinor: row.budgetTotal,
-    categories: row.categories,
-    city: row.city,
-  };
-}
 
 // The setup flow. Treasurer only; the seeded demo event is not in the list (the web adds it).
 //   GET  /                     -> EventsResponse: the events this person made
@@ -106,7 +90,7 @@ export function eventsRouter(options: EventsRouterOptions = {}) {
             date: new Date(`${input.date}T00:00:00Z`),
             endDate: new Date(`${input.endDate ?? input.date}T00:00:00Z`),
             headcount: input.people,
-            budgetTotal: input.budgetTotalMinor,
+            budgetTotal: input.budget,
             currency: input.currency,
             categories: [...new Set(input.categories.map((c) => c.toLowerCase()))],
             city: input.city,

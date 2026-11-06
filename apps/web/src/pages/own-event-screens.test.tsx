@@ -18,7 +18,7 @@ function stubApi(overview: unknown, overviewStatus = 200) {
     vi.fn((url: string) => {
       if (url === '/api/events') {
         return json({
-          events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budgetTotalMinor: 300_000, categories: [] }],
+          events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budget: 300_000, categories: [] }],
         });
       }
       if (url === `/api/events/${id}/overview`) return json(overview, overviewStatus);

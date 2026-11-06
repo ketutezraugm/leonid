@@ -1,97 +1,123 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { EventsProvider } from '../shell/event';
-import { ToastProvider } from '../ui/Toast';
-import { NewEvent } from './NewEvent';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { App } from '../App';
+
+vi.mock('../chat/AgentChat', () => ({ AgentChat: () => null }));
 
 const json = (body: unknown, status = 200) =>
-  Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }));
+  Promise.resolve(
+    new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }),
+  );
 
 const created = {
-  id: crypto.randomUUID(),
-  name: 'Test Meetup',
-  date: '2999-05-01',
-  endDate: '2999-05-03',
+  id: '7b2f3c1e-1f0a-4c55-9a51-2a8f0b6d8e10',
+  name: 'Spring Meetup',
+  date: '2999-05-20',
+  endDate: '2999-05-21',
   people: 80,
   currency: 'USD',
-  budgetTotalMinor: 250_050,
+  budget: 150_050,
   categories: ['venue'],
   city: 'Jakarta',
 };
+let posted: unknown;
 
-function mount(post: (body: unknown) => Promise<Response>) {
-  const fetchStub = vi.fn((url: string, init?: RequestInit) => {
-    if (url === '/api/events' && init?.method === 'POST') return post(JSON.parse(String(init.body)));
-    if (url === '/api/events') return json({ events: [] });
-    return new Promise<Response>(() => {});
-  });
-  vi.stubGlobal('fetch', fetchStub);
-  render(
-    <ToastProvider>
-      <EventsProvider>
-        <MemoryRouter initialEntries={['/setup']}>
-          <Routes>
-            <Route path="/setup" element={<NewEvent />} />
-            <Route path="/events/:eventId/agent" element={<p>opened the agent</p>} />
-          </Routes>
-        </MemoryRouter>
-      </EventsProvider>
-    </ToastProvider>,
+// POST /api/events answers `create`; the rest answers enough for the three steps.
+function stubApi(create: () => Promise<Response> = () => json({ event: created }, 201), wallet = 'none') {
+  posted = undefined;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      const path = String(url);
+      if (path === '/api/events' && init?.method === 'POST') {
+        posted = JSON.parse(String(init.body));
+        return create();
+      }
+      if (path.startsWith('/api/events')) return json({ events: posted ? [created] : [] });
+      if (path.startsWith('/api/treasury'))
+        return json({
+          merchantId: null,
+          asOf: null,
+          balances: [{ currency: 'USD', totalMinor: 0, availableMinor: 0, withheldMinor: 0 }],
+        });
+      if (path.startsWith('/api/wallet')) return json({ status: wallet });
+      return new Promise(() => {});
+    }),
   );
-  return fetchStub;
 }
 
-const fill = (label: RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
-
+beforeEach(() => {
+  localStorage.clear();
+  stubApi();
+});
 afterEach(() => vi.unstubAllGlobals());
 
-describe('New event', () => {
-  it('says what to fix before anything is sent', async () => {
-    const stub = mount(() => json(created, 201));
-    fireEvent.click(screen.getByRole('button', { name: 'Create event' }));
+function renderSetup() {
+  render(
+    <MemoryRouter initialEntries={['/setup']}>
+      <App />
+    </MemoryRouter>,
+  );
+}
+
+function fill(label: RegExp, value: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+}
+
+function fillRequired() {
+  fill(/Event name/, '  Spring Meetup ');
+  fill(/First day/, '2999-05-20');
+  fill(/Last day/, '2999-05-21');
+  fill(/People coming/, '80');
+  fill(/Budget/, '$1,500.50');
+}
+
+describe('New event (setup)', () => {
+  it('checks every field before saving anything', async () => {
+    renderSetup();
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
     expect(await screen.findByText('Enter a name for the event.')).toBeInTheDocument();
     expect(screen.getByText('Pick the first day.')).toBeInTheDocument();
-    expect(stub.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
     expect(screen.getByLabelText('Event name')).toHaveFocus();
+    expect(posted).toBeUndefined();
   });
 
-  it('sends the shared request in integer cents, then opens the new event', async () => {
-    let sent: unknown;
-    mount((body) => {
-      sent = body;
-      return json({ event: created }, 201);
-    });
-    fill(/Event name/, 'Test Meetup');
-    fill(/First day/, '2999-05-01');
-    fill(/Last day/, '2999-05-03');
-    fill(/People coming/, '80');
-    fill(/Budget/, '$2,500.50');
+  it('saves the event in cents, confirms the treasury, offers the shared wallet, then opens the agent', async () => {
+    renderSetup();
+    fillRequired();
     fill(/Spend categories/, 'Venue');
     fill(/City/, ' Jakarta ');
-    fireEvent.click(screen.getByRole('button', { name: 'Create event' }));
-    expect(await screen.findByText('opened the agent')).toBeInTheDocument();
-    expect(sent).toEqual({
-      name: 'Test Meetup',
-      date: '2999-05-01',
-      endDate: '2999-05-03',
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText(/Treasury connected/)).toBeInTheDocument();
+    expect(posted).toEqual({
+      name: 'Spring Meetup',
+      date: '2999-05-20',
+      endDate: '2999-05-21',
       people: 80,
       currency: 'USD',
-      budgetTotalMinor: 250_050,
+      budget: 150_050,
       categories: ['venue'],
       city: 'Jakarta',
     });
+    expect(screen.getByText(/\$1,500\.50 budget, 80 people/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(
+      await screen.findByText("The agent can't buy anything until you connect a wallet."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect wallet' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Skip for now' }));
+    expect(await screen.findByRole('region', { name: 'Results' })).toBeInTheDocument();
   });
 
-  it('shows the server\'s refusal and lets the person try again', async () => {
-    mount(() => json({ error: 'The event date is in the past' }, 422));
-    fill(/Event name/, 'Test Meetup');
-    fill(/First day/, '2999-05-01');
-    fill(/Last day/, '2999-05-03');
-    fill(/People coming/, '80');
-    fill(/Budget/, '100');
-    fireEvent.click(screen.getByRole('button', { name: 'Create event' }));
+  it("shows the server's refusal and lets the person try again", async () => {
+    stubApi(() => json({ error: 'The event date is in the past' }, 422));
+    renderSetup();
+    fillRequired();
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The event date is in the past');
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Create event' })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
   });
 });

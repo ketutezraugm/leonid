@@ -1,15 +1,25 @@
-import { RulesHealthResponse, type RuleDecision } from '@quartermaster/shared';
+import { SpendsResponse, type RuleDecision, type SpendEntry } from '@quartermaster/shared';
 import { useFetch } from '../shell/api';
 import { useEvent, withEvent } from '../shell/event';
 import { CopyId } from '../ui/CopyId';
 import { formatMoney } from '../ui/money';
-import { StatusBadge } from '../ui/StatusBadge';
+import { StatusBadge, type Status } from '../ui/StatusBadge';
 import { SAMPLE_RECENT_SPENDS } from './budget';
 
 const decisions: Record<RuleDecision, { status: 'done' | 'risk' | 'blocked'; label: string }> = {
   allow: { status: 'done', label: 'Allowed' },
   needs_approval: { status: 'risk', label: 'Needs approval' },
   block: { status: 'blocked', label: 'Blocked' },
+};
+
+// How the spend ended, when that says more than the rules' decision (an allowed spend PayPal refused after the kill switch).
+const outcomes: Partial<Record<SpendEntry['status'], { status: 'progress' | 'blocked'; label: string }>> = {
+  capturing: { status: 'progress', label: 'Paying' },
+  rejected: { status: 'blocked', label: 'Rejected' },
+  refused: { status: 'blocked', label: 'Refused' },
+  failed: { status: 'blocked', label: 'Failed' },
+  error: { status: 'blocked', label: 'Failed' },
+  mismatch: { status: 'blocked', label: 'Failed' },
 };
 
 const toneOf = { Allowed: 'done', 'Needs approval': 'risk', Blocked: 'blocked' } as const;
@@ -20,7 +30,7 @@ function ledgerDate(iso: string): string {
   );
 }
 
-function Verdict({ status, label, reason }: { status: 'done' | 'risk' | 'blocked'; label: string; reason?: string }) {
+function Verdict({ status, label, reason }: { status: Status; label: string; reason?: string }) {
   return (
     <span className="ledger-verdict">
       <StatusBadge status={status} label={label} />
@@ -29,12 +39,12 @@ function Verdict({ status, label, reason }: { status: 'done' | 'risk' | 'blocked
   );
 }
 
-// The rules-health feed once spends have gone through the rules; sample rows, labelled, until then
-// (the feed needs the database, and has no rows on a fresh event). The feed carries no PayPal ID yet.
+// The spends the payment executor decided (GET /api/spends/recent, treasurer only); sample rows, labelled, until there
+// are some (the feed needs the database and a treasurer session, and has no rows on a fresh event).
 export function RecentSpends() {
   const event = useEvent();
-  const feed = useFetch(withEvent('/api/widgets/rules-health', event), RulesHealthResponse);
-  const live = feed.kind === 'ready' ? feed.data.data.recent.filter((entry) => entry.amount !== null) : [];
+  const feed = useFetch(withEvent('/api/spends/recent?limit=8', event), SpendsResponse);
+  const live = feed.kind === 'ready' ? feed.data.spends.filter((entry) => entry.amountMinor !== null) : [];
 
   return (
     <section className="card ledger" aria-labelledby="ledger-title">
@@ -50,18 +60,19 @@ export function RecentSpends() {
               <th>What</th>
               <th>Rules said</th>
               <th className="num">Amount</th>
-              {live.length === 0 && <th>PayPal ID</th>}
+              <th>PayPal ID</th>
             </tr>
           </thead>
           <tbody>
             {live.map((entry) => (
-              <tr key={entry.auditId}>
+              <tr key={entry.id}>
                 <td className="ledger-date num">{ledgerDate(entry.at)}</td>
-                <td>{entry.category ?? 'Spend'}</td>
+                <td>{entry.vendor ?? entry.category ?? 'Spend'}</td>
                 <td>
-                  <Verdict {...decisions[entry.result.decision]} reason={entry.result.reasons[0]} />
+                  <Verdict {...(outcomes[entry.status] ?? decisions[entry.decision])} reason={entry.reasons[0]} />
                 </td>
-                <td className="num">{formatMoney(entry.amount ?? 0, entry.currency ?? 'USD')}</td>
+                <td className="num">{formatMoney(entry.amountMinor ?? 0, entry.currency ?? 'USD')}</td>
+                <td>{entry.paypalId ? <CopyId value={entry.paypalId} /> : <span className="muted">None</span>}</td>
               </tr>
             ))}
             {live.length === 0 &&

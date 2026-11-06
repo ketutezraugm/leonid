@@ -173,11 +173,14 @@ function Outcome({
             The rules sent this to the treasurer: {outcome.reasons.join('; ')}. Approve it in PayPal
             to pay.
           </p>
-          <ApproveButtons
-            approvalId={outcome.approvalId}
-            orderId={outcome.paypalOrderId}
-            onApproved={onApproved}
-          />
+          {/* A deposit is a purchase, so it always has a PayPal order; only a payout (not shown here) has none. */}
+          {outcome.paypalOrderId && (
+            <ApproveButtons
+              approvalId={outcome.approvalId}
+              orderId={outcome.paypalOrderId}
+              onApproved={onApproved}
+            />
+          )}
         </div>
       );
     case 'blocked':

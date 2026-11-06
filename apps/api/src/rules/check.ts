@@ -37,6 +37,14 @@ const money = (amountMinor: number, currency: string) => {
 export const normalizeName = (name: string) =>
   name.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
 
+// Who a claim is for, as far as the daily cap is concerned: the PayPal email the money goes to (so the same inbox under
+// another name is the same person), else the name. undefined when the claim names neither.
+// ponytail: an agent can still invent a new email for the same person; a registry of known, verified payees closes that.
+export const payeeKey = (s: { payee?: string; payeeEmail?: string }): string | undefined => {
+  const who = s.payeeEmail ?? s.payee;
+  return who === undefined ? undefined : normalizeName(who);
+};
+
 const isCategoryScoped = (rule: Rule) => rule.type === 'approved_vendors' || rule.type === 'category_cap';
 
 function checkFunds(spend: Spend, budget: Budget): Finding[] {
@@ -97,7 +105,7 @@ function checkRule(rule: Rule, spend: Spend, budget: Budget): Finding[] {
         ? [ask(rule.id, `would pass the ${limit} the agent wallet may auto-pay per day`)]
         : [];
     case 'claim_daily_cap':
-      if (spend.payee === undefined) return [ask(rule.id, 'this claim names no person, so the daily cap cannot be checked')];
+      if (payeeKey(spend) === undefined) return [ask(rule.id, 'this claim names no person, so the daily cap cannot be checked')];
       return budget.claimedTodayMinor + spend.amountMinor > rule.amountMinor
         ? [refuse(rule.id, `would pass the ${limit} a person may claim per day`)]
         : [];

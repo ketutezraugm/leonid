@@ -24,6 +24,10 @@ export default tseslint.config(
               group: ['**/paypal/spend', '**/paypal/spend.js'],
               message: 'Money-moving PayPal calls may only be imported by payments/executor.ts (money-safety.md).',
             },
+            {
+              group: ['**/paypal/payouts', '**/paypal/payouts.js'],
+              message: 'sendPayout moves money, so only payments/executor.ts may import it (money-safety.md).',
+            },
           ],
         },
       ],

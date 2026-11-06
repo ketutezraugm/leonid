@@ -22,7 +22,7 @@ const asDemo = (sub: string) => ({
   Origin: sessionEnv.APP_BASE_URL,
 });
 const NOW = new Date('2026-11-02T10:00:00Z');
-const valid = { name: 'Test Meetup', date: '2027-05-01', endDate: '2027-05-03', people: 80, currency: 'USD', budgetTotalMinor: 250_000, categories: ['Venue', 'venue', 'Swag'] };
+const valid = { name: 'Test Meetup', date: '2027-05-01', endDate: '2027-05-03', people: 80, currency: 'USD', budget: 250_000, categories: ['Venue', 'venue', 'Swag'] };
 
 let db: Db;
 beforeEach(async () => {
@@ -114,7 +114,7 @@ describe('POST /api/events', () => {
       date: '2027-05-01',
       endDate: '2027-05-03',
       people: 80,
-      budgetTotalMinor: 250_000,
+      budget: 250_000,
       categories: ['venue', 'swag'],
     });
 
@@ -124,7 +124,7 @@ describe('POST /api/events', () => {
   });
 
   it('refuses a bad body, a past date, and the demo name', async () => {
-    for (const body of [{}, { ...valid, people: 0 }, { ...valid, budgetTotalMinor: 12.5 }, { ...valid, name: ' ' }]) {
+    for (const body of [{}, { ...valid, people: 0 }, { ...valid, budget: 12.5 }, { ...valid, name: ' ' }]) {
       expect((await request(app()).post('/api/events').set(treasurer).send(body)).status).toBe(422);
     }
     const backwards = await request(app()).post('/api/events').set(treasurer).send({ ...valid, endDate: '2027-04-30' });

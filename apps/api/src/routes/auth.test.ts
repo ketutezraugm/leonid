@@ -5,6 +5,7 @@ import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { isAllowed } from '../auth/paypalLogin.js';
 import { sign } from '../auth/session.js';
 import { authRouter, demoLoginEnabled } from './auth.js';
+import { createRateLimiter } from './rateLimit.js';
 
 const SECRET = 's'.repeat(40);
 const env = {
@@ -178,6 +179,24 @@ describe('Log in with PayPal', () => {
       error.mockRestore();
       warn.mockRestore();
     }
+  });
+
+  it('rate limits demo login, and a disabled demo login (404) never uses up the allowance', async () => {
+    const app = (e: NodeJS.ProcessEnv, max: number) => {
+      const a = express();
+      a.use('/api/auth', authRouter({ env: e, demoLimiter: createRateLimiter({ max, windowMs: 60_000 }) }));
+      return a;
+    };
+    const off = app(env, 1);
+    expect((await request(off).post('/api/auth/demo-login')).status).toBe(404);
+    expect((await request(off).post('/api/auth/demo-login')).status).toBe(404);
+
+    const on = app({ ...env, DEMO_LOGIN: 'true' }, 2);
+    expect((await request(on).post('/api/auth/demo-login')).status).toBe(200);
+    expect((await request(on).post('/api/auth/demo-login')).status).toBe(200);
+    const blocked = await request(on).post('/api/auth/demo-login');
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers['set-cookie']).toBeUndefined();
   });
 
   it('treats a SESSION_SECRET shorter than 32 characters as unset', async () => {

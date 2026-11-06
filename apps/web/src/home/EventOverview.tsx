@@ -62,7 +62,7 @@ export function EventOverview({ event, eventId }: { event: EventInfo; eventId: s
       <div className="home-grid">
         <section className="card" aria-labelledby="target-title">
           <h2 id="target-title">Budget target</h2>
-          <p className="unlocked-figure num">{formatMoney(event.budgetTotalMinor, event.currency)}</p>
+          <p className="unlocked-figure num">{formatMoney(event.budget, event.currency)}</p>
           <p className="muted">What you plan to spend in total. It is a target, not money you have.</p>
           {event.categories.length > 0 && (
             <p>

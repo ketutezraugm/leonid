@@ -329,6 +329,7 @@ export * from './ledger.js';
 export * from './payout.js';
 export * from './claim.js';
 export * from './widgets.js';
+export * from './checkout.js';
 export * from './approvals.js';
 export * from './treasury.js';
 export * from './session.js';
@@ -357,9 +358,11 @@ export const SpendOutcome = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('needs_approval'),
     approvalId: z.string(),
-    paypalOrderId: z.string(),
+    paypalOrderId: z.string().optional(), // none for a payout: it has no PayPal popup, the treasurer just approves it
     reasons: z.array(z.string()),
   }),
+  // A payout (a claim or a person's payment) that PayPal accepted. PayPal pays out later; the webhooks carry the result.
+  z.object({ status: z.literal('submitted'), batchId: z.string() }),
   z.object({ status: z.literal('blocked'), reasons: z.array(z.string()) }),
   z.object({ status: z.literal('refused'), reason: z.string() }),
   z.object({
@@ -375,3 +378,4 @@ export const VenueDepositPayResponse = z.object({ deposit: VenueDeposit, outcome
 export type VenueDepositPayResponse = z.infer<typeof VenueDepositPayResponse>;
 export * from './spends.js';
 export * from './events.js';
+export * from './sponsorReport.js';

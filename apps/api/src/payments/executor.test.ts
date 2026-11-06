@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createPayPalClient } from '../paypal/client.js';
+import { PayPalApiError } from '../paypal/errors.js';
 import { createExecutor } from './executor.js';
-import type { ApprovalStatus, ApprovalsPort, AuditPort, ReferencePort, Spend, WalletPort } from './ports.js';
+import type { ApprovalStatus, ApprovalsPort, AuditPort, PayoutSender, ReferencePort, Spend, WalletPort } from './ports.js';
 import { stubCheck } from './stub-check.js';
 
 const json = (status: number, body: unknown) =>
@@ -20,7 +21,7 @@ const orderState = (status: string, amount: string) =>
 type SeededApproval = { spend: Spend; status: ApprovalStatus; paypalOrderId?: string; reasons?: string[] };
 
 // One shared timeline so tests can assert ordering (audit before PayPal, flag before delete, check before capture).
-function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean; approvals?: Record<string, SeededApproval> } = {}) {
+function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean; approvals?: Record<string, SeededApproval>; payouts?: PayoutSender } = {}) {
   const events: string[] = [];
   const routes = opts.routes ?? {};
   const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
@@ -113,17 +114,25 @@ function setup(opts: { routes?: Record<string, () => Response>; wallet?: boolean
     },
   };
 
-  const executor = createExecutor({ client, check: stubCheck, audit, wallet, approvals, references });
+  const executor = createExecutor({ client, check: stubCheck, audit, wallet, approvals, references, payouts: opts.payouts });
   return { executor, events, fetch, auditRows, approvalRows, wallet };
 }
 
+const EVENT_ID = '11111111-1111-4111-8111-111111111111';
 const spend = (amountMinor: number, referenceId = 'cart-1'): Spend => ({
   referenceId,
   amountMinor,
   currency: 'USD',
   actor: 'procurement-agent',
   reason: 'lanyards for 200 attendees',
+  eventId: EVENT_ID,
 });
+// An approval or spend from before every spend needed an event.
+const withoutEvent = (s: Spend): Spend => {
+  const copy = { ...s };
+  delete copy.eventId;
+  return copy;
+};
 const callsTo = (fetch: ReturnType<typeof setup>['fetch'], method: string, pathEnd: string) =>
   fetch.mock.calls.filter(([u, init]) => init?.method === method && new URL(String(u)).pathname.endsWith(pathEnd));
 const orderPosts = (fetch: ReturnType<typeof setup>['fetch']) => callsTo(fetch, 'POST', '/v2/checkout/orders');
@@ -190,6 +199,34 @@ describe('requestSpend', () => {
     const { executor, fetch } = setup({ wallet: false });
     expect(await executor.requestSpend(spend(14000))).toEqual({ status: 'refused', reason: 'no_wallet' });
     expect(orderPosts(fetch)).toHaveLength(0);
+  });
+
+  it('refuses a spend with no event before any rules check or PayPal call, and audits it', async () => {
+    const { executor, fetch, events, auditRows } = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
+    const noEvent = withoutEvent(spend(14000));
+    expect(await executor.requestSpend(noEvent)).toEqual({ status: 'refused', reason: 'no_event' });
+    expect(orderPosts(fetch)).toHaveLength(0);
+    expect(events).toEqual(['audit.record spend.rejected', 'audit.update refused']);
+    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'refused', detail: 'spend has no event' });
+  });
+
+  it("tags the PayPal order with the spend's event, on the auto-pay path and the approval path", async () => {
+    const tagOf = (fetch: ReturnType<typeof setup>['fetch']) => JSON.parse(String(orderPosts(fetch)[0]![1]!.body)).purchase_units[0].custom_id;
+    const auto = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
+    await auto.executor.requestSpend(spend(14000));
+    expect(tagOf(auto.fetch)).toBe(`qm:${EVENT_ID}:spend`);
+    const asked = setup({ routes: { 'POST /v2/checkout/orders': orderCreated } });
+    await asked.executor.requestSpend(spend(42000, 'prizes-1'));
+    expect(tagOf(asked.fetch)).toBe(`qm:${EVENT_ID}:spend`);
+  });
+
+  it('does not capture or reject an approval made before spends had an event', async () => {
+    const old = withoutEvent(spend(42000, 'prizes-old'));
+    const { executor, fetch, approvalRows } = setup({ approvals: { AP1: { spend: old, status: 'pending', paypalOrderId: 'ORD-1' } } });
+    expect(await executor.captureApproved('AP1', 'treasurer')).toEqual({ status: 'refused', reason: 'no_event' });
+    expect(await executor.rejectApproval('AP1', 'treasurer')).toEqual({ rejected: false });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(approvalRows.get('AP1')!.status).toBe('pending');
   });
 
   it('treats PayPal refusing the token (403) as a revoked wallet', async () => {
@@ -449,7 +486,26 @@ describe('captureApproved (the treasurer approved in the PayPal popup)', () => {
     });
     expect((await executor.captureApproved('AP1', 'treasurer')).status).toBe('failed');
     expect(approvalRows.get('AP1')?.status).toBe('pending');
-    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'error' });
+    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'failed' }); // PayPal said no, so nothing moved
+  });
+
+  it('records a 5xx on capture as error, and "order already captured" as error too, since money may have moved', async () => {
+    const down = setup({
+      routes: { ...approvedAtPayPal, 'POST /v2/checkout/orders/ORD-1/capture': () => json(503, { name: 'SERVICE_UNAVAILABLE' }) },
+      approvals: { AP1: pending },
+    });
+    expect(await down.executor.captureApproved('AP1', 'treasurer')).toMatchObject({ status: 'failed', retryable: true });
+    expect(down.auditRows[0]!.patch).toMatchObject({ outcome: 'error' });
+
+    const already = setup({
+      routes: {
+        ...approvedAtPayPal,
+        'POST /v2/checkout/orders/ORD-1/capture': () => json(422, { name: 'UNPROCESSABLE_ENTITY', details: [{ issue: 'ORDER_ALREADY_CAPTURED' }] }),
+      },
+      approvals: { AP1: pending },
+    });
+    expect((await already.executor.captureApproved('AP1', 'treasurer')).status).toBe('failed');
+    expect(already.auditRows[0]!.patch).toMatchObject({ outcome: 'error' });
   });
 });
 
@@ -523,5 +579,127 @@ describe('revokeWallet (kill switch)', () => {
   it('does nothing when there is no active wallet', async () => {
     const { executor } = setup({ wallet: false });
     expect(await executor.revokeWallet('treasurer')).toEqual({ revoked: false });
+  });
+});
+
+// Claims and payouts: sent from the Treasury app by a PayoutSender, never through the Procurement app's orders or vault.
+const claim = (amountMinor: number, referenceId = 'claim-1'): Spend => ({
+  ...spend(amountMinor, referenceId),
+  kind: 'claim',
+  payee: 'Dana',
+  payeeEmail: 'dana@example.com',
+  category: 'volunteers',
+});
+const sender = (send?: PayoutSender['send']) => {
+  const fn = vi.fn<PayoutSender['send']>(send ?? (async () => ({ batchId: 'PB-1' })));
+  return { fn, port: { send: fn } satisfies PayoutSender };
+};
+
+describe('payouts (claims and payouts)', () => {
+  it('sends a payout the rules allow, once, and never uses the Procurement orders or the wallet charge', async () => {
+    const payouts = sender();
+    const { executor, fetch, auditRows } = setup({ payouts: payouts.port });
+    const out = await executor.requestSpend(claim(5000));
+    expect(out).toEqual({ status: 'submitted', batchId: 'PB-1' });
+    expect(payouts.fn).toHaveBeenCalledOnce();
+    expect(payouts.fn).toHaveBeenCalledWith({ referenceId: 'claim-1', recipientEmail: 'dana@example.com', amountMinor: 5000, currency: 'USD', note: 'Quartermaster claim' });
+    expect(orderPosts(fetch)).toHaveLength(0);
+    expect(auditRows[0]!.entry.ruleResult?.decision).toBe('allow');
+    expect(auditRows[0]!.patch).toMatchObject({ outcome: 'submitted', paypalId: 'PB-1' });
+  });
+
+  it('refuses a payout with no recipient, or on a server that cannot send payouts, before any rules check', async () => {
+    const payouts = sender();
+    const noEmail = setup({ payouts: payouts.port });
+    const withoutEmail = claim(5000);
+    delete withoutEmail.payeeEmail;
+    expect(await noEmail.executor.requestSpend(withoutEmail)).toEqual({ status: 'refused', reason: 'no_recipient' });
+    expect(noEmail.events).toEqual(['audit.record spend.rejected', 'audit.update refused']);
+
+    const noSender = setup();
+    expect(await noSender.executor.requestSpend(claim(5000))).toEqual({ status: 'refused', reason: 'payouts_unavailable' });
+    expect(payouts.fn).not.toHaveBeenCalled();
+  });
+
+  it('refuses a payout PayPal would reject (a bad email, a reference it cannot use as sender_batch_id) before using the reference up', async () => {
+    const payouts = sender();
+    const bad = setup({ payouts: payouts.port });
+    expect(await bad.executor.requestSpend({ ...claim(5000), payeeEmail: 'not-an-email' })).toEqual({ status: 'refused', reason: 'no_recipient' });
+    expect(await bad.executor.requestSpend(claim(5000, 'x'.repeat(64)))).toEqual({ status: 'refused', reason: 'invalid_reference' });
+    expect(await bad.executor.requestSpend(claim(5000, 'has space'))).toEqual({ status: 'refused', reason: 'invalid_reference' });
+    expect(payouts.fn).not.toHaveBeenCalled();
+    // none of the three burned its reference id: a corrected request with the same id still goes through
+    expect(await bad.executor.requestSpend(claim(5000, 'claim-fixed'))).toEqual({ status: 'submitted', batchId: 'PB-1' });
+  });
+
+  it('sends a payout over the threshold to the treasurer with no PayPal order, and sends it only when the treasurer approves', async () => {
+    const payouts = sender();
+    const { executor, fetch, approvalRows } = setup({ payouts: payouts.port });
+    const asked = await executor.requestSpend(claim(25_000));
+    expect(asked).toMatchObject({ status: 'needs_approval', approvalId: 'AP1', reasons: ['over the $200 approval threshold'] });
+    expect(asked).not.toHaveProperty('paypalOrderId');
+    expect(orderPosts(fetch)).toHaveLength(0);
+    expect(payouts.fn).not.toHaveBeenCalled();
+    expect(approvalRows.get('AP1')).toMatchObject({ status: 'pending' });
+
+    expect(await executor.captureApproved('AP1', 'treasurer:u1')).toEqual({ status: 'submitted', batchId: 'PB-1' });
+    expect(approvalRows.get('AP1')!.status).toBe('paid');
+    expect(payouts.fn).toHaveBeenCalledOnce();
+    expect(await executor.captureApproved('AP1', 'treasurer:u1')).toEqual({ status: 'refused', reason: 'already_paid' });
+    expect(payouts.fn).toHaveBeenCalledOnce();
+  });
+
+  it('answers a retried payout request with the same approval, not a second one', async () => {
+    const { executor, approvalRows } = setup({ payouts: sender().port });
+    const first = await executor.requestSpend(claim(25_000));
+    const again = await executor.requestSpend(claim(25_000));
+    expect(again).toEqual(first);
+    expect(approvalRows.size).toBe(1);
+  });
+
+  it('is stopped by the kill switch: nothing is sent while the wallet is revoked, whether allowed or approved', async () => {
+    const payouts = sender();
+    const direct = setup({ wallet: false, payouts: payouts.port });
+    expect(await direct.executor.requestSpend(claim(5000))).toEqual({ status: 'refused', reason: 'no_wallet' });
+
+    const approval = setup({ wallet: false, payouts: payouts.port, approvals: { AP1: { spend: claim(25_000), status: 'pending', reasons: [] } } });
+    expect(await approval.executor.captureApproved('AP1', 'treasurer:u1')).toEqual({ status: 'refused', reason: 'no_wallet' });
+    expect(approval.approvalRows.get('AP1')!.status).toBe('pending');
+    expect(payouts.fn).not.toHaveBeenCalled();
+  });
+
+  it('puts the approval back when PayPal refuses the payout, and leaves it claimed when the outcome is unknown', async () => {
+    const refusing = sender(async () => {
+      throw new PayPalApiError({ status: 422, errorName: 'UNPROCESSABLE_ENTITY' });
+    });
+    const refused = setup({ payouts: refusing.port, approvals: { AP1: { spend: claim(25_000), status: 'pending', reasons: [] } } });
+    expect((await refused.executor.captureApproved('AP1', 'treasurer:u1')).status).toBe('failed');
+    expect(refused.approvalRows.get('AP1')!.status).toBe('pending'); // the treasurer can try again
+
+    const dropped = sender(async () => {
+      throw new Error('socket hang up');
+    });
+    const unknown = setup({ payouts: dropped.port, approvals: { AP1: { spend: claim(25_000), status: 'pending', reasons: [] } } });
+    await expect(unknown.executor.captureApproved('AP1', 'treasurer:u1')).rejects.toThrow('socket hang up');
+    expect(unknown.approvalRows.get('AP1')!.status).toBe('capturing'); // the payout may have gone out: a human decides
+
+    // a PayPal 5xx is not a refusal either: PayPal may have accepted the batch before failing, so it is not freed for a second click
+    const serverError = sender(async () => {
+      throw new PayPalApiError({ status: 500, errorName: 'INTERNAL_SERVER_ERROR' });
+    });
+    const unclear = setup({ payouts: serverError.port, approvals: { AP1: { spend: claim(25_000), status: 'pending', reasons: [] } } });
+    expect((await unclear.executor.captureApproved('AP1', 'treasurer:u1')).status).toBe('failed');
+    expect(unclear.approvalRows.get('AP1')!.status).toBe('capturing');
+    expect(await unclear.executor.rejectApproval('AP1', 'treasurer:u1')).toEqual({ rejected: false });
+  });
+
+  it('lets the treasurer reject a payout approval, and then nothing is sent', async () => {
+    const payouts = sender();
+    const { executor, approvalRows } = setup({ payouts: payouts.port });
+    await executor.requestSpend(claim(25_000));
+    expect(await executor.rejectApproval('AP1', 'treasurer:u1')).toEqual({ rejected: true });
+    expect(approvalRows.get('AP1')!.status).toBe('rejected');
+    expect(await executor.captureApproved('AP1', 'treasurer:u1')).toEqual({ status: 'refused', reason: 'not_approved' });
+    expect(payouts.fn).not.toHaveBeenCalled();
   });
 });

@@ -13,6 +13,8 @@ const Input = z.looseObject({
   category: z.string().optional(),
   vendor: z.string().optional(),
   eventId: z.string().optional(),
+  kind: z.string().optional(),
+  fundedBySponsorId: z.string().optional(),
 });
 
 const FROM_APPROVAL = { pending: 'needs_approval', capturing: 'capturing', rejected: 'rejected', paid: 'paid' } as const;
@@ -73,6 +75,8 @@ export async function recentSpends(db: Db, options: { limit?: number; eventId?: 
       status: row.approval ? FROM_APPROVAL[row.approval] : known.success ? known.data : 'unknown',
       paypalId: row.paypalId,
       eventId: spend.eventId ?? null,
+      ...(spend.kind ? { kind: spend.kind } : {}),
+      ...(spend.fundedBySponsorId ? { fundedBySponsorId: spend.fundedBySponsorId } : {}),
     });
   }
   return entries;

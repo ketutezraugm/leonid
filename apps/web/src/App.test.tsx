@@ -65,8 +65,8 @@ describe('App', () => {
     const autumn = crypto.randomUUID();
     stubApi({
       events: [
-        { id: spring, name: 'Spring Meetup', date: '2027-05-02', endDate: '2027-05-02', people: 60, currency: 'USD', budgetTotalMinor: 300_000, categories: [] },
-        { id: autumn, name: 'Autumn Summit', date: '2027-10-09', endDate: '2027-10-09', people: 120, currency: 'USD', budgetTotalMinor: 900_000, categories: ['venue'] },
+        { id: spring, name: 'Spring Meetup', date: '2027-05-02', endDate: '2027-05-02', people: 60, currency: 'USD', budget: 300_000, categories: [] },
+        { id: autumn, name: 'Autumn Summit', date: '2027-10-09', endDate: '2027-10-09', people: 120, currency: 'USD', budget: 900_000, categories: ['venue'] },
       ],
     });
     render(
@@ -88,7 +88,7 @@ describe('App', () => {
   it('shows an event the person made its own Event home, never the demo\'s sample figures', async () => {
     const id = crypto.randomUUID();
     stubApi({
-      events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budgetTotalMinor: 300_000, categories: ['venue', 'swag'] }],
+      events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budget: 300_000, categories: ['venue', 'swag'] }],
     });
     render(
       <MemoryRouter initialEntries={[`/events/${id}`]}>
@@ -216,7 +216,7 @@ describe('App', () => {
     expect(await screen.findByText('Opening your event…')).toBeInTheDocument();
     release(
       new Response(
-        JSON.stringify({ events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budgetTotalMinor: 0, categories: [] }] }),
+        JSON.stringify({ events: [{ id, name: 'Spring Meetup', date: '2999-05-02', endDate: '2999-05-02', people: 60, currency: 'USD', budget: 0, categories: [] }] }),
         { status: 200, headers: { 'content-type': 'application/json' } },
       ),
     );
@@ -274,7 +274,8 @@ describe('App', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('heading', { name: 'Sponsor report' })).toBeInTheDocument();
+    // The report page fetches its report first (pages/SponsorReport.test.tsx covers what it shows); here it is still loading.
+    expect(screen.getByText('Loading the report…')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ask the agent' })).not.toBeInTheDocument();
   });

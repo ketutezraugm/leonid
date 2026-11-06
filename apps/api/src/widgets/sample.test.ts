@@ -1,8 +1,4 @@
-import {
-  BudgetBurnResponse,
-  DeliveryRiskResponse,
-  PayoutsLedgerResponse,
-} from '@quartermaster/shared';
+import { DeliveryRiskResponse, PayoutsLedgerResponse } from '@quartermaster/shared';
 import express from 'express';
 import request from 'supertest';
 import { sql } from 'drizzle-orm';
@@ -12,11 +8,9 @@ import { sponsors } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { widgetsRouter } from '../routes/widgets.js';
-import { recordLedgerEntry } from '../db/ledger.js';
 import {
   assessDelivery,
   AT_RISK_SLACK_DAYS,
-  getBudgetBurnSample,
   getDeliveryRiskSample,
   getPayoutsLedgerSample,
 } from './sample.js';
@@ -26,7 +20,6 @@ const UNKNOWN_EVENT = '00000000-0000-4000-8000-000000000000';
 
 let db: Db;
 let eventId: string;
-let budgetTotal: number;
 let gold: string;
 let silver: string;
 
@@ -38,82 +31,13 @@ beforeEach(async () => {
   await db.execute(sql`truncate table audit_log, events restart identity cascade`);
   const event = await seedDemoEvent(db);
   eventId = event.id;
-  budgetTotal = event.budgetTotal;
   const rows = await db.select().from(sponsors);
   gold = rows.find((r) => r.tier === 'gold')!.id;
   silver = rows.find((r) => r.tier === 'silver')!.id;
 });
 
-const burn = async (filter = {}) => (await getBudgetBurnSample(db, eventId, filter, NOW))!;
 const delivery = async (filter = {}) => (await getDeliveryRiskSample(db, eventId, filter, NOW))!;
 const payouts = async (filter = {}) => (await getPayoutsLedgerSample(db, eventId, filter, NOW))!;
-
-describe('budget burn sample', () => {
-  it('matches the numbers in the design mockups: cleared $3,000, committed $1,860, unlocked $1,140', async () => {
-    const data = await burn();
-
-    expect(data).toMatchObject({ clearedIncome: 300_000, committed: 186_000, unlocked: 114_000 });
-    expect(data.currency).toBe('USD');
-  });
-
-  it('adds up: unlocked is cleared minus committed, and committed is every category spent plus committed', async () => {
-    const data = await burn();
-
-    expect(data.unlocked).toBe(data.clearedIncome - data.committed);
-    expect(data.committed).toBe(data.categories.reduce((sum, c) => sum + c.spent + c.committed, 0));
-  });
-
-  it('has category caps that add up to the event budget, and no category over its cap', async () => {
-    const data = await burn();
-
-    expect(data.categories.reduce((sum, c) => sum + (c.cap ?? 0), 0)).toBe(budgetTotal);
-    for (const c of data.categories)
-      expect(c.spent + c.committed).toBeLessThanOrEqual(c.cap ?? Infinity);
-  });
-
-  it("uses the event's real date and counts the days to it from now", async () => {
-    const data = await burn();
-
-    expect(data.eventDate).toBe('2027-03-14');
-    // Nov 2, 2026 to Mar 14, 2027.
-    expect(data.daysToEvent).toBe(132);
-  });
-
-  it('counts the days as negative once the event has passed', async () => {
-    const after = new Date('2027-03-16T08:00:00Z');
-    expect((await getBudgetBurnSample(db, eventId, {}, after))!.daysToEvent).toBe(-2);
-  });
-
-  it('narrows the category list by category but keeps the event-wide totals', async () => {
-    const data = await burn({ category: 'swag' });
-
-    expect(data.categories.map((c) => c.category)).toEqual(['swag']);
-    expect(data.committed).toBe(186_000);
-    expect(data.unlocked).toBe(114_000);
-  });
-
-  it('ignores the sponsor filter, and answers an unknown category with an empty list', async () => {
-    expect((await burn({ sponsorId: gold })).categories).toHaveLength(6);
-    expect((await burn({ category: 'nonexistent' })).categories).toEqual([]);
-  });
-
-  it('does not read the ledger, so real cleared income cannot be mixed with the sample commitment', async () => {
-    await recordLedgerEntry(db, {
-      eventId,
-      direction: 'in',
-      amount: 999_999,
-      currency: 'USD',
-      source: 'donation',
-      paypalId: 'CAP-LEDGER',
-    });
-
-    expect((await burn()).clearedIncome).toBe(300_000);
-  });
-
-  it('answers nothing for an unknown event', async () => {
-    expect(await getBudgetBurnSample(db, UNKNOWN_EVENT, {}, NOW)).toBeUndefined();
-  });
-});
 
 describe('delivery assessment', () => {
   it.each([
@@ -263,17 +187,6 @@ describe('sample widget routes', () => {
     return app;
   };
 
-  it('labels budget burn as sample, in the shared shape', async () => {
-    const res = await request(appWith())
-      .get(`/api/widgets/budget-burn?eventId=${eventId}`)
-      .set(TOKEN);
-
-    expect(res.status).toBe(200);
-    const parsed = BudgetBurnResponse.parse(res.body);
-    expect(parsed.source).toBe('sample');
-    expect(parsed.data.unlocked).toBe(114_000);
-  });
-
   it('labels delivery risk as sample, and applies the filters from the query string', async () => {
     const res = await request(appWith())
       .get(`/api/widgets/delivery-risk?eventId=${eventId}&sponsorId=${silver}&category=prizes`)
@@ -296,7 +209,7 @@ describe('sample widget routes', () => {
     expect(parsed.data.rows.map((r) => r.recipientName)).toEqual(['Ravi Winner']);
   });
 
-  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
+  it.each(['delivery-risk', 'payouts'])(
     '%s fails closed without a token and refuses a wrong one',
     async (name) => {
       const url = `/api/widgets/${name}?eventId=${eventId}`;
@@ -305,7 +218,7 @@ describe('sample widget routes', () => {
     },
   );
 
-  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
+  it.each(['delivery-risk', 'payouts'])(
     '%s answers 400 to a bad event id and 404 to an unknown event',
     async (name) => {
       const app = appWith();
@@ -319,7 +232,7 @@ describe('sample widget routes', () => {
   );
 
   // The web does not know an event's id until the Event endpoint exists, so the demo event is the default.
-  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
+  it.each(['delivery-risk', 'payouts'])(
     '%s uses the seeded demo event when no event id is given',
     async (name) => {
       const res = await request(appWith()).get(`/api/widgets/${name}`).set(TOKEN);
@@ -329,7 +242,7 @@ describe('sample widget routes', () => {
     },
   );
 
-  it.each(['budget-burn', 'delivery-risk', 'payouts'])(
+  it.each(['delivery-risk', 'payouts'])(
     '%s answers 404 with no event id when there is no demo event to fall back on',
     async (name) => {
       await db.execute(sql`truncate table audit_log, events restart identity cascade`);

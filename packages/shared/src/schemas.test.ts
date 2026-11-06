@@ -452,7 +452,7 @@ describe('session and wallet (F1, F13, F15)', () => {
 });
 
 describe('events', () => {
-  const valid = { name: '  Test Meetup ', date: '2027-05-01', people: 80, currency: 'USD', budgetTotalMinor: 250_000 };
+  const valid = { name: '  Test Meetup ', date: '2027-05-01', people: 80, currency: 'USD', budget: 250_000 };
 
   it('trims the name and defaults categories to none', () => {
     const parsed = CreateEventRequest.parse(valid);
@@ -463,15 +463,15 @@ describe('events', () => {
   it('refuses headcounts and budgets the database cannot hold', () => {
     expect(CreateEventRequest.safeParse({ ...valid, people: EVENT_PEOPLE_MAX + 1 }).success).toBe(false);
     expect(CreateEventRequest.safeParse({ ...valid, people: 0 }).success).toBe(false);
-    expect(CreateEventRequest.safeParse({ ...valid, budgetTotalMinor: EVENT_BUDGET_MAX_MINOR + 1 }).success).toBe(false);
-    expect(CreateEventRequest.safeParse({ ...valid, budgetTotalMinor: 10.5 }).success).toBe(false);
+    expect(CreateEventRequest.safeParse({ ...valid, budget: EVENT_BUDGET_MAX_MINOR + 1 }).success).toBe(false);
+    expect(CreateEventRequest.safeParse({ ...valid, budget: 10.5 }).success).toBe(false);
   });
 
   it('trims the city, refuses a blank or long one, and reads a missing city back as none', () => {
     expect(CreateEventRequest.parse({ ...valid, city: ' Jakarta ' }).city).toBe('Jakarta');
     expect(CreateEventRequest.safeParse({ ...valid, city: '  ' }).success).toBe(false);
     expect(CreateEventRequest.safeParse({ ...valid, city: 'x'.repeat(101) }).success).toBe(false);
-    const row = { id: '0f9f6b2a-6f0d-4a6e-9a43-3d2a5c1e8b11', name: 'Old', date: '2027-05-01', endDate: '2027-05-01', people: 5, currency: 'USD', budgetTotalMinor: 0, categories: [] };
+    const row = { id: '0f9f6b2a-6f0d-4a6e-9a43-3d2a5c1e8b11', name: 'Old', date: '2027-05-01', endDate: '2027-05-01', people: 5, currency: 'USD', budget: 0, categories: [] };
     expect(EventSummary.parse(row).city).toBeNull();
   });
 
@@ -495,7 +495,7 @@ describe('events', () => {
       endDate: '2027-05-01',
       people: 250_000,
       currency: 'USD',
-      budgetTotalMinor: 0,
+      budget: 0,
       categories: [],
     };
     expect(EventSummary.safeParse(row).success).toBe(true);

@@ -22,6 +22,10 @@ const toItem = (v: ApprovalView): ApprovalItem => ({
   status: v.status,
   createdAt: v.createdAt,
   referenceId: v.spend.referenceId,
+  eventId: v.spend.eventId,
+  kind: v.spend.kind === 'claim' || v.spend.kind === 'payout' ? 'payout' : 'purchase',
+  payee: v.spend.payee,
+  payeeEmail: v.spend.payeeEmail,
   amountMinor: v.spend.amountMinor,
   currency: v.spend.currency,
   actor: v.spend.actor,
@@ -86,7 +90,7 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
     guard,
     withPayments(async (req, res, { executor }) => {
       const outcome = await executor.captureApproved(String(req.params.id), treasurerActor(res));
-      if (outcome.status === 'paid') res.json(outcome);
+      if (outcome.status === 'paid' || outcome.status === 'submitted') res.json(outcome);
       else res.status(outcome.status === 'refused' ? 409 : 502).json(outcome);
     }),
   );

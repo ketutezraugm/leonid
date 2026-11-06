@@ -1,20 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  TreasuryResponse,
-  WalletConnectResponse,
-  WalletRevokeResponse,
-  type WalletState,
-} from '@quartermaster/shared';
-import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';
+import { WalletRevokeResponse, type WalletState } from '@quartermaster/shared';
+import { TreasuryStatus } from '../setup/TreasuryStatus';
+import { ApiFailure, errorMessage, sendJson } from '../shell/api';
 import { useShellData } from '../shell/data';
 import { useEvents } from '../shell/event';
 import { useSession } from '../shell/session';
+import { useConnectWallet } from '../shell/useConnectWallet';
 import { walletConsequence } from '../shell/wallet';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ConfirmDialog } from '../ui/Dialog';
-import { formatMoney } from '../ui/money';
 import { PageHeader } from '../ui/PageHeader';
 import { StatusBadge } from '../ui/StatusBadge';
 import { useToast } from '../ui/Toast';
@@ -28,28 +24,13 @@ const statusBadge: Record<WalletState, { status: 'done' | 'pending' | 'blocked';
 export function Settings() {
   const { wallet } = useShellData();
   const { events } = useEvents();
-  const treasury = useFetch('/api/treasury', TreasuryResponse);
   const { session, signOut } = useSession();
   const toast = useToast();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deletionPending, setDeletionPending] = useState(false);
 
-  async function connect() {
-    setBusy(true);
-    try {
-      const { approveUrl } = await sendJson('/api/wallet/connect', WalletConnectResponse);
-      // A full-page redirect to PayPal; it returns to /?wallet=connected|error|cancelled.
-      window.location.assign(approveUrl);
-    } catch (err) {
-      setBusy(false);
-      toast.error(
-        err instanceof ApiFailure && err.status === 409
-          ? 'A wallet is already connected. Revoke it first.'
-          : "Couldn't start the PayPal connection. Try again.",
-      );
-    }
-  }
+  const { connect, connecting } = useConnectWallet();
 
   async function revoke() {
     setBusy(true);
@@ -86,28 +67,7 @@ export function Settings() {
       </Card>
 
       <Card title="Treasury">
-        {treasury.kind === 'loading' && <p className="muted">Loading the balance…</p>}
-        {treasury.kind === 'error' && (
-          <p className="muted">
-            {errorMessage(treasury.error).title}. {errorMessage(treasury.error).detail}
-          </p>
-        )}
-        {treasury.kind === 'ready' && (
-          <>
-            <p>
-              <StatusBadge status="done" label="Treasury connected" />
-            </p>
-            {treasury.data.balances.map((b) => (
-              <p key={b.currency}>
-                Balance <strong className="num">{formatMoney(b.totalMinor, b.currency)}</strong>
-                {treasury.data.asOf && <span className="muted"> as of {new Date(treasury.data.asOf).toLocaleString()}</span>}
-              </p>
-            ))}
-            <p className="muted">
-              This is PayPal’s own balance and it lags. What the agent may spend is worked out from cleared income.
-            </p>
-          </>
-        )}
+        <TreasuryStatus />
       </Card>
 
       <Card title="Agent wallet">
@@ -145,7 +105,7 @@ export function Settings() {
                 </Button>
               )}
               {wallet.data.status !== 'active' && !deletionPending && (
-                <Button variant="primary" busy={busy} busyLabel="Opening PayPal…" onClick={() => void connect()}>
+                <Button variant="primary" busy={connecting} busyLabel="Opening PayPal…" onClick={() => void connect()}>
                   Connect wallet
                 </Button>
               )}

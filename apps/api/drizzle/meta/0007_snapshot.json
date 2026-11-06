@@ -1,5 +1,5 @@
 {
-  "id": "48fe2f12-5544-4972-af86-7876f6860737",
+  "id": "5ab951ed-6802-4bc5-b8ca-97a8d0d1fbe7",
   "prevId": "ef8fd3c8-7616-4ae0-b3ee-44316453e08e",
   "version": "7",
   "dialect": "postgresql",
@@ -103,6 +103,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "reasons": {
           "name": "reasons",
           "type": "text[]",
@@ -176,6 +182,19 @@
         }
       },
       "foreignKeys": {
+        "approvals_event_id_events_id_fk": {
+          "name": "approvals_event_id_events_id_fk",
+          "tableFrom": "approvals",
+          "tableTo": "events",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "approvals_audit_id_audit_log_id_fk": {
           "name": "approvals_audit_id_audit_log_id_fk",
           "tableFrom": "approvals",
@@ -422,38 +441,9 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "owner_sub": {
-          "name": "owner_sub",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "categories": {
-          "name": "categories",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::text[]"
         }
       },
-      "indexes": {
-        "events_owner_idx": {
-          "name": "events_owner_idx",
-          "columns": [
-            {
-              "expression": "owner_sub",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -810,6 +800,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -819,7 +815,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "spend_references_event_id_events_id_fk": {
+          "name": "spend_references_event_id_events_id_fk",
+          "tableFrom": "spend_references",
+          "tableTo": "events",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

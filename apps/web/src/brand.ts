@@ -7,7 +7,7 @@ export const BRAND = {
 
 // Public links shown on the landing page. A link that is null is not shown: never invent a URL.
 export const LINKS = {
-  github: 'https://github.com/harfiibadurahman01-del/paypal-hack',
+  github: 'https://github.com/ketutezraugm/paypal-hack-1',
   video: null as string | null,
 } as const;
 

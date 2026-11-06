@@ -46,8 +46,8 @@ export function validateEventForm(
   const people = /^\d+$/.test(values.people.trim()) ? Number(values.people.trim()) : NaN;
   if (!Number.isSafeInteger(people) || people < 1) errors.people = 'Enter how many people are coming, as a whole number.';
 
-  const budgetTotalMinor = parseMoneyInput(values.budget, EVENT_CURRENCY);
-  if (budgetTotalMinor === null) errors.budget = 'Enter an amount like 8000 or 8,000.00.';
+  const budget = parseMoneyInput(values.budget, EVENT_CURRENCY);
+  if (budget === null) errors.budget = 'Enter an amount like 8000 or 8,000.00.';
 
   const categories = parseCategories(values.categories);
   if (categories.length > EVENT_CATEGORIES_MAX) errors.categories = `Use up to ${EVENT_CATEGORIES_MAX} categories.`;
@@ -65,7 +65,7 @@ export function validateEventForm(
     endDate: values.endDate,
     people,
     currency: EVENT_CURRENCY,
-    budgetTotalMinor,
+    budget,
     categories,
     city: values.city.trim() || undefined,
   });
@@ -74,7 +74,7 @@ export function validateEventForm(
   // The shared limits (a huge headcount or budget) that the checks above do not repeat.
   const out: EventFormErrors = {};
   for (const issue of parsed.error.issues) {
-    const field = issue.path[0] === 'budgetTotalMinor' ? 'budget' : issue.path[0];
+    const field = issue.path[0];
     if (field === 'name' || field === 'date' || field === 'endDate' || field === 'people' || field === 'budget' || field === 'categories' || field === 'city') {
       out[field] ??= field === 'budget' ? 'That budget is too large.' : field === 'people' ? 'That headcount is too large.' : issue.message;
     }

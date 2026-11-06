@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { CurrencyCode, IsoDate, MinorUnits } from './common.js';
 
 // Quartermaster runs several events (decided Oct 31). GET /api/events lists the signed-in organiser's own events
-// (the seeded demo event is not in it: the web always adds it); POST /api/events creates one (the setup flow).
+// (the seeded demo event is not in it: the web always adds it); POST /api/events creates one (the setup flow, step 1)
+// and answers 201 with CreateEventResponse. Both are treasurer only.
 // Every event-scoped endpoint takes ?eventId=<id>; when it is missing, a read uses the seeded demo event, so a
 // client that does not send it yet keeps working. Nothing that moves money falls back: a spend with no event is
 // blocked by the rules check.
@@ -27,8 +28,9 @@ export const EventSummary = z.object({
   endDate: IsoDate,
   people: z.number().int().positive(),
   currency: CurrencyCode,
-  // A target the organiser plans around, not spendable money: what can be spent is the unlocked budget.
-  budgetTotalMinor: MinorUnits,
+  // The event's total budget: a target the organiser plans around, not spendable money. What can be spent is the
+  // unlocked budget (cleared income only).
+  budget: MinorUnits,
   categories: z.array(z.string()),
   // Where the event is, when the organiser said. The agent searches venues there.
   city: z.string().nullable().default(null),
@@ -46,7 +48,7 @@ export const CreateEventRequest = z
   endDate: IsoDate.optional(),
   people: z.number().int().positive().max(EVENT_PEOPLE_MAX),
   currency: CurrencyCode,
-  budgetTotalMinor: MinorUnits.max(EVENT_BUDGET_MAX_MINOR),
+  budget: MinorUnits.max(EVENT_BUDGET_MAX_MINOR),
   categories: z.array(z.string().trim().min(1).max(EVENT_CATEGORY_MAX_LENGTH)).max(EVENT_CATEGORIES_MAX).default([]),
   city: z.string().trim().min(1).max(EVENT_CITY_MAX_LENGTH).optional(),
   })

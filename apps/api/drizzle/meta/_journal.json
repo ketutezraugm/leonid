@@ -54,22 +54,36 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1793592569511,
-      "tag": "0007_smart_lockheed",
+      "when": 1793607300733,
+      "tag": "0007_event_id_on_spends",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "7",
-      "when": 1793594718920,
-      "tag": "0008_stale_annihilus",
+      "when": 1793611518626,
+      "tag": "0008_events_ticket_price",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1793603732357,
-      "tag": "0009_superb_barracuda",
+      "when": 1793862791816,
+      "tag": "0009_demo_token_pool",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793886715235,
+      "tag": "0010_sponsor_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793960168157,
+      "tag": "0011_event_owner_city_dates",
       "breakpoints": true
     }
   ]
