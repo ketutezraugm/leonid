@@ -1,5 +1,6 @@
 import {
   BudgetBurnResponse,
+  CommandCenterResponse,
   DeliveryRiskResponse,
   FundingThermometerResponse,
   PayoutsLedgerResponse,
@@ -32,6 +33,7 @@ const EventQuery = WidgetFilter.extend({ eventId: z.uuid().optional() });
 //   GET /budget-burn[?eventId=…&category=…]    cleared, committed and unlocked, by category, with caps
 //   GET /delivery-risk[?eventId=…&sponsorId=…&category=…]   SAMPLE until P4's orders and tracking exist
 //   GET /payouts[?eventId=…&sponsorId=…&category=…]   claims, prizes and speaker fees, live (F17)
+//   GET /command-center[?eventId=…]   all five above, unfiltered, in one answer (what the Money page asks)
 // With no eventId the seeded demo event is used: the web does not know an event's id until the Event
 // endpoint exists, and the demo runs on that one event.
 export function widgetsRouter(options: WidgetsRouterOptions = {}) {
@@ -136,6 +138,39 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
         return;
       }
       res.json(PayoutsLedgerResponse.parse({ source: 'live', data }));
+    }),
+  );
+
+  // The Money page's one request: all five widgets, unfiltered (Studio does the cross-filtering in the
+  // browser). The event is resolved once and the five loaders run in parallel, instead of five requests
+  // each resolving the event and queueing for the same database connections.
+  router.get(
+    '/command-center',
+    guard,
+    handle(z.object({ eventId: z.uuid().optional() }), async ({ eventId }, res, { db, now }) => {
+      const id = await eventIdOf(db, eventId);
+      const [funding, budget, payouts, rules, delivery] = id
+        ? await Promise.all([
+            getFundingThermometer(db, id, {}, now),
+            getBudgetBurn(db, id, {}, now),
+            getPayoutsLedger(db, id, {}, now),
+            getRulesHealth(db, id, {}, now),
+            getDeliveryRiskSample(db, id, {}, now),
+          ])
+        : [];
+      if (!funding || !budget || !payouts || !rules || !delivery) {
+        res.status(404).json({ error: 'No such event' });
+        return;
+      }
+      res.json(
+        CommandCenterResponse.parse({
+          funding: { source: 'live', data: funding },
+          budget: { source: 'live', data: budget },
+          payouts: { source: 'live', data: payouts },
+          rules: { source: 'live', data: rules },
+          delivery: { source: 'sample', data: delivery },
+        }),
+      );
     }),
   );
 

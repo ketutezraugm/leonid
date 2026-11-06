@@ -132,3 +132,14 @@ export type DeliveryRiskResponse = z.infer<typeof DeliveryRiskResponse>;
 
 export const PayoutsLedgerResponse = widgetResponse(PayoutsLedgerData);
 export type PayoutsLedgerResponse = z.infer<typeof PayoutsLedgerResponse>;
+
+// GET /api/widgets/command-center[?eventId=…]: all five widgets in one answer, so the Money page makes one
+// request and the server looks the event up once instead of five times.
+export const CommandCenterResponse = z.object({
+  funding: FundingThermometerResponse,
+  budget: BudgetBurnResponse,
+  payouts: PayoutsLedgerResponse,
+  rules: RulesHealthResponse,
+  delivery: DeliveryRiskResponse,
+});
+export type CommandCenterResponse = z.infer<typeof CommandCenterResponse>;

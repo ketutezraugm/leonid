@@ -1,5 +1,7 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Payouts } from '../money/Payouts';
+import { prefetchCommandCenter } from '../money/use-command-center-data';
+import { useEvent } from '../shell/event';
 import { PageHeader } from '../ui/PageHeader';
 import { PageState } from '../ui/PageState';
 import { TabPanel, Tabs } from '../ui/Tabs';
@@ -16,6 +18,13 @@ const tabs = [
 
 export function Money() {
   const [tab, setTab] = useState('command');
+  const eventId = useEvent().id;
+  // Ask for the numbers now, while AG Studio's bundle is still downloading, not after it has loaded. The
+  // command center picks up this same request.
+  useEffect(() => {
+    // Only once the event's id is known, so it is the same request the command center will ask for.
+    if (tab === 'command' && eventId) prefetchCommandCenter(eventId);
+  }, [tab, eventId]);
   return (
     <section>
       <PageHeader
