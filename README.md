@@ -77,31 +77,29 @@ The Stage 2 write-up, with how the cross-filtering works and what is still sampl
 
 ### Bryntum
 
-The Plan screen is a Bryntum Gantt (trial 7.3.7, React wrapper) in [`apps/web/src/plan/`](apps/web/src/plan/). It shows the rule Bryntum's own brief asks for: a PayPal payment that has not arrived visibly blocks the work that depends on it.
+The Plan screen is a Bryntum Gantt (trial 7.3.7, React wrapper) in [`apps/web/src/plan/`](apps/web/src/plan/): the event's tasks and purchases on one timeline, counting down to event day.
 
-- **Each sponsor invoice is a task.** The purchases a sponsor funds depend on it, and stay blocked, labelled "Waiting on Harbor Cloud", until PayPal reports the invoice paid (`INVOICING.INVOICE.PAID`). Once the sponsor is paid, they unblock.
-- **The Gantt shows the rule; it does not enforce it.** The spend itself is refused by the rules engine: `check()` in [`apps/api/src/rules/check.ts`](apps/api/src/rules/check.ts) blocks a spend whose sponsor has not paid, so the plan and the money can't disagree.
+- **Each sponsor invoice is a task, live from PayPal.** Its bar follows the sponsor's status from `GET /api/sponsors`: invoiced is in progress, and when PayPal reports the invoice paid (`INVOICING.INVOICE.PAID`) it turns done, without a reload (the screen re-reads sponsor status every 10 seconds while one is unpaid).
+- **Every purchase says which sponsor funds it,** and whether that sponsor has paid yet ("Harbor Cloud · not paid yet"). It is a label, not a lock: since Nov 6 the organizer's own PayPal account pays, so a purchase never waits on a sponsor.
+- **Red means a delivery problem.** At risk is two days or fewer to spare before a deadline; late is past it. Late-delivery recovery (F18/F19, next) is where the agent moves the dependent tasks.
 - **Event day is a fixed milestone** (a must-start-on constraint), and each purchase with a deadline gets a deadline flag.
 - **One design system.** Bars use the same status colors as every badge in the app, and the Gantt theme is driven from `apps/web/src/styles/tokens.css`.
 
-| What                                                           | Code                                                                     |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Gantt setup: columns, the Status column, bar colors by status  | [`apps/web/src/plan/PlanGantt.tsx`](apps/web/src/plan/PlanGantt.tsx)     |
-| Sponsor gating: which tasks wait on which sponsor's invoice    | [`apps/web/src/plan/gating.ts`](apps/web/src/plan/gating.ts)             |
-| Task model with our status and the sponsor it waits on         | [`apps/web/src/plan/PlanTask.ts`](apps/web/src/plan/PlanTask.ts)         |
-| Sample OpenHack 2027 plan: 15 linked tasks, three sponsors     | [`apps/web/src/plan/demoPlan.ts`](apps/web/src/plan/demoPlan.ts)         |
-| Theme overrides from design tokens                             | [`apps/web/src/plan/gantt-theme.css`](apps/web/src/plan/gantt-theme.css) |
-| Plan page: legend, the preview buttons, lazy-loading the Gantt | [`apps/web/src/pages/Plan.tsx`](apps/web/src/pages/Plan.tsx)             |
+| What                                                                                 | Code                                                                       |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Gantt setup: columns (Status, Funded by), bar colors by status                       | [`apps/web/src/plan/PlanGantt.tsx`](apps/web/src/plan/PlanGantt.tsx)       |
+| Sponsor labels: which sponsor funds each purchase, invoice tasks from sponsor status | [`apps/web/src/plan/gating.ts`](apps/web/src/plan/gating.ts)               |
+| Live sponsor status matched to the plan                                              | [`apps/web/src/plan/sponsorSource.ts`](apps/web/src/plan/sponsorSource.ts) |
+| Task model with our status and its funding sponsor                                   | [`apps/web/src/plan/PlanTask.ts`](apps/web/src/plan/PlanTask.ts)           |
+| Sample OpenHack 2027 plan: 15 linked tasks, three sponsors                           | [`apps/web/src/plan/demoPlan.ts`](apps/web/src/plan/demoPlan.ts)           |
+| Theme overrides from design tokens                                                   | [`apps/web/src/plan/gantt-theme.css`](apps/web/src/plan/gantt-theme.css)   |
+| Plan page: legend, polling sponsor status, lazy-loading the Gantt                    | [`apps/web/src/pages/Plan.tsx`](apps/web/src/pages/Plan.tsx)               |
 
-Harbor Cloud has been invoiced but has not paid, so swag and speaker travel wait on it:
+Lumen Labs has paid, so its invoice task is done and "Buy prizes" shows it as paid for. Harbor Cloud and Pixel Foundry are invoiced and not paid yet:
 
-![Plan: purchases waiting on Harbor Cloud's invoice](docs/p4/screenshots/plan-waiting-on-sponsor.png)
+![Plan: each purchase names the sponsor that funds it](docs/p4/screenshots/plan-funded-by.png)
 
-After Harbor Cloud pays, its invoice task is done and both purchases are released. Pixel Foundry's two purchases still wait:
-
-![Plan: Harbor Cloud paid, its purchases released](docs/p4/screenshots/plan-sponsor-paid.png)
-
-_Status: the plan is sample data, labelled as such on the screen, and the "Preview: <sponsor> pays" buttons stand in for the PayPal webhook. Next: live tasks from the plan endpoint and the planning agent (F11), with sponsor status from `GET /api/sponsors`, both fed through the same `gateBySponsor()`; then tracking dates (F18) and the late-delivery cascade (F19)._
+_Status: the tasks are sample data, labelled on the screen; sponsor status is live. Next: live tasks from the plan endpoint and the planning agent (F11), then tracking dates (F18) and late-delivery recovery (F19), where the agent moves dependent tasks when a delivery runs late._
 
 ### Channel3
 
