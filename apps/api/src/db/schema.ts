@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 // Money is integer minor units (cents) plus an ISO currency code.
 
@@ -231,4 +231,58 @@ export const mandateItems = pgTable(
     blockedOn: text('blocked_on'),
   },
   (t) => [index('mandate_items_mandate_idx').on(t.mandateId)],
+).enableRLS();
+
+// --- Receipt claims (F16)
+
+// Raw bytes. postgres-js gives a Buffer, pglite a Uint8Array; both read back as a Buffer.
+const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array }>({
+  dataType: () => 'bytea',
+  fromDriver: (value) => Buffer.from(value),
+});
+
+// A person the treasurer registered to claim expenses. Their claims are paid only to payout_email, and the
+// claim link's token is stored as a SHA-256 hash (it can start a payout, so it is a credential).
+export const volunteers = pgTable(
+  'volunteers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    name: text('name').notNull(),
+    payoutEmail: text('payout_email').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('volunteers_event_idx').on(t.eventId)],
+).enableRLS();
+
+export const CLAIM_STATUSES = ['submitted', 'needs_review', 'pending_approval', 'approved', 'paid', 'rejected'] as const;
+
+// One receipt claim. amount is what the receipt says (or what the treasurer confirmed), in minor units. The
+// spend it becomes has the reference id `claim:<id>`, so one claim can only ever be paid once.
+export const claims = pgTable(
+  'claims',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    volunteerId: uuid('volunteer_id')
+      .notNull()
+      .references(() => volunteers.id),
+    category: text('category').notNull(),
+    receiptMime: text('receipt_mime').notNull(),
+    receiptImage: bytea('receipt_image').notNull(),
+    extracted: jsonb('extracted'),
+    amount: integer('amount'),
+    currency: text('currency').notNull(),
+    status: text('status', { enum: CLAIM_STATUSES }).notNull().default('submitted'),
+    reasons: jsonb('reasons').$type<string[]>().notNull().default([]),
+    paypalBatchId: text('paypal_batch_id'),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('claims_event_idx').on(t.eventId), index('claims_volunteer_idx').on(t.volunteerId)],
 ).enableRLS();
