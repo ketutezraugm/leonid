@@ -1,4 +1,4 @@
-import { EventsResponse, EventSummary } from '@quartermaster/shared';
+import { EventsResponse, EventSummary, PlanResponse } from '@quartermaster/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';
@@ -15,7 +15,8 @@ import {
   tasks,
 } from '../db/schema.js';
 import { SESSION_COOKIE, sign } from '../auth/session.js';
-import { DEMO_EVENT_NAME, seedDemoEvent } from '../db/seed.js';
+import { DEMO_EVENT_NAME, seedDemoEvent, seedDemoPlan } from '../db/seed.js';
+import { createTasks } from '../db/tasks.js';
 import { createTestDb } from '../db/testing.js';
 import { eventsRouter } from './events.js';
 
@@ -78,6 +79,22 @@ describe('/api/events', () => {
     expect(res.status).toBe(200);
     const names = EventsResponse.parse(res.body).events.map((e) => e.name);
     expect(names.indexOf('OpenHack 2027')).toBeLessThan(names.indexOf('Spring Meetup'));
+  });
+
+  it('keeps the setup answers with the event, so planning can start later', async () => {
+    const brief = 'Plan our new event, Spring Meetup: a meetup for 80 people in Jakarta.';
+    const created = await request(app(() => db))
+      .post('/api/events')
+      .set(treasurer)
+      .send({ ...spring, brief });
+    expect(created.status).toBe(201);
+    expect(created.body.brief).toBe(brief);
+
+    const res = await request(app(() => db))
+      .get('/api/events')
+      .set(treasurer);
+    const listed = EventsResponse.parse(res.body).events.find((e) => e.id === created.body.id);
+    expect(listed?.brief).toBe(brief);
   });
 
   it('refuses an invalid event and names the field', async () => {
@@ -234,9 +251,9 @@ describe('/api/events per treasurer', () => {
     return a;
   };
   const names = async (headers: Record<string, string>) =>
-    EventsResponse.parse((await request(appWith()).get('/api/events').set(headers)).body).events.map(
-      (e) => e.name,
-    );
+    EventsResponse.parse(
+      (await request(appWith()).get('/api/events').set(headers)).body,
+    ).events.map((e) => e.name);
 
   it('shows each treasurer only their own events, plus the shared demo event', async () => {
     await seedDemoEvent(db);
@@ -274,11 +291,140 @@ describe('/api/events per treasurer', () => {
   });
 
   it("answers 404 when deleting someone else's event, and keeps it", async () => {
-    const res = await request(appWith()).post('/api/events').set(as('alice')).send(spring).expect(201);
+    const res = await request(appWith())
+      .post('/api/events')
+      .set(as('alice'))
+      .send(spring)
+      .expect(201);
     const id = EventSummary.parse(res.body).id;
 
     expect((await request(appWith()).delete(`/api/events/${id}`).set(as('bob'))).status).toBe(404);
     expect(await db.select().from(events).where(eq(events.id, id))).toHaveLength(1);
-    expect((await request(appWith()).delete(`/api/events/${id}`).set(as('alice'))).status).toBe(204);
+    expect((await request(appWith()).delete(`/api/events/${id}`).set(as('alice'))).status).toBe(
+      204,
+    );
+  });
+});
+
+describe('GET /api/events/:id/plan', () => {
+  const SECRET = 's'.repeat(40);
+  const ORIGIN = 'http://app.test';
+  const as = (sub: string) => ({
+    Cookie: `${SESSION_COOKIE}=${sign('session', { sub, via: 'demo' }, SECRET, 3600)}`,
+    Origin: ORIGIN,
+  });
+  const appWith = () => {
+    const a = express();
+    a.use(express.json());
+    a.use(
+      '/api/events',
+      eventsRouter({ env: { ...env, SESSION_SECRET: SECRET, APP_BASE_URL: ORIGIN }, db: () => db }),
+    );
+    return a;
+  };
+  const planOf = async (id: string, sub: string) =>
+    request(appWith()).get(`/api/events/${id}/plan`).set(as(sub));
+
+  it("gives each event its own tasks and hides another treasurer's", async () => {
+    const alice = (await request(appWith()).post('/api/events').set(as('alice')).send(spring)).body;
+    const bob = (await request(appWith()).post('/api/events').set(as('bob')).send(openhack)).body;
+    await createTasks(db, alice.id, [
+      {
+        name: 'Book hall',
+        start: new Date('2027-04-01T00:00:00Z'),
+        end: new Date('2027-04-02T23:59:59Z'),
+      },
+    ]);
+    await createTasks(db, bob.id, [
+      {
+        name: 'Order swag',
+        start: new Date('2027-02-01T00:00:00Z'),
+        end: new Date('2027-02-02T23:59:59Z'),
+      },
+      {
+        name: 'Swag delivery',
+        start: new Date('2027-02-03T00:00:00Z'),
+        end: new Date('2027-02-20T23:59:59Z'),
+        dependsOnNames: ['Order swag'],
+      },
+    ]);
+
+    const a = PlanResponse.parse((await planOf(alice.id, 'alice')).body);
+    const b = PlanResponse.parse((await planOf(bob.id, 'bob')).body);
+    expect(a.tasks.map((t) => t.name)).toEqual(['Book hall']);
+    expect(b.tasks.map((t) => t.name)).toEqual(['Order swag', 'Swag delivery']);
+    expect(b.tasks[1]?.dependsOn).toEqual([b.tasks[0]?.id]);
+    expect(b.eventDate).toBe('2027-03-14T00:00:00.000Z');
+    expect((await planOf(alice.id, 'bob')).status).toBe(404);
+  });
+
+  it('is empty for a new event and shows the seeded plan for the demo event', async () => {
+    const mine = (await request(appWith()).post('/api/events').set(as('alice')).send(spring)).body;
+    expect((await planOf(mine.id, 'alice')).body.tasks).toEqual([]);
+
+    const demo = await seedDemoEvent(db);
+    await seedDemoPlan(db, demo.id);
+    await seedDemoPlan(db, demo.id);
+    const viaId = PlanResponse.parse((await planOf(demo.id, 'alice')).body);
+    const viaAlias = PlanResponse.parse((await planOf('demo', 'alice')).body);
+    expect(viaId.tasks).toHaveLength(15);
+    expect(viaAlias).toEqual(viaId);
+    expect(viaId.tasks.filter((t) => t.invoiceOfSponsorId)).toHaveLength(3);
+  });
+});
+
+describe('PUT /api/events/:id/max-spend', () => {
+  const create = async () =>
+    EventSummary.parse(
+      (await request(app(() => db)).post('/api/events').set(treasurer).send(spring).expect(201)).body,
+    );
+
+  it('sets, shows and clears the maximum spend, and audits each change', async () => {
+    const { id } = await create();
+    const set = await request(app(() => db))
+      .put(`/api/events/${id}/max-spend`)
+      .set(treasurer)
+      .send({ maxSpend: 500_000 });
+    expect(set.status).toBe(200);
+    expect(EventSummary.parse(set.body).maxSpend).toBe(500_000);
+
+    const listed = EventsResponse.parse(
+      (await request(app(() => db)).get('/api/events').set(treasurer)).body,
+    ).events.find((e) => e.id === id);
+    expect(listed?.maxSpend).toBe(500_000);
+
+    const cleared = await request(app(() => db))
+      .put(`/api/events/${id}/max-spend`)
+      .set(treasurer)
+      .send({ maxSpend: null });
+    expect(EventSummary.parse(cleared.body).maxSpend ?? null).toBeNull();
+    const audits = await db.select().from(auditLog).where(eq(auditLog.action, 'event.max_spend'));
+    expect(audits).toHaveLength(2);
+  });
+
+  it('refuses a zero, negative or fractional amount', async () => {
+    const { id } = await create();
+    for (const maxSpend of [0, -5, 10.5, '100']) {
+      const res = await request(app(() => db))
+        .put(`/api/events/${id}/max-spend`)
+        .set(treasurer)
+        .send({ maxSpend });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it('is treasurer only and 404s an unknown event', async () => {
+    const { id } = await create();
+    expect(
+      (await request(app(() => db)).put(`/api/events/${id}/max-spend`).send({ maxSpend: 1000 })).status,
+    ).toBe(401);
+    expect(
+      (
+        await request(app(() => db))
+          .put('/api/events/00000000-0000-4000-8000-000000000000/max-spend')
+          .set(treasurer)
+          .send({ maxSpend: 1000 })
+      ).status,
+    ).toBe(404);
   });
 });
