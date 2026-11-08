@@ -328,22 +328,58 @@ export * from './session.js';
 export * from './wallet.js';
 export * from './rules.js';
 
-// The PayPal deposit that holds the organizer's picked venue. Only seeded demo venues list one. The
-// server reads the pick from the thread and the amount from its venue catalog, never from the
-// browser or the agent, and pays through the rules-checked executor like every other spend.
-export const VenueDeposit = z.object({
-  venue: z.string(),
-  area: z.string(),
-  amountMinor: z.number().int().positive(),
-  currency: z.string().length(3),
+// The plan summary the organizer reviews after picking a venue, and the USD total they then pay with PayPal. Only seeded
+// demo venues have the terms an estimate needs. The server reads the pick from the thread, the event from its row and the
+// price from its venue catalog, never from the browser or the agent, and pays through the rules-checked executor.
+export const VenueBookingSummary = z.object({
+  event: z.object({
+    name: z.string(),
+    date: z.iso.datetime(),
+    headcount: z.number().int().positive(),
+    maxSpend: z.object({ amountMinor: z.number().int(), currency: z.string().length(3) }).nullable(),
+  }),
+  venue: z.object({
+    name: z.string(),
+    area: z.string(),
+    includes: z.array(z.string()),
+    catering: z.enum(['yes', 'no', 'unknown']),
+    sourceUrl: z.string(),
+  }),
+  // One day at the venue's own currency (IDR, MYR or SGD), line by line.
+  estimate: z.object({
+    lines: z.array(z.object({ label: z.string(), amountMinor: z.number().int() })),
+    total: z.number().int(),
+    currency: z.string().length(3),
+  }),
+  // The demo rate used to turn that total into what PayPal charges.
+  fx: z.object({ from: z.string().length(3), localMinorPerUsd: z.number().int().positive() }),
+  payable: z.object({ amountMinor: z.number().int().positive(), currency: z.literal('USD') }),
+  // An early warning only: the spending rules still decide.
+  overMaxSpend: z.boolean(),
 });
-export type VenueDeposit = z.infer<typeof VenueDeposit>;
+export type VenueBookingSummary = z.infer<typeof VenueBookingSummary>;
 
-// GET /api/venue-deposit/:threadId. Null when nothing is picked or the venue lists no deposit.
-export const VenueDepositResponse = z.object({ deposit: VenueDeposit.nullable() });
-export type VenueDepositResponse = z.infer<typeof VenueDepositResponse>;
+// Whether the booking was paid, so the panel still shows it after a reload. Awaiting approval: the rules sent it to the
+// treasurer, who approves it in the PayPal popup (paypalOrderId is absent once a capture is under way).
+export const BookingPayment = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('unpaid') }),
+  z.object({
+    status: z.literal('awaiting_approval'),
+    approvalId: z.string(),
+    paypalOrderId: z.string().optional(),
+  }),
+  z.object({ status: z.literal('paid'), reference: z.string() }),
+]);
+export type BookingPayment = z.infer<typeof BookingPayment>;
 
-// What the executor did with the deposit: paid from the agent wallet (within the rules), sent to the
+// GET /api/venue-booking/:threadId. Null when nothing is picked, the venue has no terms, or the chat has no event.
+export const VenueBookingResponse = z.object({
+  summary: VenueBookingSummary.nullable(),
+  payment: BookingPayment,
+});
+export type VenueBookingResponse = z.infer<typeof VenueBookingResponse>;
+
+// What the executor did with the payment: paid from the agent wallet (within the rules), sent to the
 // treasurer to approve in the PayPal popup, blocked by a rule, or refused (no wallet, kill switch).
 export const SpendOutcome = z.discriminatedUnion('status', [
   z.object({ status: z.literal('paid'), orderId: z.string(), captureId: z.string().optional() }),
@@ -365,9 +401,10 @@ export const SpendOutcome = z.discriminatedUnion('status', [
 ]);
 export type SpendOutcome = z.infer<typeof SpendOutcome>;
 
-// POST /api/venue-deposit/:threadId (treasurer).
-export const VenueDepositPayResponse = z.object({ deposit: VenueDeposit, outcome: SpendOutcome });
-export type VenueDepositPayResponse = z.infer<typeof VenueDepositPayResponse>;
+// POST /api/venue-booking/:threadId (treasurer).
+export const VenueBookingPayResponse = z.object({ summary: VenueBookingSummary, outcome: SpendOutcome });
+export type VenueBookingPayResponse = z.infer<typeof VenueBookingPayResponse>;
+export * from './venueEstimate.js';
 export * from './spends.js';
 export * from './events.js';
 export * from './sponsorReport.js';
