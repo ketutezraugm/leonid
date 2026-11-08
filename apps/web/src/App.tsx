@@ -25,7 +25,7 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <main className="public-main">
       {children}
-      <footer className="public-footer muted">Prepared by Quartermaster from PayPal records.</footer>
+      <footer className="public-footer muted">Prepared by Leonid from PayPal records.</footer>
     </main>
   );
 }

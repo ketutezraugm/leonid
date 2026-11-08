@@ -120,7 +120,7 @@ export function SponsorReport() {
           pooled income, and each source pays its proportional share: each sponsor by what it paid in, and everyone else (ticket sales and
           donations) by the rest. Payments to people are included in the category totals only, never by name.
         </p>
-        <p className="muted">Prepared by Quartermaster from PayPal records on {day(r.generatedAt)}. PayPal sandbox, no real money.</p>
+        <p className="muted">Prepared by Leonid from PayPal records on {day(r.generatedAt)}. PayPal sandbox, no real money.</p>
       </Card>
     </section>
   );

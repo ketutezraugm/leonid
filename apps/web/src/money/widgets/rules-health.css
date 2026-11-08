@@ -5,10 +5,10 @@
   --qm-done: var(--color-status-done, #2e7d32);
   --qm-risk: var(--color-status-risk, #b26a00);
   --qm-blocked: var(--color-status-blocked, #c4242a);
-  --qm-text: var(--color-text, #0f1a14);
+  --qm-text: var(--color-text, #15163a);
   --qm-muted: var(--color-muted, #56625b);
   --qm-border: var(--color-border, #e1e6e2);
-  --qm-focus: var(--color-accent, #1f3a2c);
+  --qm-focus: var(--color-accent, #2b2670);
 
   box-sizing: border-box;
   display: flex;

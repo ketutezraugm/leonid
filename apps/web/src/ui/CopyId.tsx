@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-// A PayPal ID in Geist Mono that copies on click. The id is also the button's name, so it is readable without sight.
+// A PayPal ID in IBM Plex Mono that copies on click. The id is also the button's name, so it is readable without sight.
 export function CopyId({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
 

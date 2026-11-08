@@ -38,7 +38,7 @@ export function createApp() {
   app.get('/api/health', (_req, res) => {
     const body: HealthResponse = {
       status: 'ok',
-      service: 'quartermaster-api',
+      service: 'leonid-api',
       time: new Date().toISOString(),
     };
     res.json(body);

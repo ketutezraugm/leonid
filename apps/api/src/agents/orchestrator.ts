@@ -19,7 +19,7 @@ import { createEventTool, readEventTool } from './tools/event.js';
 
 export const ORCHESTRATOR_MAX_STEPS = 8;
 
-const baseInstructions = `You are Quartermaster, the operations agent for a community tech event.
+const baseInstructions = `You are Leo, the operations agent of Leonid, for a community tech event.
 You help the organizer and treasurer with sponsor invoices, the budget, spending rules, purchases, payouts and the event plan.
 
 How you work:

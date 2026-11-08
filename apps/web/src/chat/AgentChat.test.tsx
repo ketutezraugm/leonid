@@ -250,7 +250,7 @@ describe('AgentChat', () => {
     await screen.findByLabelText('Message');
     type('Plan a meetup');
 
-    const card = await screen.findByRole('form', { name: 'Questions from Quartermaster' });
+    const card = await screen.findByRole('form', { name: 'Questions from Leo' });
     const submit = within(card).getByRole('button', { name: 'Send answers' });
     expect(submit).toBeDisabled();
 
