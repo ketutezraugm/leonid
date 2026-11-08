@@ -16,6 +16,10 @@ export const events = pgTable('events', {
   // Who the event belongs to: ownerOf() of the treasurer who made it (paypal:<id> or demo:<id>). Null for the seeded demo
   // event, which every signed-in treasurer sees, and for events made before owners existed, which only the ops token sees.
   ownerSub: text('owner_sub'),
+  // The setup interview's answers as the agent's first message, so planning can start later from the chat.
+  brief: text('brief'),
+  // The most the agent may commit for this event, in minor units of its currency. Null: no maximum set.
+  maxSpendMinor: integer('max_spend_minor'),
 }, (t) => [index('events_owner_idx').on(t.ownerSub)]).enableRLS();
 
 export const sponsors = pgTable('sponsors', {
@@ -89,6 +93,8 @@ export const tasks = pgTable(
     dependsOn: uuid('depends_on').array().notNull().default([]),
     deadline: timestamp('deadline', { withTimezone: true }),
     fundedBySponsorId: uuid('funded_by_sponsor_id').references(() => sponsors.id),
+    // Set on the task that stands for this sponsor's PayPal invoice; its status follows the sponsor's.
+    invoiceOfSponsorId: uuid('invoice_of_sponsor_id').references(() => sponsors.id),
   },
   (t) => [index('tasks_event_idx').on(t.eventId)],
 ).enableRLS();

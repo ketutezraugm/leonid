@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "max_spend_minor" integer;

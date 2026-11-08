@@ -118,6 +118,7 @@ export async function createEvent(
       budgetTotal: input.budget,
       currency: input.currency,
       ownerSub: owner,
+      brief: input.brief ?? null,
     })
     .returning();
   if (!event) throw new Error('Could not create the event');
@@ -211,6 +212,27 @@ export async function deleteEvent(
   });
 }
 
+// Sets or clears (null) the event's maximum spend. Undefined when the event is not the caller's to see.
+export async function setMaxSpend(
+  db: Db,
+  eventId: string,
+  maxSpend: number | null,
+  actor: string,
+  owner: string | null,
+): Promise<EventSummary | undefined> {
+  const event = await getVisibleEvent(db, eventId, owner);
+  if (!event) return undefined;
+  const [row] = await db.update(events).set({ maxSpendMinor: maxSpend }).where(eq(events.id, eventId)).returning();
+  if (!row) return undefined;
+  await writeAudit(db, {
+    actor,
+    action: 'event.max_spend',
+    input: { eventId, from: event.maxSpendMinor, to: maxSpend, currency: event.currency },
+    reason: maxSpend === null ? 'treasurer removed the maximum spend' : 'treasurer set the maximum spend',
+  });
+  return toSummary(row);
+}
+
 function toSummary(row: typeof events.$inferSelect): EventSummary {
   return {
     id: row.id,
@@ -219,6 +241,8 @@ function toSummary(row: typeof events.$inferSelect): EventSummary {
     people: row.headcount,
     budget: row.budgetTotal,
     currency: row.currency,
+    brief: row.brief,
+    maxSpend: row.maxSpendMinor,
   };
 }
 
