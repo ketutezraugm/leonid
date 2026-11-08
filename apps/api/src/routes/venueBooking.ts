@@ -1,10 +1,14 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { validateUIMessages, type UIMessage } from 'ai';
 import { z } from 'zod';
-import type { VenueBookingPayResponse, VenueBookingResponse } from '@quartermaster/shared';
+import type {
+  VenueBookingHistoryResponse,
+  VenueBookingPayResponse,
+  VenueBookingResponse,
+} from '@quartermaster/shared';
 import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
-import { getVisibleThread } from '../db/mandates.js';
+import { getVisibleThread, listOwnerEventThreads } from '../db/mandates.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import {
   bookingPayment,
@@ -21,6 +25,7 @@ export interface VenueBookingRouterOptions {
 }
 
 // The venue the organizer picked in a chat, as a plan summary to review and then pay in full with PayPal:
+//   GET  /           (treasurer) every plan in the caller's chats with its payment status: the plan history
 //   GET  /:threadId  (treasurer) the summary (event, venue, one-day estimate, USD total), or null (nothing picked, not a
 //                    catalog venue, no event on the chat, or not the caller's chat)
 //   POST /:threadId  (treasurer) pays the USD total through the executor: rules check -> audit -> PayPal. Within the rules it
@@ -40,7 +45,14 @@ export function venueBookingRouter(options: VenueBookingRouterOptions = {}) {
     owner: string | null,
   ): Promise<{ listing: VenueListing; eventId: string | null } | null> {
     const thread = await getVisibleThread(db(), threadId, owner);
-    if (!thread || !Array.isArray(thread.messages) || thread.messages.length === 0) return null;
+    return thread ? pickOf(thread) : null;
+  }
+
+  async function pickOf(thread: {
+    messages: unknown;
+    eventId: string | null;
+  }): Promise<{ listing: VenueListing; eventId: string | null } | null> {
+    if (!Array.isArray(thread.messages) || thread.messages.length === 0) return null;
     let messages: UIMessage[];
     try {
       messages = await validateUIMessages({ messages: thread.messages });
@@ -70,6 +82,38 @@ export function venueBookingRouter(options: VenueBookingRouterOptions = {}) {
         res.status(500).json({ error: 'venue booking request failed' });
       }
     };
+
+  router.get(
+    '/',
+    requireTreasurer(env),
+    async (_req, res) => {
+      try {
+        const threads = await listOwnerEventThreads(db(), ownerOf(currentTreasurer(res)));
+        const plans: VenueBookingHistoryResponse['plans'] = [];
+        for (const thread of threads) {
+          const pick = await pickOf(thread);
+          const summary = pick && (await bookingSummary(db(), pick.listing, pick.eventId));
+          if (!pick || !summary || !pick.eventId) continue;
+          plans.push({
+            threadId: thread.id,
+            eventId: pick.eventId,
+            updatedAt: thread.updatedAt.toISOString(),
+            summary,
+            payment: await bookingPayment(db(), bookingReference(thread.id, pick.listing)),
+          });
+        }
+        const body: VenueBookingHistoryResponse = { plans };
+        res.json(body);
+      } catch (err) {
+        if (err instanceof DbNotConfiguredError) {
+          res.status(503).json({ error: 'The database is not configured on this server.' });
+          return;
+        }
+        console.error('venue booking history failed', err);
+        res.status(500).json({ error: 'venue booking request failed' });
+      }
+    },
+  );
 
   router.get(
     '/:threadId',
