@@ -13,6 +13,7 @@ export interface Budget {
   // Null when the spend names no event: there is no budget to check it against.
   funds: {
     unlockedMinor: number; // cleared income - committed spend
+    committedMinor: number; // everything committed for the event, all categories (feeds the max_spend rule)
     committedByCategoryMinor: Readonly<Record<string, number>>; // keyed by normalized category
     paidSponsorIds: readonly string[];
   } | null;
@@ -61,6 +62,7 @@ function limitApplies(rule: LimitRule, spend: Spend): boolean {
     case 'claim_daily_cap':
       return kind === 'claim';
     case 'daily_auto_spend_cap':
+    case 'max_spend':
       return true;
     case 'category_cap':
       return spend.category !== undefined && normalizeName(spend.category) === normalizeName(rule.category);
@@ -96,6 +98,13 @@ function checkRule(rule: Rule, spend: Spend, budget: Budget): Finding[] {
       return budget.claimedTodayMinor + spend.amountMinor > rule.amountMinor
         ? [refuse(rule.id, `would pass the ${limit} a person may claim per day`)]
         : [];
+    case 'max_spend': {
+      // No event, no total to measure against: fail closed rather than let the spend slip past the maximum.
+      if (!budget.funds) return [refuse(rule.id, `this spend names no event, so the ${limit} maximum cannot be checked`)];
+      return budget.funds.committedMinor + spend.amountMinor > rule.amountMinor
+        ? [refuse(rule.id, `would pass the ${limit} maximum spend for this event`)]
+        : [];
+    }
     case 'category_cap': {
       const committed = budget.funds?.committedByCategoryMinor[normalizeName(rule.category)] ?? 0;
       return committed + spend.amountMinor > rule.amountMinor

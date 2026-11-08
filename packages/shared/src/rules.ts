@@ -20,6 +20,8 @@ export const Rule = z.discriminatedUnion('type', [
   z.object({ ...Limit, type: z.literal('daily_auto_spend_cap') }),
   // "Volunteers can claim up to $50 per day." Per person, per UTC day.
   z.object({ ...Limit, type: z.literal('claim_daily_cap') }),
+  // The most the whole event may commit (paid, in flight and waiting for approval). The organizer sets it; past it a spend is blocked.
+  z.object({ ...Limit, type: z.literal('max_spend') }),
   // The most one category may commit across the whole event.
   z.object({ ...Limit, type: z.literal('category_cap'), category: Category }),
   // "Swag only from the approved list."
