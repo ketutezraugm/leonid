@@ -117,11 +117,43 @@ describe('New event (setup interview)', () => {
     expect(screen.getByRole('button', { name: 'Next question' })).toBeDisabled();
   });
 
+  it('shows a summary before saving, and a changed answer comes back to it', async () => {
+    await answerEverything();
+    expect(screen.getByRole('heading', { name: 'Here’s your event' })).toBeInTheDocument();
+    expect(screen.getByText('Spring Meetup')).toBeInTheDocument();
+    expect(screen.getByText('$1,500')).toBeInTheDocument();
+    expect(posted).toBeUndefined();
+
+    click('Change: What’s the event called?');
+    type(/What’s the event called/, 'Summer Meetup');
+    click(/Confirm/);
+    expect(screen.getByRole('heading', { name: 'Here’s your event' })).toBeInTheDocument();
+    expect(screen.getByText('Summer Meetup')).toBeInTheDocument();
+    expect(posted).toBeUndefined();
+  });
+
+  it('saves the event and every answer without starting the agent when the organizer skips', async () => {
+    localStorage.setItem('quartermaster.threadId', 'an-earlier-chat');
+    await answerEverything();
+    click('Skip for now');
+    expect(await screen.findByText(/Setting up Spring Meetup/)).toBeInTheDocument();
+    expect(posted).toMatchObject({ name: 'Spring Meetup' });
+    // The answers go with the event, so the agent chat can start planning with them later.
+    const { brief } = posted as { brief: string };
+    expect(brief).toContain('a hackathon for 80 people in Jakarta on Thursday, May 20, 2027');
+    expect(brief).toContain('Book for this event: Venue, Food & drinks');
+    await new Promise((r) => setTimeout(r, 700));
+    expect(sessionStorage.getItem('quartermaster.kickoff')).toBeNull();
+    // A fresh chat for the new event, not the one open before.
+    expect(localStorage.getItem('quartermaster.threadId')).not.toBe('an-earlier-chat');
+  });
+
   it('saves the event in cents, then opens the agent with the answers as its first message', async () => {
     await answerEverything();
+    click('Start planning');
     expect(await screen.findByText(/Setting up Spring Meetup/)).toBeInTheDocument();
     expect(screen.getByText('Workshop or hackathon')).toBeInTheDocument();
-    expect(posted).toEqual({
+    expect(posted).toMatchObject({
       name: 'Spring Meetup',
       date: '2027-05-20',
       people: 80,
@@ -143,13 +175,14 @@ describe('New event (setup interview)', () => {
       'a hackathon for 80 people in Jakarta on Thursday, May 20, 2027',
     );
     expect(kickoff.text).toContain(
-      'Book for this event: Venue, Food & drinks, AV & Wi-Fi, Swag, Prizes',
+      'Book for this event: Venue, Food & drinks',
     );
   });
 
   it('says what went wrong and lets the organizer try again', async () => {
     stubApi(404);
     await answerEverything();
+    click('Start planning');
     expect(await screen.findByRole('alert')).toHaveTextContent(/./);
     expect(screen.getByRole('button', { name: 'Change answers' })).toBeInTheDocument();
     expect(sessionStorage.getItem('quartermaster.kickoff')).toBeNull();
