@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
 import type { ChecklistItem } from '@quartermaster/shared';
 import type { Db } from './client.js';
 import { chatThreads, mandateItems, mandates } from './schema.js';
@@ -16,6 +16,18 @@ export const ownerThread = (threadId: string, owner: string | null) =>
 export async function getVisibleThread(db: Db, threadId: string, owner: string | null) {
   const [thread] = await db.select().from(chatThreads).where(ownerThread(threadId, owner));
   return thread;
+}
+
+// The chats this owner may see that are linked to an event, newest first: the plan history reads them.
+export async function listOwnerEventThreads(db: Db, owner: string | null, limit = 50) {
+  return db
+    .select()
+    .from(chatThreads)
+    .where(
+      and(isNotNull(chatThreads.eventId), owner === null ? undefined : eq(chatThreads.ownerSub, owner)),
+    )
+    .orderBy(desc(chatThreads.updatedAt))
+    .limit(limit);
 }
 
 // The client mints thread ids, so the first message for an unknown id creates the thread, owned by

@@ -379,6 +379,19 @@ export const VenueBookingResponse = z.object({
 });
 export type VenueBookingResponse = z.infer<typeof VenueBookingResponse>;
 
+// GET /api/venue-booking (treasurer): every plan in the caller's chats, newest first, with its payment status. The
+// All events screen groups them into plans still to pay and plans already paid.
+export const VenueBookingHistoryItem = z.object({
+  threadId: z.uuid(),
+  eventId: z.uuid(),
+  updatedAt: z.iso.datetime(),
+  summary: VenueBookingSummary,
+  payment: BookingPayment,
+});
+export type VenueBookingHistoryItem = z.infer<typeof VenueBookingHistoryItem>;
+export const VenueBookingHistoryResponse = z.object({ plans: z.array(VenueBookingHistoryItem) });
+export type VenueBookingHistoryResponse = z.infer<typeof VenueBookingHistoryResponse>;
+
 // What the executor did with the payment: paid from the agent wallet (within the rules), sent to the
 // treasurer to approve in the PayPal popup, blocked by a rule, or refused (no wallet, kill switch).
 export const SpendOutcome = z.discriminatedUnion('status', [

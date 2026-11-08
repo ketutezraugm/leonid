@@ -3,6 +3,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UIMessage } from 'ai';
 import {
+  VenueBookingHistoryResponse,
   VenueBookingPayResponse,
   VenueBookingResponse,
   venueEstimate,
@@ -253,6 +254,35 @@ describe('venue booking route', () => {
       const res = await request(app).get(`/api/venue-booking/${id}`).set(treasurer).expect(200);
       expect(res.body).toEqual({ summary: null, payment: { status: 'unpaid' } });
     }
+  });
+
+  it('lists every picked plan with its payment status, and skips chats with no plan or no event', async () => {
+    const { app } = await build();
+    const unpaid = await seedThread(thread([idr], pick(idr)));
+    const paid = await seedThread(thread([big], pick(big)));
+    await seedThread(thread([idr]));
+    await seedThread(thread([idr], pick(idr)), null);
+    await db.insert(auditLog).values({
+      actor: 'treasurer',
+      action: 'spend.check',
+      input: { referenceId: referenceOf(paid, big) },
+      outcome: 'paid',
+      paypalId: 'CAP-7',
+    });
+    const res = await request(app).get('/api/venue-booking').set(treasurer).expect(200);
+    const { plans } = VenueBookingHistoryResponse.parse(res.body);
+    expect(plans.map((p) => [p.threadId, p.payment.status].join(' ')).sort()).toEqual(
+      [`${unpaid} unpaid`, `${paid} paid`].sort(),
+    );
+    expect(plans.find((p) => p.threadId === paid)).toMatchObject({
+      eventId: demoEventId,
+      payment: { status: 'paid', reference: 'CAP-7' },
+    });
+  });
+
+  it('keeps the plan history for the treasurer only', async () => {
+    const { app } = await build();
+    await request(app).get('/api/venue-booking').expect(401);
   });
 
   it('only lets the treasurer see or pay', async () => {
