@@ -6,24 +6,24 @@ import '@bryntum/gantt/fontawesome/css/solid.css';
 import '@bryntum/gantt/gantt.css';
 import '@bryntum/gantt/svalbard-light.css';
 import './gantt-theme.css';
-import { demoDependencies, demoTasks, EVENT_DAY } from './demoPlan';
+import type { PlanSource } from './fromApi';
 import { applySponsors, fundingText, statusLabel, type PlanSponsor } from './gating';
 import { PlanTask } from './PlanTask';
 
 // Loaded lazily from the Plan page: the trial bundle is large and unminified. The page remounts it
 // (by key) when a sponsor's status changes, so the sponsor labels are recomputed from scratch.
-function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
+function PlanGantt({ plan, sponsors }: { plan: PlanSource; sponsors: PlanSponsor[] }) {
   return (
     <div className="qm-gantt">
       <BryntumGantt
         project={{
           taskModelClass: PlanTask,
-          tasks: applySponsors(demoTasks, sponsors),
-          dependencies: demoDependencies,
-          timeRanges: [{ id: 'event-day', name: 'Event day', startDate: EVENT_DAY }],
+          tasks: applySponsors(plan.tasks, sponsors),
+          dependencies: plan.dependencies,
+          timeRanges: [{ id: 'event-day', name: 'Event day', startDate: plan.eventDay }],
         }}
-        startDate="2027-01-04"
-        endDate="2027-03-28"
+        startDate={plan.startDate}
+        endDate={plan.endDate}
         viewPreset={{ base: 'weekAndMonth', tickWidth: 46 }}
         columns={[
           { type: 'name', width: 270 },
@@ -75,7 +75,11 @@ function PlanGantt({ sponsors }: { sponsors: PlanSponsor[] }) {
 }
 
 // The Plan page re-renders while it polls sponsor status; the Gantt only redraws when a sponsor's status changes.
-const sameStatuses = (a: { sponsors: PlanSponsor[] }, b: { sponsors: PlanSponsor[] }) =>
+const sameStatuses = (
+  a: { plan: PlanSource; sponsors: PlanSponsor[] },
+  b: { plan: PlanSource; sponsors: PlanSponsor[] },
+) =>
+  a.plan === b.plan &&
   a.sponsors.length === b.sponsors.length &&
   a.sponsors.every((s, i) => s.id === b.sponsors[i]?.id && s.status === b.sponsors[i]?.status);
 
