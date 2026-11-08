@@ -4,13 +4,12 @@ import { Approvals } from './pages/Approvals';
 import { Checkout } from './pages/Checkout';
 import { Claims } from './pages/Claims';
 import { VolunteerClaim } from './pages/VolunteerClaim';
-import { EventHome } from './pages/EventHome';
 import { Events } from './pages/Events';
 import { Money } from './pages/Money';
 import { NewEvent } from './pages/NewEvent';
 import { NotFound } from './pages/NotFound';
 import { Plan } from './pages/Plan';
-import { Rules } from './pages/Rules';
+import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
 import { SignIn } from './pages/SignIn';
 import { SponsorReport } from './pages/SponsorReport';
@@ -46,7 +45,7 @@ function ToEventScreen({ screen }: { screen: string }) {
   return <Navigate to={`${eventPath(routeId, screen)}${search}`} replace />;
 }
 
-const SCREENS = ['agent', 'plan', 'money', 'approvals', 'rules', 'claims'] as const;
+const SCREENS = ['agent', 'plan', 'money', 'approvals', 'claims'] as const;
 
 export function App() {
   return (
@@ -60,18 +59,18 @@ export function App() {
               <Route path="/events" element={<Events />} />
               <Route path="/setup" element={<NewEvent />} />
               <Route path="/events/:eventId" element={<EventScope />}>
-                <Route index element={<EventHome />} />
+                <Route index element={<Navigate to="agent" replace />} />
                 <Route path="agent" element={<Agent />} />
                 <Route path="plan" element={<Plan />} />
                 <Route path="money" element={<Money />} />
                 <Route path="approvals" element={<Approvals />} />
-                <Route path="rules" element={<Rules />} />
                 <Route path="claims" element={<Claims />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
               {SCREENS.map((screen) => (
                 <Route key={screen} path={`/${screen}`} element={<ToEventScreen screen={screen} />} />
               ))}
+              <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>

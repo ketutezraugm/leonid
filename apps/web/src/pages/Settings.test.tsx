@@ -38,10 +38,10 @@ async function revoke() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Settings kill switch', () => {
-  it('shows a revoke in the sidebar straight away', async () => {
+  it('shows a revoke on the wallet card straight away', async () => {
     stubServer(200);
     await revoke();
-    expect(await screen.findByRole('link', { name: 'Agent wallet · Revoked' })).toBeInTheDocument();
+    expect(await screen.findByText('Revoked')).toBeInTheDocument();
     expect(screen.queryByText(/deletion pending/)).not.toBeInTheDocument();
   });
 
@@ -50,6 +50,6 @@ describe('Settings kill switch', () => {
     await revoke();
     expect(await screen.findByText('Agent stopped, PayPal deletion pending.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry deletion' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Agent wallet · Revoked' })).toBeInTheDocument();
+    expect(screen.getByText('Revoked')).toBeInTheDocument();
   });
 });
