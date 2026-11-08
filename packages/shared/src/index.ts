@@ -72,7 +72,7 @@ export const BOOKING_ITEMS: readonly {
     id: 'catering',
     label: 'Food & drinks',
     description: 'Usually priced per person',
-    available: false,
+    available: true,
   },
   {
     id: 'av',
@@ -371,3 +371,4 @@ export type VenueDepositPayResponse = z.infer<typeof VenueDepositPayResponse>;
 export * from './spends.js';
 export * from './events.js';
 export * from './sponsorReport.js';
+export * from './plan.js';
