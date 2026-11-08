@@ -22,6 +22,9 @@ export interface AgentContext {
   bookings?: BookingChoice | null;
   // The venue the organizer picked from the scout's results, read from their own messages.
   venuePick?: VenuePick | null;
+  // The picked venue's plan and payment status as facts for the instructions, built by code from the event, the catalog and
+  // our own payment records. Null until a catalog venue is picked in a chat with an event.
+  bookingPlan?: string | null;
   // The run's clock, so tests can pin "today". Defaults to the real time.
   now?: Date;
 }

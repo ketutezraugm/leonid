@@ -23,7 +23,7 @@ import { stubCheck } from '../payments/stub-check.js';
 import { createPayPalClient } from '../paypal/client.js';
 import { listingUrl, loadVenueCatalog, type VenueListing } from '../search/venueCatalog.js';
 import { toUsdCents } from '../pricing/fx.js';
-import { events } from '../db/schema.js';
+import { approvals, auditLog, events } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { venueBookingRouter } from './venueBooking.js';
 
@@ -170,6 +170,53 @@ const allow: typeof stubCheck = () => ({ decision: 'allow', reasons: ['test'], r
 const pick = (l: VenueListing) => ({ name: l.name, sourceUrl: listingUrl(l) });
 
 describe('venue booking route', () => {
+  const referenceOf = (threadId: string, l: VenueListing) => `venue-booking-${threadId}-${l.id}`;
+
+  it('says a booking is unpaid, waiting for the treasurer, or paid, from our own records', async () => {
+    const { app } = await build();
+    const id = await seedThread(thread([idr], pick(idr)));
+    const paymentOf = async () =>
+      VenueBookingResponse.parse(
+        (await request(app).get(`/api/venue-booking/${id}`).set(treasurer).expect(200)).body,
+      ).payment;
+    expect(await paymentOf()).toEqual({ status: 'unpaid' });
+
+    const [approval] = await db
+      .insert(approvals)
+      .values({
+        spend: { referenceId: referenceOf(id, idr) },
+        eventId: demoEventId,
+        status: 'pending',
+        paypalOrderId: 'ORD-APPROVE',
+      })
+      .returning();
+    expect(await paymentOf()).toEqual({
+      status: 'awaiting_approval',
+      approvalId: approval!.id,
+      paypalOrderId: 'ORD-APPROVE',
+    });
+
+    await db.update(approvals).set({ status: 'paid' }).where(eq(approvals.id, approval!.id));
+    expect(await paymentOf()).toEqual({ status: 'paid', reference: 'ORD-APPROVE' });
+  });
+
+  it('says a booking charged to the agent wallet is paid', async () => {
+    const { app } = await build();
+    const id = await seedThread(thread([idr], pick(idr)));
+    await db.insert(auditLog).values({
+      actor: 'treasurer',
+      action: 'spend.check',
+      input: { referenceId: referenceOf(id, idr) },
+      outcome: 'paid',
+      paypalId: 'CAP-9',
+    });
+    const res = await request(app).get(`/api/venue-booking/${id}`).set(treasurer).expect(200);
+    expect(VenueBookingResponse.parse(res.body).payment).toEqual({
+      status: 'paid',
+      reference: 'CAP-9',
+    });
+  });
+
   it("summarises the picked venue: the event, the one-day estimate and its USD total from the demo rate", async () => {
     const { app } = await build();
     const id = await seedThread(thread([idr, big], pick(idr)));
@@ -204,7 +251,7 @@ describe('venue booking route', () => {
     const noEvent = await seedThread(thread([idr], pick(idr)), null);
     for (const id of [none, madeUp, noEvent]) {
       const res = await request(app).get(`/api/venue-booking/${id}`).set(treasurer).expect(200);
-      expect(res.body).toEqual({ summary: null });
+      expect(res.body).toEqual({ summary: null, payment: { status: 'unpaid' } });
     }
   });
 

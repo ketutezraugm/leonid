@@ -1,20 +1,18 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { validateUIMessages, type UIMessage } from 'ai';
 import { z } from 'zod';
-import {
-  venueEstimate,
-  type VenueBookingPayResponse,
-  type VenueBookingResponse,
-  type VenueBookingSummary,
-} from '@quartermaster/shared';
-import { venuePickOf } from '../agents/venuePick.js';
+import type { VenueBookingPayResponse, VenueBookingResponse } from '@quartermaster/shared';
 import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
-import { getEvent } from '../db/events.js';
 import { getVisibleThread } from '../db/mandates.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
-import { LOCAL_MINOR_PER_USD, isFxCurrency, toUsdCents } from '../pricing/fx.js';
-import { findListing, listingUrl, type VenueListing } from '../search/venueCatalog.js';
+import {
+  bookingPayment,
+  bookingReference,
+  bookingSummary,
+  pickedListing,
+} from '../booking/venueBooking.js';
+import type { VenueListing } from '../search/venueCatalog.js';
 
 export interface VenueBookingRouterOptions {
   env?: NodeJS.ProcessEnv;
@@ -37,7 +35,7 @@ export function venueBookingRouter(options: VenueBookingRouterOptions = {}) {
   const db = options.db ?? getDb;
   const router = Router();
 
-  async function pickedVenue(
+  async function picked(
     threadId: string,
     owner: string | null,
   ): Promise<{ listing: VenueListing; eventId: string | null } | null> {
@@ -49,48 +47,8 @@ export function venueBookingRouter(options: VenueBookingRouterOptions = {}) {
     } catch {
       return null;
     }
-    const pick = venuePickOf(messages);
-    const listing = pick && findListing(pick.sourceUrl);
-    return listing && listing.name === pick.name ? { listing, eventId: thread.eventId } : null;
-  }
-
-  async function summaryOf(
-    listing: VenueListing,
-    eventId: string | null,
-  ): Promise<VenueBookingSummary | null> {
-    const event = eventId ? await getEvent(db(), eventId) : undefined;
-    if (!event || !isFxCurrency(listing.price.currency)) return null;
-    const estimate = venueEstimate(listing, event.headcount);
-    if (!estimate) return null;
-    const payableMinor = toUsdCents(estimate.total, listing.price.currency);
-    const maxSpend =
-      event.maxSpendMinor === null
-        ? null
-        : { amountMinor: event.maxSpendMinor, currency: event.currency };
-    return {
-      event: {
-        name: event.name,
-        date: event.date.toISOString(),
-        headcount: event.headcount,
-        maxSpend,
-      },
-      venue: {
-        name: listing.name,
-        area: `${listing.area}, ${listing.city}`,
-        includes: listing.terms.includes,
-        catering: listing.catering,
-        sourceUrl: listingUrl(listing),
-      },
-      estimate: { ...estimate, currency: listing.price.currency },
-      fx: {
-        from: listing.price.currency,
-        localMinorPerUsd: LOCAL_MINOR_PER_USD[listing.price.currency],
-      },
-      payable: { amountMinor: payableMinor, currency: 'USD' },
-      // check() compares in one currency only, so the early warning does too.
-      overMaxSpend:
-        maxSpend !== null && maxSpend.currency === 'USD' && payableMinor > maxSpend.amountMinor,
-    };
+    const listing = pickedListing(messages);
+    return listing ? { listing, eventId: thread.eventId } : null;
   }
 
   const handle =
@@ -117,9 +75,14 @@ export function venueBookingRouter(options: VenueBookingRouterOptions = {}) {
     '/:threadId',
     requireTreasurer(env),
     handle(async (_req, res, threadId) => {
-      const picked = await pickedVenue(threadId, ownerOf(currentTreasurer(res)));
+      const pick = await picked(threadId, ownerOf(currentTreasurer(res)));
+      const summary = pick && (await bookingSummary(db(), pick.listing, pick.eventId));
       const body: VenueBookingResponse = {
-        summary: picked ? await summaryOf(picked.listing, picked.eventId) : null,
+        summary: summary ?? null,
+        payment:
+          pick && summary
+            ? await bookingPayment(db(), bookingReference(threadId, pick.listing))
+            : { status: 'unpaid' },
       };
       res.json(body);
     }),
@@ -136,18 +99,18 @@ export function venueBookingRouter(options: VenueBookingRouterOptions = {}) {
         res.status(503).json({ error: 'PayPal Procurement app is not configured' });
         return;
       }
-      const picked = await pickedVenue(threadId, ownerOf(currentTreasurer(res)));
-      const summary = picked && (await summaryOf(picked.listing, picked.eventId));
-      if (!picked || !summary) {
+      const pick = await picked(threadId, ownerOf(currentTreasurer(res)));
+      const summary = pick && (await bookingSummary(db(), pick.listing, pick.eventId));
+      if (!pick || !summary) {
         res.status(409).json({
           error: 'Pick one of the seeded venues in a chat linked to an event first.',
         });
         return;
       }
-      const { listing, eventId } = picked;
+      const { listing, eventId } = pick;
       const local = formatLocal(summary.estimate.total, summary.estimate.currency);
       const outcome = await ctx.executor.requestSpend({
-        referenceId: `venue-booking-${threadId}-${listing.id}`,
+        referenceId: bookingReference(threadId, listing),
         amountMinor: summary.payable.amountMinor,
         currency: summary.payable.currency,
         actor: treasurerActor(res),
