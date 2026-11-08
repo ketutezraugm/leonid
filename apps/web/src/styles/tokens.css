@@ -38,7 +38,7 @@
   --color-data: #3d46b8; /* chart-1: committed spend, main series, in-progress bars */
   --color-data-soft: #93a6f7; /* chart-3: unlocked budget segment, secondary series */
   --color-brass: #b42d6e; /* the meteor: mark and Gantt today line only */
-  --color-brass-text: #b42d6e; /* meteor as words; landing page only */
+  --color-brass-text: #b42d6e; /* meteor as words: small labels and the landing page */
   --color-brass-soft: #fff1d6; /* the one surface that says "this needs you" = approval-soft */
   --color-brass-on-dark: #ff7ab6; /* the meteor on the night sky (landing hero) */
   --color-hold: #d3d5ea; /* money that exists but cannot be spent: invoiced, pledged */
@@ -46,7 +46,7 @@
   /* --- Status colors ---
    * Shared by badges, the Gantt, AG Studio and Approvals so a "blocked" spend
    * and a "blocked" task read as the same state everywhere. Base = fills and
-   * bars, -soft = badge fill, -text = words (each 6.7:1 or better on its soft). */
+   * bars, -soft = badge fill, -text = words (each 4.5:1 or better on its soft). */
   --color-status-done: #1e7a3e; /* paid / delivered / allowed */
   --color-status-done-soft: #e2f4e7;
   --color-status-done-text: #1e7a3e;
