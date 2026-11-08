@@ -99,9 +99,9 @@ The Plan screen is a Bryntum Gantt (trial 7.3.7, React wrapper) in [`apps/web/sr
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | Gantt setup: columns (Status, Funded by), bar colors by status                       | [`apps/web/src/plan/PlanGantt.tsx`](apps/web/src/plan/PlanGantt.tsx)       |
 | Sponsor labels: which sponsor funds each purchase, invoice tasks from sponsor status | [`apps/web/src/plan/gating.ts`](apps/web/src/plan/gating.ts)               |
-| Live sponsor status matched to the plan                                              | [`apps/web/src/plan/sponsorSource.ts`](apps/web/src/plan/sponsorSource.ts) |
+| Each event's own tasks from `GET /api/events/:id/plan`, turned into Gantt tasks      | [`apps/web/src/plan/fromApi.ts`](apps/web/src/plan/fromApi.ts)             |
 | Task model with our status and its funding sponsor                                   | [`apps/web/src/plan/PlanTask.ts`](apps/web/src/plan/PlanTask.ts)           |
-| Sample OpenHack 2027 plan: 15 linked tasks, three sponsors                           | [`apps/web/src/plan/demoPlan.ts`](apps/web/src/plan/demoPlan.ts)           |
+| Seeded OpenHack 2027 plan: 15 linked tasks, three sponsors (`pnpm db:seed`)          | [`apps/api/src/db/seed.ts`](apps/api/src/db/seed.ts)                       |
 | Theme overrides from design tokens                                                   | [`apps/web/src/plan/gantt-theme.css`](apps/web/src/plan/gantt-theme.css)   |
 | Plan page: legend, polling sponsor status, lazy-loading the Gantt                    | [`apps/web/src/pages/Plan.tsx`](apps/web/src/pages/Plan.tsx)               |
 
@@ -117,7 +117,7 @@ _TODO (P1)_
 
 ## Agent loop (P1)
 
-The Event home chat is a tool loop, not a single completion. An orchestrator agent writes a checklist for the organizer's goal, works through it with tools, and stops when every item is done or blocked. The checklist is saved as a mandate in Postgres (Supabase), so it survives reloads.
+The agent chat is a tool loop, not a single completion. An orchestrator agent writes a checklist for the organizer's goal, works through it with tools, and stops when every item is done or blocked. The checklist is saved as a mandate in Postgres (Supabase), so it survives reloads.
 
 | Piece                                     | Code                                                                                                                                    |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
