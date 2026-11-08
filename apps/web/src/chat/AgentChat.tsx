@@ -59,7 +59,7 @@ interface CanvasLink {
   viewLeavesChat?: boolean;
   // Lets the canvas send a message (a venue pick) through this chat. Null while a run is going.
   onSendChange?: (send: ((text: string) => void) | null) => void;
-  // The open chat's id, so the canvas can ask the server about this chat (the venue deposit).
+  // The open chat's id, so the canvas can ask the server about this chat (the venue booking).
   onThreadChange?: (threadId: string) => void;
 }
 

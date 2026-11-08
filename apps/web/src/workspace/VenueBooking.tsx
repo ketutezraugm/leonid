@@ -3,6 +3,7 @@ import {
   ApiError,
   SpendOutcome,
   VenueBookingPayResponse,
+  type BookingPayment,
   VenueBookingResponse,
   type VenueBookingSummary,
 } from '@quartermaster/shared';
@@ -18,6 +19,32 @@ type State =
   | { kind: 'outcome'; outcome: SpendOutcome }
   | { kind: 'error'; message: string };
 
+// The state a booking already has when the panel opens.
+function stateOf(payment: BookingPayment): State {
+  if (payment.status === 'paid') {
+    return { kind: 'outcome', outcome: { status: 'paid', orderId: payment.reference } };
+  }
+  if (payment.status === 'awaiting_approval') {
+    return {
+      kind: 'outcome',
+      outcome: {
+        status: 'needs_approval',
+        approvalId: payment.approvalId,
+        paypalOrderId: payment.paypalOrderId,
+        reasons: ['it is waiting for the treasurer to approve it in PayPal'],
+      },
+    };
+  }
+  return { kind: 'idle' };
+}
+
+// Questions the plan can answer, one click each.
+const QUESTIONS = [
+  'What does this venue include?',
+  'Is catering covered?',
+  'What are the next steps for this event?',
+];
+
 async function errorOf(res: Response): Promise<string> {
   const body = ApiError.safeParse(await res.json().catch(() => null));
   return body.success ? body.data.error : `HTTP ${res.status}`;
@@ -30,34 +57,45 @@ export function VenueBookingPanel({
   threadId,
   pickName,
   onBack,
+  onAsk,
 }: {
   threadId: string;
   pickName: string;
   onBack: () => void;
+  /** Sends a question to the agent chat; null while the agent is busy, which is also when the server may still be saving the pick. */
+  onAsk: ((question: string) => void) | null;
 }) {
+  const idle = onAsk !== null;
   const [summary, setSummary] = useState<VenueBookingSummary | null | undefined>(undefined);
   const [agreed, setAgreed] = useState(false);
   const [state, setState] = useState<State>({ kind: 'idle' });
 
-  // The pick reaches the server with the chat run that follows it. The workspace remounts this
-  // panel for each pick, so it starts empty.
+  // The pick reaches the server with the chat run that follows it, so the plan is read once the chat is idle, and again
+  // after each later run (a payment status the agent just changed is then picked up). The workspace keeps this panel
+  // mounted per pick, so it never starts over.
   useEffect(() => {
+    if (!idle) return;
     let cancelled = false;
     fetch(`/api/venue-booking/${threadId}`)
       .then(async (res) => (res.ok ? VenueBookingResponse.parse(await res.json()) : null))
-      .then((body) => !cancelled && setSummary(body?.summary ?? null))
-      .catch(() => !cancelled && setSummary(null));
+      .then((body) => {
+        if (cancelled) return;
+        setSummary(body?.summary ?? null);
+        // Paid in an earlier visit, or waiting for the treasurer: pick up where it was left.
+        if (body && body.payment.status !== 'unpaid') setState(stateOf(body.payment));
+      })
+      .catch(() => !cancelled && setSummary((prev) => prev ?? null));
     return () => {
       cancelled = true;
     };
-  }, [threadId, pickName]);
+  }, [threadId, pickName, idle]);
 
   if (summary === undefined) {
     return (
       <section className="booking" aria-label="Plan status" aria-busy="true">
         <p className="booking-eyebrow">Your plan</p>
         <p className="muted" role="status">
-          Preparing your plan…
+          {idle ? 'Preparing your plan…' : `The agent is planning ${pickName}…`}
         </p>
       </section>
     );
@@ -123,12 +161,14 @@ export function VenueBookingPanel({
 
   return (
     <section className={`booking${paid ? ' is-paid' : ''}`} aria-label="Plan summary">
-      <p className="booking-eyebrow">Your plan</p>
+      <p className="booking-eyebrow">{paid ? 'Your plan · paid' : 'Your plan'}</p>
       <h3>
         {event.name} at {venue.name}
       </h3>
       <p className="muted">
-        Read this through. When you agree, you pay the total with PayPal (sandbox).
+        {paid
+          ? 'The venue is booked and paid with PayPal. This plan stays here; ask the agent anything about it.'
+          : 'Read this through. When you agree, you pay the total with PayPal (sandbox).'}
       </p>
 
       <h4>The event</h4>
@@ -266,6 +306,24 @@ export function VenueBookingPanel({
           onConnectWallet={connectWallet}
           onApproved={(outcome) => setState({ kind: 'outcome', outcome })}
         />
+      )}
+
+      {onAsk && (
+        <div className="booking-ask">
+          <p className="muted">Ask the agent about this plan</p>
+          <div className="booking-actions">
+            {QUESTIONS.map((question) => (
+              <button
+                key={question}
+                type="button"
+                className="booking-chip"
+                onClick={() => onAsk(question)}
+              >
+                {question}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </section>
   );
