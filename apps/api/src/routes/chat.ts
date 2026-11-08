@@ -15,7 +15,8 @@ import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.j
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
 import { bookingChoiceOf } from '../agents/tools/bookings.js';
 import { venuePickOf } from '../agents/venuePick.js';
-import { DbNotConfiguredError, getDb } from '../db/client.js';
+import { bookingPayment, bookingPlanLine, bookingReference, bookingSummary, pickedListing } from '../booking/venueBooking.js';
+import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
 import { getDemoEvent, getEvent, getVisibleEvent } from '../db/events.js';
 import {
   getChecklist,
@@ -183,6 +184,7 @@ export function createChatRouter({
         // Read from the whole thread, not the model window, so an early choice is not forgotten.
         bookings: bookingChoiceOf(all),
         venuePick: venuePickOf(all),
+        bookingPlan: await bookingPlanOf(db, threadId, thread.eventId, all),
       });
 
       // Stop the run if the browser goes away mid-stream.
@@ -216,3 +218,22 @@ export function createChatRouter({
 }
 
 export const chatRouter = createChatRouter();
+
+// The picked venue's plan and whether it is paid, as facts for the orchestrator so the organizer can ask about it. A failure
+// here only means the agent knows less; the chat itself still runs.
+async function bookingPlanOf(
+  db: Db,
+  threadId: string,
+  eventId: string | null,
+  messages: Parameters<typeof pickedListing>[0],
+): Promise<string | null> {
+  try {
+    const listing = pickedListing(messages);
+    const summary = listing && (await bookingSummary(db, listing, eventId));
+    if (!listing || !summary) return null;
+    return bookingPlanLine(summary, await bookingPayment(db, bookingReference(threadId, listing)));
+  } catch (err) {
+    console.error('Loading the booking plan failed', err);
+    return null;
+  }
+}

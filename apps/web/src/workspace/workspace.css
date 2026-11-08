@@ -632,8 +632,8 @@
   border-radius: var(--radius);
 }
 
-/* The PayPal deposit for the picked venue, above the results. */
-.deposit {
+/* The plan summary and PayPal payment for the picked venue, in place of the results. */
+.booking {
   margin-bottom: var(--space-3);
   padding: var(--space-3);
   background: var(--color-surface);
@@ -641,28 +641,93 @@
   border-radius: var(--radius);
 }
 
-.deposit.is-paid {
+.booking.is-paid {
   border-color: var(--color-status-done);
 }
 
-.deposit-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  align-items: center;
-  justify-content: space-between;
-}
-
-.deposit-head h3 {
+.booking h3 {
   margin: 0 0 var(--space-1);
 }
 
-.deposit-head .muted {
+.booking h4 {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 0.875rem;
+}
+
+.booking > .muted {
   margin: 0;
   font-size: 0.875rem;
 }
 
-.deposit-eyebrow {
+.booking-facts,
+.booking-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.booking-facts li,
+.booking-lines li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.booking-facts li > span {
+  text-align: right;
+}
+
+.booking-lines-total {
+  font-weight: 600;
+}
+
+.booking-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: var(--space-3) 0 0;
+  font-size: 1.125rem;
+}
+
+.booking-total strong {
+  font-size: 1.5rem;
+}
+
+.booking-warning {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius);
+}
+
+.booking-agree {
+  margin-top: var(--space-3);
+}
+
+.booking-agree label {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.booking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.booking-pay:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.booking-eyebrow {
   margin: 0 0 var(--space-1);
   font-size: 0.75rem;
   font-weight: 600;
@@ -671,7 +736,7 @@
   color: var(--color-accent);
 }
 
-.deposit-pay {
+.booking-pay {
   display: inline-block;
   padding: var(--space-2) var(--space-3);
   font: inherit;
@@ -684,38 +749,64 @@
   cursor: pointer;
 }
 
-.deposit-status {
+.booking-status {
   font-weight: 600;
   color: var(--color-muted);
 }
 
-.deposit-body {
+.booking-body {
   margin: var(--space-3) 0 0;
 }
 
-.deposit-body p {
+.booking-body p {
   margin: 0 0 var(--space-2);
 }
 
-.deposit-actions {
+.booking-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
 }
 
-.deposit-paid {
+.booking-paid {
   padding: var(--space-2) var(--space-3);
   color: var(--color-status-done-text);
   background: var(--color-status-done-soft);
   border-radius: var(--radius);
 }
 
-.deposit-error {
+.booking-error {
   color: var(--color-danger);
 }
 
-.deposit-paypal {
+.booking-paypal {
   max-width: 320px;
   margin-top: var(--space-2);
+}
+
+.booking-ask {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.booking-ask .muted {
+  margin: 0 0 var(--space-2);
+  font-size: 0.875rem;
+}
+
+.booking-chip {
+  padding: var(--space-1) var(--space-3);
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.booking-chip:hover {
+  border-color: var(--color-accent);
 }

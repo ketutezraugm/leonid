@@ -16,7 +16,7 @@ import { payoutsRouter } from './routes/payouts.js';
 import { reportsRouter } from './routes/reports.js';
 import { spendsRouter } from './routes/spends.js';
 import { treasuryRouter } from './routes/treasury.js';
-import { venueDepositRouter } from './routes/venueDeposit.js';
+import { venueBookingRouter } from './routes/venueBooking.js';
 import { TRUSTED_PROXY_HOPS } from './routes/rateLimit.js';
 import { walletRouter } from './routes/wallet.js';
 import { walletPoolRouter } from './routes/walletPool.js';
@@ -58,7 +58,7 @@ export function createApp() {
   app.use('/api/wallet', walletRouter());
   app.use('/api/approvals', approvalsRouter());
   app.use('/api/sponsors', invoicesRouter());
-  app.use('/api/venue-deposit', venueDepositRouter());
+  app.use('/api/venue-booking', venueBookingRouter());
   app.use('/api/widgets', widgetsRouter());
   app.use('/api/workflows', workflowsRouter());
 

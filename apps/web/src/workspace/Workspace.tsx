@@ -4,7 +4,7 @@ import { AgentChat } from '../chat/AgentChat';
 import type { EventInfo } from '../shell/event';
 import { venuePickText, type VenueCandidate } from '@quartermaster/shared';
 import { latestVenuePick, venueSearches } from '../chat/parts';
-import { VenueDepositPanel } from './VenueDeposit';
+import { VenueBookingPanel } from './VenueBooking';
 import { VenueResults } from './VenueResults';
 import './workspace.css';
 
@@ -23,6 +23,11 @@ export function Workspace({
   const [threadId, setThreadId] = useState<string | null>(null);
   const searches = useMemo(() => venueSearches(messages), [messages]);
   const picked = useMemo(() => latestVenuePick(messages), [messages]);
+  // After a pick the canvas shows the plan to pay for; "Back to venues" lets the organizer compare again.
+  // It is remembered per pick, so a new pick shows the plan again.
+  const pickKey = picked ? `${picked.name} ${picked.sourceUrl}` : null;
+  const [browsingPick, setBrowsingPick] = useState<string | null>(null);
+  const browsing = pickKey !== null && browsingPick === pickKey;
   // The chat's send while it is idle; picking a venue goes through the chat like any answer.
   const [send, setSend] = useState<((text: string) => void) | null>(null);
   const onSendChange = useCallback(
@@ -61,15 +66,15 @@ export function Workspace({
         />
       </div>
       <section className="workspace-canvas" aria-label="Results">
-        {/* Shown once the chat is idle: the pick is saved on the server when its run ends. */}
-        {picked && threadId && send && (
-          <VenueDepositPanel
+        {picked && !browsing && threadId ? (
+          <VenueBookingPanel
             key={`${threadId} ${picked.sourceUrl}`}
             threadId={threadId}
             pickName={picked.name}
+            onBack={() => setBrowsingPick(pickKey)}
+            onAsk={send}
           />
-        )}
-        {viewing ? (
+        ) : viewing ? (
           <VenueResults key={viewing.id} search={viewing} picked={picked} onChoose={choose} />
         ) : (
           <CanvasIdle>{idle}</CanvasIdle>
@@ -103,9 +108,9 @@ function CanvasIdle({ children }: { children?: ReactNode }) {
           <span>Every figure links to its source. Choose the one that fits.</span>
         </li>
         <li>
-          <strong>Pay the deposit with PayPal</strong>
+          <strong>Review the plan and pay with PayPal</strong>
           <span>
-            Your spending rules decide: small deposits pay at once, bigger ones need the treasurer.
+            You read the summary and the USD total, then agree. Your spending rules decide: small amounts pay at once, bigger ones need the treasurer.
           </span>
         </li>
       </ol>
