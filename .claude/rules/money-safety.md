@@ -26,7 +26,7 @@ Owner: P1. Features: F8 rules compiler, F9 rules engine, F10 budget figures (no 
 - The funds gate and sponsor gate were removed on Nov 6, 2026: the agent pays from the organizer's own PayPal account, so `check()` does not compare a spend with cleared income and does not wait on a sponsor's invoice.
 - unlocked = cleared income − committed spend, in integer cents, is still computed (`rules/budget.ts`, `db/budget.ts`) for the home screen, widgets and sponsor report. It is informational only.
 - Committed spend still feeds the daily auto-pay cap and the category caps, and includes approved-but-not-captured carts and pending payouts, so two concurrent carts cannot both slip under a cap.
-- Next: a user-set maximum spend, entered by the organizer, becomes the spending limit.
+- The organizer's maximum spend is the spending limit: `events.max_spend_minor`, set from the "Add rule" button in the agent chat (`PUT /api/events/:id/max-spend`). `createRulesCheck` adds it as a `max_spend` rule, and `check()` blocks any spend that would take the event's committed total past it. No maximum set means no such limit.
 
 ## Tests
 

@@ -34,6 +34,16 @@
   font-size: 0.875rem;
 }
 
+.chat-start {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+
+.chat-start p {
+  margin: 0;
+}
+
 .chat-message {
   max-width: 80%;
   padding: var(--space-2) var(--space-3);
@@ -99,6 +109,12 @@
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
+}
+
+.chat-form .chat-stop {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
 .chat-form button:disabled {

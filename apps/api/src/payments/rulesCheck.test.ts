@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.js';
 import { listSponsors } from '../db/events.js';
 import { recordLedgerEntry } from '../db/ledger.js';
-import { auditLog } from '../db/schema.js';
+import { auditLog, events } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
 import { createPayPalClient } from '../paypal/client.js';
@@ -50,6 +50,15 @@ async function recorded(s: Spend, result: CheckResult, outcome: string | undefin
 }
 
 describe('createRulesCheck', () => {
+  it("enforces the event's maximum spend across what is already committed, and nothing when none is set", async () => {
+    expect((await rulesCheck()(spend('before', 190_000))).decision).toBe('needs_approval'); // only the approval threshold
+    await db.update(events).set({ maxSpendMinor: 30_000 }).where(eq(events.id, eventId));
+    await recorded(spend('first', 20_000), allow, 'paid');
+    expect((await rulesCheck()(spend('fits', 10_000))).decision).toBe('allow');
+    const over = await rulesCheck()(spend('over', 10_001));
+    expect(over).toMatchObject({ decision: 'block', ruleIds: ['max-spend'] });
+  });
+
   it('allows a spend while nothing has cleared: income is not a gate, the organizer pays', async () => {
     expect((await rulesCheck()(spend('a', 14_000))).decision).toBe('allow');
   });

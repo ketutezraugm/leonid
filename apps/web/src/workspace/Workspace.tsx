@@ -16,7 +16,7 @@ export function Workspace({
   inEvent = null,
 }: {
   idle?: ReactNode;
-  inEvent?: Pick<EventInfo, 'id' | 'name'> | null;
+  inEvent?: (Pick<EventInfo, 'id' | 'name' | 'brief'> & Partial<Pick<EventInfo, 'currency' | 'maxSpend'>>) | null;
 }) {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [viewingId, setViewingId] = useState<string | null>(null);

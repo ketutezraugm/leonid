@@ -1,15 +1,23 @@
+import type { BudgetBurnData, FundingThermometerData, TreasuryBalance, TreasuryResponse } from '@quartermaster/shared';
 import type { BudgetFigures } from '../ui/BudgetBar';
 
-// Sample data for Event home until P1's budget-summary endpoint exists (UX plan: missing shapes).
-// Matches the seeded demo: Harbor Cloud has paid $3,000, Lumen Labs is invoiced $2,500, Pixel Foundry has
-// pledged $2,500. The real screen reads cleared, committed, invoiced and pledged from that one endpoint.
-export const SAMPLE_BUDGET: BudgetFigures = {
-  currency: 'USD',
-  cleared: 300_000,
-  committed: 186_000,
-  invoiced: 250_000,
-  pledged: 250_000,
-};
+// The funding widget's totals are cumulative (a paid sponsor counts as pledged, invoiced and cleared), while the
+// budget bar draws each dollar once: invoiced means invoiced and not yet paid, pledged means not yet invoiced.
+export function eventBudgetFigures(funding: FundingThermometerData, burn: BudgetBurnData): BudgetFigures {
+  const { pledged, invoiced } = funding.totals;
+  return {
+    currency: burn.currency,
+    cleared: burn.clearedIncome,
+    committed: burn.committed,
+    invoiced: Math.max(0, invoiced - burn.clearedIncome),
+    pledged: Math.max(0, pledged - invoiced),
+  };
+}
+
+// The PayPal account's balance in the event's currency; undefined when PayPal reports none in it.
+export function paypalBalance(treasury: TreasuryResponse, currency: string): TreasuryBalance | undefined {
+  return treasury.balances.find((b) => b.currency === currency.toUpperCase());
+}
 
 export interface RecentSpend {
   id: string;

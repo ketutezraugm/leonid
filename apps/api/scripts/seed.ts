@@ -1,6 +1,8 @@
 import { getDb } from '../src/db/client.js';
-import { seedDemoEvent } from '../src/db/seed.js';
+import { seedDemoEvent, seedDemoPlan } from '../src/db/seed.js';
 
-const event = await seedDemoEvent(getDb());
+const db = getDb();
+const event = await seedDemoEvent(db);
+await seedDemoPlan(db, event.id);
 console.log(`Seeded "${event.name}" (${event.id})`);
 process.exit(0);

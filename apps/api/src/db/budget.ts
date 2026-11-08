@@ -141,6 +141,7 @@ async function loadFunds(
   }
   return {
     unlockedMinor: unlockedBudget(cleared, sumMinor(committed)),
+    committedMinor: sumMinor(committed),
     committedByCategoryMinor,
     // A refund or chargeback nets the sponsor's cleared money to zero and closes the gate again.
     paidSponsorIds: sponsors

@@ -27,7 +27,12 @@ const text = (delta: string) => [
   { type: 'text-end', id: 't1' },
 ];
 
-type Summary = { id: string; title: string; updatedAt: string };
+type Summary = {
+  id: string;
+  title: string;
+  updatedAt: string;
+  event?: { id: string; name: string } | null;
+};
 
 function stubFetch({
   thread = emptyThread,
@@ -271,7 +276,7 @@ describe('AgentChat', () => {
     });
   });
 
-  it('offers only the venue to book and shows the rest as in development', async () => {
+  it('offers only the venue and food to book and shows the rest as in development', async () => {
     const fetchMock = stubFetch({
       reply: () =>
         sse([
@@ -293,20 +298,17 @@ describe('AgentChat', () => {
 
     const card = await screen.findByRole('form', { name: 'What to book' });
     expect(within(card).getByRole('checkbox', { name: /Venue/ })).toBeChecked();
-    // Suggested by the agent, but still in development: shown, not choosable.
-    const food = within(card).getByRole('checkbox', { name: /Food & drinks/ });
-    expect(food).toBeDisabled();
-    expect(food).not.toBeChecked();
+    expect(within(card).getByRole('checkbox', { name: /Food & drinks/ })).toBeChecked();
     expect(within(card).getByRole('checkbox', { name: /Swag/ })).toBeDisabled();
-    expect(within(card).getAllByText('In development')).toHaveLength(7);
+    expect(within(card).getAllByText('In development')).toHaveLength(6);
 
-    fireEvent.click(within(card).getByRole('button', { name: 'Plan 1 item' }));
+    fireEvent.click(within(card).getByRole('button', { name: 'Plan 2 items' }));
 
     await waitFor(() => {
       const posts = fetchMock.mock.calls.filter(([url]) => url === '/api/chat');
       expect(posts).toHaveLength(2);
       const body = JSON.parse(String(posts[1]?.[1]?.body));
-      expect(body.message.parts[0].text).toBe('Book for this event: Venue');
+      expect(body.message.parts[0].text).toBe('Book for this event: Venue, Food & drinks');
     });
   });
 
@@ -346,12 +348,35 @@ describe('AgentChat', () => {
     expect(onViewSearch).toHaveBeenCalledWith('s1');
 
     type('Anything else?');
-    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByText('Working…')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View results' })).not.toBeInTheDocument();
 
     finish(sse(text('Done.')));
     expect(await screen.findByRole('button', { name: 'View results' })).toBeInTheDocument();
+  });
+
+  it('swaps Send for Stop during a run, and Stop aborts the request', async () => {
+    let signal: AbortSignal | undefined;
+    const fetchMock = stubFetch({});
+    const passThrough = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url, init) => {
+      if (url !== '/api/chat' || init?.method !== 'POST') return passThrough(url, init);
+      signal = init.signal ?? undefined;
+      // Never answers; only the abort ends it.
+      return new Promise((_, reject) =>
+        signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError'))),
+      );
+    });
+    render(<AgentChat />);
+
+    await screen.findByLabelText('Message');
+    type('Plan everything.');
+    fireEvent.click(await screen.findByRole('button', { name: 'Stop' }));
+
+    expect(signal?.aborted).toBe(true);
+    expect(await screen.findByRole('button', { name: 'Send' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('starts with the agent checklist closed and opens it on click', async () => {
@@ -502,6 +527,45 @@ describe('AgentChat', () => {
     expect(patch?.[0]).toBe(`/api/chat/${a}`);
     expect(JSON.parse(String(patch?.[1]?.body))).toEqual({ archived: true });
     expect(await screen.findByRole('status')).toHaveTextContent('Archived “Plan swag”');
+  });
+
+  it('offers to start planning with the answers saved on the event, and sends them once', async () => {
+    const fetchMock = stubFetch({
+      reply: () => sse([{ type: 'start' }, ...text('On it.'), { type: 'finish' }]),
+    });
+    const eventId = crypto.randomUUID();
+    render(
+      <AgentChat inEvent={{ id: eventId, name: 'Spring Meetup', brief: 'Plan our new event.' }} />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Start planning' }));
+
+    expect(await screen.findByText('On it.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start planning' })).not.toBeInTheDocument();
+    const posts = fetchMock.mock.calls.filter(
+      ([url, init]) => url === '/api/chat' && init?.method === 'POST',
+    );
+    expect(posts).toHaveLength(1);
+    const sent = JSON.parse(String(posts[0]?.[1]?.body));
+    expect(sent.eventId).toBe(eventId);
+    expect(sent.message.parts).toEqual([{ type: 'text', text: 'Plan our new event.' }]);
+  });
+
+  it("opens the event's own chat when the open chat is about another event", async () => {
+    const other = crypto.randomUUID();
+    const mine = crypto.randomUUID();
+    const eventId = crypto.randomUUID();
+    localStorage.setItem('quartermaster.threadId', other);
+    localStorage.setItem('quartermaster.threadIds', JSON.stringify([other, mine]));
+    stubFetch({
+      threads: [
+        { ...summary(other, 'Old plans'), event: { id: crypto.randomUUID(), name: 'OpenHack' } },
+        { ...summary(mine, 'Spring plans'), event: { id: eventId, name: 'Spring Meetup' } },
+      ],
+    });
+    render(<AgentChat inEvent={{ id: eventId, name: 'Spring Meetup' }} />);
+
+    await waitFor(() => expect(localStorage.getItem('quartermaster.threadId')).toBe(mine));
   });
 
   it('deletes the active chat after confirming and drops it from this browser', async () => {

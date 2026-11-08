@@ -123,52 +123,249 @@ a:hover {
   text-align: center;
 }
 
-.shell-foot {
-  display: grid;
-  gap: 2px;
-  margin-top: var(--space-4);
+/* --- Account card and menu: pinned to the sidebar's bottom-left --- */
+@media (min-width: 721px) {
+  .shell-side {
+    min-height: calc(100dvh - 2 * var(--space-2));
+  }
+}
+
+/* The sidebar's menu floats over the sheet, so the sidebar sits above it and the sheet keeps the z-indexes of
+   its own widgets (the Plan's Gantt bars and toolbar) to itself. */
+.shell-side {
+  z-index: 20;
+}
+
+.shell-sheet {
+  isolation: isolate;
+}
+
+.shell-account {
+  margin-top: auto;
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
 }
 
-.shell-foot a,
-.shell-signout {
+.account {
+  position: relative;
+}
+
+.account-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 34px;
-  padding: 0 var(--space-2) 0 10px;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.account-card:hover,
+.account-card:has(.account-button[aria-expanded='true']) {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* An empty button covers the whole card, so clicking anywhere opens the menu; the eye sits above it. */
+.account-button {
+  position: absolute;
+  inset: 0;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   background: none;
-  font: inherit;
-  color: var(--color-muted);
-  text-decoration: none;
-  text-align: left;
   cursor: pointer;
 }
 
-.shell-foot a:hover,
-.shell-signout:hover {
+.account-card > .account-initial,
+.account-card > .account-text {
+  pointer-events: none;
+}
+
+.account-initial {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.account-text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.account-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+}
+
+.account-text .muted {
+  font-size: var(--font-size-xs);
+}
+
+.account-balance {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.account-eye {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.account-eye .nav-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.account-eye:hover {
   color: var(--color-text);
   background: var(--color-surface-sunken);
 }
 
-.shell-foot a.active {
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
+/* The menu opens upward; its head and foot stay put and only the event list scrolls. */
+.account-menu {
+  position: absolute;
+  bottom: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  width: max(100%, 280px);
+  max-height: min(70vh, 520px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-menu);
+  animation: account-menu-in var(--motion-base) var(--ease-standard);
 }
 
-.wallet-status {
+@keyframes account-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.account-menu-head,
+.account-menu-links,
+.account-menu-foot,
+.account-menu-title {
+  flex: none;
+}
+
+.account-menu-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.account-menu-links,
+.account-menu-foot {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.account-menu-foot {
+  border-top: 1px solid var(--color-border);
+  padding-bottom: var(--space-2);
+}
+
+.account-menu a,
+.account-menu-foot button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  font: inherit;
+  color: var(--color-text);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-menu a:hover,
+.account-menu-foot button:hover {
+  background: var(--color-surface-sunken);
+}
+
+.account-menu-title {
+  margin: 0;
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+}
+
+.account-menu-events {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-2);
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.account-menu-events a {
+  justify-content: space-between;
+  min-height: 0;
+  padding: var(--space-2);
+}
+
+.account-menu-events a[aria-current='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.account-menu-event {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.account-menu-event .muted {
   font-size: var(--font-size-xs);
 }
 
-.wallet-status--active {
-  color: var(--color-status-done-text);
-}
-
-.wallet-status--revoked {
-  color: var(--color-status-blocked-text);
+@media (prefers-reduced-motion: reduce) {
+  .account-menu {
+    animation: none;
+  }
 }
 
 /* Agent workspace: the chat rail and results canvas fill the sheet edge to edge and scroll themselves. */
@@ -215,9 +412,14 @@ a:hover {
   display: none;
 }
 
+.shell--rail .account-card,
+.shell--rail .event-label {
+  justify-content: center;
+  padding: var(--space-1);
+}
+
 .shell--rail .brand,
-.shell--rail .shell-nav a,
-.shell--rail .shell-foot a {
+.shell--rail .shell-nav a {
   justify-content: center;
   padding: 0;
 }
@@ -259,8 +461,38 @@ a:hover {
 
   .shell-event,
   .shell--rail .shell-event,
-  .shell-foot {
+  .event-label {
     display: none;
+  }
+
+  /* On phones the account card is just the avatar, in the top bar's corner, and its menu opens downward. */
+  .shell-side {
+    position: relative;
+  }
+
+  .shell-account {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-3);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .account-card {
+    padding: var(--space-1);
+  }
+
+  .shell-side .account-text {
+    display: none;
+  }
+
+  .account-menu {
+    top: calc(100% + var(--space-1));
+    bottom: auto;
+    right: 0;
+    left: auto;
+    width: min(320px, calc(100vw - 2 * var(--space-3)));
   }
 
   .shell-sheet {

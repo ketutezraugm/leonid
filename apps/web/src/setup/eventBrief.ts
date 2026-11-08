@@ -133,9 +133,9 @@ export function newBrief(kind: EventKindId, kindNote = ''): Brief {
 // What usually fits this kind of event; the venue is only pre-ticked when the agent has to find one.
 export function defaultNeeds(kind: EventKindId, venue: VenueStatus): BookingItemId[] {
   const needs = kindOf(kind).needs;
-  return BOOKING_ITEMS.map((item) => item.id).filter(
-    (id) => needs.includes(id) && (id !== 'venue' || venue === 'find'),
-  );
+  return BOOKING_ITEMS.filter((item) => item.available)
+    .map((item) => item.id)
+    .filter((id) => needs.includes(id) && (id !== 'venue' || venue === 'find'));
 }
 
 export type QuestionId =

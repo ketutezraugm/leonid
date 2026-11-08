@@ -27,7 +27,7 @@ describe('event brief', () => {
     expect(text).toContain('I still need a venue, so find me one.');
     // Only bookable items count; the rest are coming soon.
     expect(parseBookingChoice(text)).toEqual({
-      chosen: ['venue'],
+      chosen: ['venue', 'catering'],
       extra: 'a sign-language interpreter',
     });
   });
@@ -41,7 +41,7 @@ describe('event brief', () => {
     });
     expect(text).toContain('in a city I have not decided yet');
     expect(text).toContain('do not search for one');
-    expect(parseBookingChoice(text)?.chosen).toEqual([]);
+    expect(parseBookingChoice(text)?.chosen).toEqual(['catering']);
   });
 
   it('summarises every answer', () => {

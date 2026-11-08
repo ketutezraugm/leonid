@@ -42,8 +42,10 @@ import {
   takeKickoff,
   withId,
 } from './sessions';
+import { MaxSpendButton } from './MaxSpendButton';
 import { ThreadList } from './ThreadList';
 import type { EventInfo } from '../shell/event';
+import { Button } from '../ui/Button';
 import './chat.css';
 
 interface CanvasLink {
@@ -63,7 +65,7 @@ interface CanvasLink {
 
 // The event in the URL, if any: a new chat opened there works on that event. A null id is the demo
 // fallback, which means the seeded event.
-type InEvent = Pick<EventInfo, 'id' | 'name'> | null;
+type InEvent = (Pick<EventInfo, 'id' | 'name' | 'brief'> & Partial<Pick<EventInfo, 'currency' | 'maxSpend'>>) | null;
 
 export function AgentChat({
   variant = 'panel',
@@ -83,6 +85,9 @@ export function AgentChat({
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<ChatThreadSummary | null>(null);
   const [showList, setShowList] = useState(false);
+  const inEventId = inEvent?.id ?? null;
+  // The event whose chat was last chosen on arrival, so a chat the organizer opens is left alone.
+  const followed = useRef<string | null>(null);
   const [loaded, setLoaded] = useState<{
     threadId: string;
     thread: ChatThreadResponse;
@@ -138,6 +143,21 @@ export function AgentChat({
         if (cancelled || !body) return;
         setThreads(body.threads);
         setDemoEvent(body.demoEvent);
+        // Arriving in an event with a chat about another event open: open this event's newest
+        // chat, or a fresh one. A chat with no event yet, or not sent yet, stays.
+        if (inEventId && followed.current !== inEventId) {
+          followed.current = inEventId;
+          const current = body.threads.find((t) => t.id === threadId);
+          if (current?.event && current.event.id !== inEventId) {
+            const next = body.threads.find((t) => t.event?.id === inEventId)?.id ?? newThreadId();
+            setThreadId(next);
+            saveActiveId(next);
+            const ordered = withId(ids, next);
+            setIds(ordered);
+            saveIds(ordered);
+            return;
+          }
+        }
         const kept = ids.filter((id) => id === threadId || body.threads.some((t) => t.id === id));
         if (kept.length !== ids.length) {
           setIds(kept);
@@ -150,7 +170,7 @@ export function AgentChat({
     return () => {
       cancelled = true;
     };
-  }, [ids, threadId, refreshCount]);
+  }, [ids, threadId, refreshCount, inEventId]);
 
   const refreshThreads = useCallback(() => setRefreshCount((n) => n + 1), []);
 
@@ -159,6 +179,8 @@ export function AgentChat({
       ? { id: inEvent.id, name: inEvent.name }
       : demoEvent
     : null;
+  // The setup answers saved on the event, offered as the first message of a new chat there.
+  const briefForNewChat = inEvent?.id ? (inEvent.brief ?? null) : null;
 
   function open(id: string) {
     setThreadId(id);
@@ -235,6 +257,7 @@ export function AgentChat({
     <section className={`chat chat--${variant}`} aria-label="Agent chat">
       <header className="chat-header">
         <h2>Ask Leo</h2>
+        {inEvent?.id && <MaxSpendButton event={{ ...inEvent, id: inEvent.id, currency: inEvent.currency ?? 'USD' }} />}
         <button
           type="button"
           className="chat-toggle"
@@ -274,6 +297,7 @@ export function AgentChat({
               initialChecklist={ready.thread.checklist}
               initialEvent={ready.thread.event}
               eventForNewChat={eventForNewChat}
+              briefForNewChat={briefForNewChat}
               loadError={ready.error}
               onBusyChange={setBusy}
               onSettled={refreshThreads}
@@ -298,6 +322,7 @@ function ChatPanel({
   initialChecklist,
   initialEvent,
   eventForNewChat,
+  briefForNewChat,
   loadError,
   onBusyChange,
   onSettled,
@@ -312,6 +337,7 @@ function ChatPanel({
   initialChecklist: ChecklistItem[];
   initialEvent: ChatEventRef | null;
   eventForNewChat: ChatEventRef | null;
+  briefForNewChat: string | null;
   loadError: string | null;
   onBusyChange: (busy: boolean) => void;
   onSettled: () => void;
@@ -327,7 +353,7 @@ function ChatPanel({
   });
   const linked = kickoffEvent ?? eventForNewChat;
 
-  const { messages, setMessages, sendMessage, status, error, clearError } = useChat({
+  const { messages, setMessages, sendMessage, stop, status, error, clearError } = useChat({
     id: threadId,
     messages: initialMessages,
     transport: new DefaultChatTransport({
@@ -428,7 +454,16 @@ function ChatPanel({
       <Checklist items={checklist} />
 
       <div className="chat-log" ref={logRef} role="log" aria-live="polite">
-        {messages.length === 0 ? (
+        {messages.length === 0 && briefForNewChat && !kickoffEvent && linked ? (
+          <div className="chat-empty chat-start">
+            <p className="muted">
+              Your setup answers for {linked.name} are saved. Start planning when you’re ready.
+            </p>
+            <Button variant="primary" disabled={busy} onClick={() => send(briefForNewChat)}>
+              Start planning
+            </Button>
+          </div>
+        ) : messages.length === 0 ? (
           <p className="chat-empty muted">
             {linked ? `Ask me anything about ${linked.name}.` : 'Tell me about your event.'}
           </p>
@@ -470,9 +505,16 @@ function ChatPanel({
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="submit" disabled={busy || !draft.trim()}>
-          Send
-        </button>
+        {/* Stopping closes the request, and the server aborts the run when its request closes. */}
+        {busy ? (
+          <button type="button" className="chat-stop" onClick={() => void stop()}>
+            Stop
+          </button>
+        ) : (
+          <button type="submit" disabled={!draft.trim()}>
+            Send
+          </button>
+        )}
       </form>
     </>
   );

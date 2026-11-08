@@ -7,6 +7,7 @@ import {
   type ToolSet,
 } from 'ai';
 import { z } from 'zod';
+import { parseBookingChoice } from '@quartermaster/shared';
 import { auditedExecute, auditedStream, todayLine, type AgentContext } from './context.js';
 import { createPlanningAgent } from './planning.js';
 import { createTreasuryAgent } from './treasury.js';
@@ -34,7 +35,7 @@ If read_event returns no event and the organizer describes a new one, call creat
 When something you need is missing or unclear (date, headcount, budget, city, format), do not guess and do not ask in plain text: call ask_user once with every open question together, each with 2-4 likely options, your recommended one first. Then stop and wait for the answers.
 Before any planning or venue search, the organizer chooses what to book. If they have not chosen yet, call choose_bookings once the event exists (right after create_event is fine), pre-ticking what usually fits this kind of event, then stop and wait. delegate_to_planning refuses until they have chosen.
 Once they have chosen, plan and search only for the chosen items. Call choose_bookings again only if they ask to change the list.
-Only the venue can be booked today. Everything else on the checklist (food & drinks, AV & Wi-Fi, swag, prizes, speakers & volunteers, printing & signage, photo & video) is still in development: if the organizer asks for one, or names other items in their own words, say it is coming soon and do not plan or search for it.
+Only the venue and food & drinks can be booked today. Everything else on the checklist (AV & Wi-Fi, swag, prizes, speakers & volunteers, printing & signage, photo & video) is still in development: if the organizer asks for one, or names other items in their own words, say it is coming soon and do not plan or search for it.
 So start with the venue. When the venue scout returns venues, your turn ends so the organizer can pick one in the results; do not pick for them.
 After they pick a venue, call delegate_to_planning to add the tasks for booking that venue (name it in the task), say whether the picked venue's page mentions catering, then tell them the next step is paying the venue's deposit with PayPal from the results panel. Stop there.
 If there is no event and they ask about "my event", say this chat has no event yet: they can describe one, or start a new chat linked to an existing event.
@@ -67,6 +68,9 @@ export function createOrchestrator(ctx: AgentContext) {
     'VENUE_TOOL_LINE\n',
     search ? `${venueToolLine}\n` : '',
   )}`;
+  // The organizer's message answers what to book (the setup wizard's kickoff or the checklist
+  // card), so the checklist is not offered again this turn. The prompt alone did not stop it.
+  const justChose = parseBookingChoice(ctx.goal) !== null;
 
   return new ToolLoopAgent({
     model: ctx.model,
@@ -76,7 +80,7 @@ export function createOrchestrator(ctx: AgentContext) {
       create_event: createEventTool(ctx),
       update_checklist: updateChecklistTool(ctx),
       ask_user: askUserTool(ctx),
-      choose_bookings: chooseBookingsTool(ctx),
+      ...(!justChose && { [CHOOSE_BOOKINGS_TOOL]: chooseBookingsTool(ctx) }),
       delegate_to_planning: tool({
         description:
           'Ask the planning agent to add tasks to the event plan (venue, swag, AV, catering, travel, ' +

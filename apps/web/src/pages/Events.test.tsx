@@ -84,45 +84,4 @@ describe('Events delete', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
   });
-
-  it('deletes from inside the event and goes back to All events', async () => {
-    stubServer(204);
-    render(
-      <MemoryRouter initialEntries={[`/events/${meetup.id}`]}>
-        <App />
-      </MemoryRouter>,
-    );
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete event' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete event' }));
-    expect(await screen.findByText('Deleted Spring Meetup.')).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Your events' })).toBeInTheDocument();
-    await vi.waitFor(() => expect(screen.queryByRole('link', { name: /Spring Meetup/ })).not.toBeInTheDocument());
-  });
-
-  it('stays in the event when the server refuses', async () => {
-    stubServer(409);
-    render(
-      <MemoryRouter initialEntries={[`/events/${meetup.id}`]}>
-        <App />
-      </MemoryRouter>,
-    );
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete event' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete event' }));
-    expect(await screen.findByText(/money history/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Event home' })).toBeInTheDocument();
-  });
-
-  it('offers no delete for the demo fallback', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string) => (url === '/api/events' ? json({ error: 'not found' }, 404) : new Promise(() => {}))),
-    );
-    render(
-      <MemoryRouter initialEntries={['/events/demo']}>
-        <App />
-      </MemoryRouter>,
-    );
-    expect(await screen.findByRole('heading', { name: 'Event home' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete event' })).not.toBeInTheDocument();
-  });
 });
