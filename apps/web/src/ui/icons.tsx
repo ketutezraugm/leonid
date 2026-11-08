@@ -5,6 +5,7 @@ const paths: Record<string, string> = {
   agent: 'M5 4.5h14a2 2 0 012 2V15a2 2 0 01-2 2h-6.5L8 20.5V17H5a2 2 0 01-2-2V6.5a2 2 0 012-2zM8 9h8M8 12.5h5',
   plan: 'M4 7h9M4 12h14M4 17h7M15 5v4M19 15v4',
   money: 'M5 6h14v12H5zM5 10h14M9 14h3',
+  history: 'M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4M12 8v4l3 2',
   approvals: 'M5 12.5l4.5 4.5L19 7.5',
   claims: 'M7 4h10v16l-2.5-1.5L12 20l-2.5-1.5L7 20zM10 9h4M10 13h4',
   sidebarOpen: 'M4 5h16v14H4zM9 5v14M13 9.5l2.5 2.5-2.5 2.5',

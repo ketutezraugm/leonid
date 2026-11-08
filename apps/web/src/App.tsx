@@ -5,6 +5,7 @@ import { Checkout } from './pages/Checkout';
 import { Claims } from './pages/Claims';
 import { VolunteerClaim } from './pages/VolunteerClaim';
 import { Events } from './pages/Events';
+import { History } from './pages/History';
 import { Money } from './pages/Money';
 import { NewEvent } from './pages/NewEvent';
 import { NotFound } from './pages/NotFound';
@@ -57,6 +58,7 @@ export function App() {
             <Route element={<OrganizerLayout />}>
               <Route path="/" element={<ToAllEvents />} />
               <Route path="/events" element={<Events />} />
+              <Route path="/history" element={<History />} />
               <Route path="/setup" element={<NewEvent />} />
               <Route path="/events/:eventId" element={<EventScope />}>
                 <Route index element={<Navigate to="agent" replace />} />

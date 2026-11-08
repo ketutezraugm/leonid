@@ -82,6 +82,10 @@ export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => voi
             <Icon name="events" />
             <span className="shell-label">All events</span>
           </NavLink>
+          <NavLink to="/history" title="History">
+            <Icon name="history" />
+            <span className="shell-label">History</span>
+          </NavLink>
         </nav>
       )}
 

@@ -57,15 +57,21 @@ export function VenueBookingPanel({
   threadId,
   pickName,
   onBack,
-  onAsk,
+  onAsk = null,
+  backLabel = 'Back to venues',
+  idle: idleProp,
 }: {
   threadId: string;
   pickName: string;
   onBack: () => void;
+  /** The back button's text; the plan history reuses this panel and closes it. */
+  backLabel?: string;
+  /** Read the plan now. Defaults to "the chat is idle" (onAsk is set); the plan history has no chat running. */
+  idle?: boolean;
   /** Sends a question to the agent chat; null while the agent is busy, which is also when the server may still be saving the pick. */
-  onAsk: ((question: string) => void) | null;
+  onAsk?: ((question: string) => void) | null;
 }) {
-  const idle = onAsk !== null;
+  const idle = idleProp ?? onAsk !== null;
   const [summary, setSummary] = useState<VenueBookingSummary | null | undefined>(undefined);
   const [agreed, setAgreed] = useState(false);
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -109,7 +115,7 @@ export function VenueBookingPanel({
           Only the seeded demo venues, in a chat linked to an event, can be paid for here.
         </p>
         <button type="button" className="link-button" onClick={onBack}>
-          Back to venues
+          {backLabel}
         </button>
       </section>
     );
@@ -264,7 +270,7 @@ export function VenueBookingPanel({
               Agree and pay with PayPal
             </button>
             <button type="button" className="link-button" onClick={onBack}>
-              Back to venues
+              {backLabel}
             </button>
           </div>
         </div>
