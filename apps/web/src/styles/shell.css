@@ -542,6 +542,37 @@ a:hover {
   background: var(--color-accent-strong);
 }
 
+/* Leo on the button: the mane is the face's pale halo; eyes and nose are cut in the button's own indigo. */
+.agent-button .leo-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.leo-icon-mane {
+  fill: currentColor;
+  opacity: 0.5;
+  transform-box: view-box;
+  transform-origin: 12px 12.5px;
+  transition: transform 400ms var(--ease-in-out-strong);
+}
+
+.leo-icon-ink {
+  fill: var(--color-accent);
+}
+
+.leo-icon-nose {
+  stroke: var(--color-accent);
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+}
+
+/* A small hello on hover: the mane turns one notch and lands on itself. Mouse only, never under reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .agent-button:hover .leo-icon-mane {
+    transform: rotate(45deg);
+  }
+}
+
 .agent-button:active {
   transform: scale(0.96);
 }
