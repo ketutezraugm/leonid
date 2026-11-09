@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { Spend } from '../payments/ports.js';
 import { check, type Budget } from './check.js';
+import { CompiledRules } from '@leonid/shared';
 import { DEMO_RULES } from './demoRules.js';
+
+// The demo has no approval step (#115), but the rule types stay in the engine for rules an organizer writes
+// later, so their behaviour is still tested here with the thresholds added back.
+const WITH_THRESHOLDS = CompiledRules.parse([
+  ...DEMO_RULES,
+  { id: 'approval-threshold', type: 'approval_threshold', amountMinor: 20_000, currency: 'USD' },
+  { id: 'payout-threshold', type: 'payout_threshold', amountMinor: 20_000, currency: 'USD' },
+]);
 
 const SPONSOR = 'sponsor-1';
 const spend = (amountMinor: number, extra: Partial<Spend> = {}): Spend => ({
@@ -28,11 +37,17 @@ describe('check: the demo beats', () => {
   it('allows the $140 cart', () => {
     const result = check(lanyards(), DEMO_RULES, budget());
     expect(result.decision).toBe('allow');
-    expect(result.ruleIds).toContain('approval-threshold');
+    expect(result.ruleIds).toContain('daily-auto-spend-cap');
   });
 
-  it('sends the $420 cart to the treasurer', () => {
-    expect(check(spend(42_000), DEMO_RULES, budget())).toEqual({
+  it('pays the $420 cart too: there is no approval step, but it is still checked', () => {
+    const result = check(spend(42_000), DEMO_RULES, budget());
+    expect(result.decision).toBe('allow');
+    expect(result.ruleIds).toContain('daily-auto-spend-cap');
+  });
+
+  it('sends a $420 cart to the treasurer when an organizer sets an approval threshold', () => {
+    expect(check(spend(42_000), WITH_THRESHOLDS, budget())).toEqual({
       decision: 'needs_approval',
       reasons: ['over the 200.00 USD approval threshold'],
       ruleIds: ['approval-threshold'],
@@ -40,8 +55,8 @@ describe('check: the demo beats', () => {
   });
 
   it('allows exactly the threshold and asks one cent above it', () => {
-    expect(check(spend(20_000), DEMO_RULES, budget()).decision).toBe('allow');
-    expect(check(spend(20_001), DEMO_RULES, budget()).decision).toBe('needs_approval');
+    expect(check(spend(20_000), WITH_THRESHOLDS, budget()).decision).toBe('allow');
+    expect(check(spend(20_001), WITH_THRESHOLDS, budget()).decision).toBe('needs_approval');
   });
 
   it('blocks swag from a vendor off the approved list', () => {
@@ -69,8 +84,8 @@ describe('check: no funds gate', () => {
     expect(check(lanyards(), DEMO_RULES, { ...budget(), funds: null }).decision).toBe('allow');
   });
 
-  it('still sends a big spend to the treasurer, whatever is unlocked', () => {
-    expect(check(spend(42_000), DEMO_RULES, budget({ unlockedMinor: 0 }))).toMatchObject({
+  it('an approval threshold, when set, still holds a big spend, whatever is unlocked', () => {
+    expect(check(spend(42_000), WITH_THRESHOLDS, budget({ unlockedMinor: 0 }))).toMatchObject({
       decision: 'needs_approval',
       ruleIds: ['approval-threshold'],
     });
@@ -136,8 +151,10 @@ describe('check: claims and payouts', () => {
 
   it('holds payouts to the payout threshold, not the purchase one', () => {
     const payout = (amountMinor: number) => spend(amountMinor, { kind: 'payout', payee: 'speaker-1' });
-    expect(check(payout(20_000), DEMO_RULES, budget()).decision).toBe('allow');
-    expect(check(payout(20_001), DEMO_RULES, budget())).toMatchObject({ decision: 'needs_approval', ruleIds: ['payout-threshold'] });
+    expect(check(payout(20_000), WITH_THRESHOLDS, budget()).decision).toBe('allow');
+    expect(check(payout(20_001), WITH_THRESHOLDS, budget())).toMatchObject({ decision: 'needs_approval', ruleIds: ['payout-threshold'] });
+    // The demo has no payout threshold: a $500 prize is allowed (and still checked).
+    expect(check(payout(50_000), DEMO_RULES, budget()).decision).toBe('allow');
   });
 
   it('applies the swag list to purchases only', () => {
