@@ -786,6 +786,12 @@ a:hover {
   margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
+  /* Still swipes on narrow screens, without the browser's grey scrollbar under the labels. */
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
