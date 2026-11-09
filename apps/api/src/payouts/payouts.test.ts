@@ -116,16 +116,14 @@ describe('prize and speaker payouts (F17)', () => {
     ]);
   });
 
-  it('holds a prize over the threshold for the treasurer, and sends it once approved', async () => {
+  it('sends a prize over $200 straight away: no approval step (#115), but still checked and audited', async () => {
     const item = await pay(prize({ amount: 50_000 }));
-    expect(item.status).toBe('pending_approval');
-    expect(sent).toHaveLength(0);
 
-    const approval = await createDbApprovals(db).findByReference(`payout:${item.id}`);
-    await executor.captureApproved(approval!.id, 'treasurer');
-
-    expect(sent).toHaveLength(1);
-    expect((await listed())[0]).toMatchObject({ id: item.id, status: 'processing' });
+    expect(item.status).toBe('processing');
+    expect(sent).toEqual([expect.objectContaining({ amountMinor: 50_000, referenceId: `payout:${item.id}` })]);
+    const checks = (await db.select().from(auditLog)).filter((r) => r.action === 'spend.check');
+    expect(checks).toHaveLength(1);
+    expect(JSON.parse(String(checks[0]!.ruleResult))).toMatchObject({ decision: 'allow' });
   });
 
   it("pays a prize funded by a sponsor whose invoice is not paid: the sponsor gate is gone, the rules are the limit", async () => {

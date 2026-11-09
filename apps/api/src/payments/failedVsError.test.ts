@@ -1,3 +1,4 @@
+import { CompiledRules } from '@leonid/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { auditLog } from '../db/schema.js';
 import type { Db } from '../db/client.js';
@@ -10,6 +11,7 @@ import { createDbApprovals, createDbAudit, createDbReferences, createDbWalletSto
 import { createExecutor, definitelyRefused } from './executor.js';
 import type { Spend } from './ports.js';
 import { createRulesCheck } from './rulesCheck.js';
+import { DEMO_RULES } from '../rules/demoRules.js';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -47,7 +49,7 @@ describe('a failed PayPal call and the daily auto-pay cap', () => {
   });
 
   // PayPal fails the FIRST call that matches (a vault charge, or an approval order), then behaves.
-  function executor(failFirst: { charge?: () => Response; order?: () => Response }) {
+  function executor(failFirst: { charge?: () => Response; order?: () => Response }, rules?: CompiledRules) {
     const failures = { ...failFirst };
     let orders = 0;
     const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
@@ -69,7 +71,7 @@ describe('a failed PayPal call and the daily auto-pay cap', () => {
     });
     return createExecutor({
       client: createPayPalClient({ app: 'procurement', clientId: 'i', clientSecret: 's', fetch }),
-      check: createRulesCheck(db),
+      check: createRulesCheck(db, rules ? { rules } : {}),
       audit: createDbAudit(db),
       wallet: createDbWalletStore(db),
       approvals: createDbApprovals(db),
@@ -101,8 +103,13 @@ describe('a failed PayPal call and the daily auto-pay cap', () => {
     expect((await requestSpend(cart('h', 14_000))).status).toBe('needs_approval');
   });
 
+  // The demo has no approval threshold any more (#115); an organizer's own threshold still creates approval orders.
   it('gives the money back when PayPal cannot create the approval order', async () => {
-    const { requestSpend } = executor({ order: declined });
+    const withThreshold = CompiledRules.parse([
+      ...DEMO_RULES,
+      { id: 'approval-threshold', type: 'approval_threshold', amountMinor: 20_000, currency: 'USD' },
+    ]);
+    const { requestSpend } = executor({ order: declined }, withThreshold);
     expect((await requestSpend(cart('big-1', 42_000))).status).toBe('failed');
     expect(await outcomeOf()).toEqual(['failed']);
     // the $420 is free again, so another $420 cart still reaches the treasurer
