@@ -92,13 +92,20 @@
   padding-block: var(--space-4);
 }
 
+/* The landing wordmark: lowercase "leonid", the "eo" (the event organizer, and Leo) in the meteor color. */
 .lp-brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   font-family: var(--font-display);
-  font-weight: var(--font-weight-semibold);
+  font-size: 19px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.03em;
   color: var(--color-on-accent);
+}
+
+.lp-brand .lp-eo {
+  color: var(--color-brass-on-dark);
 }
 
 .lp-brand .brand-mark {
@@ -1268,6 +1275,10 @@ button.leo:focus-visible {
   color: var(--color-sky-ink);
   white-space: nowrap;
   user-select: none;
+}
+
+.lp-wordmark .lp-eo {
+  color: var(--color-brass-on-dark);
 }
 
 .lp-sticker {

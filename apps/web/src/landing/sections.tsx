@@ -17,11 +17,31 @@ const DEMO_BUDGET: BudgetFigures = {
   pledged: 250_000,
 };
 
+// The name as the landing sets it: lowercase "leonid" with the "eo" in the meteor color. The "eo" is the event
+// organizer, the person Leonid is for, and Leo, the agent and the EO's best friend, lives in the same letters.
+// Landing, hero and video only: inside the app the wordmark is one color. Decorative: callers give the real name.
+function NameWithEo() {
+  const word = BRAND.name.toLowerCase();
+  const at = word.indexOf('eo');
+  if (at < 0) return <>{word}</>;
+  return (
+    <>
+      {word.slice(0, at)}
+      <span className="lp-eo">eo</span>
+      {word.slice(at + 2)}
+    </>
+  );
+}
+
+// Screen readers hear the name, not the split letters.
 export function Wordmark() {
   return (
     <span className="lp-brand">
       <BrandMark />
-      {BRAND.name}
+      <span className="visually-hidden">{BRAND.name}</span>
+      <span aria-hidden="true">
+        <NameWithEo />
+      </span>
     </span>
   );
 }
@@ -587,7 +607,9 @@ export function LandingFooter() {
           </div>
         </div>
         <div className="lp-footer-mark" aria-hidden="true">
-          <span className="lp-wordmark">{BRAND.name}</span>
+          <span className="lp-wordmark">
+            <NameWithEo />
+          </span>
           <span className="lp-sticker">
             <svg className="lp-sticker-ring" viewBox="0 0 200 200">
               <defs>
