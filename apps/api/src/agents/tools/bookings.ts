@@ -6,7 +6,7 @@ import {
   isBookingAvailable,
   parseBookingChoice,
   type BookingChoice,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { auditedExecute, type AgentContext } from '../context.js';
 
 export const CHOOSE_BOOKINGS_TOOL = 'choose_bookings';

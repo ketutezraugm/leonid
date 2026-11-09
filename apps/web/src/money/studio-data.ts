@@ -5,7 +5,7 @@ import type {
   FundingThermometerData,
   PayoutsLedgerData,
   RulesHealthData,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 
 // The widget payloads the command center reads. Each comes from one API endpoint, backed by the ledger.
 export type CommandCenterData = {

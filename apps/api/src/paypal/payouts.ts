@@ -1,4 +1,4 @@
-import { PayoutRecipientType } from '@quartermaster/shared';
+import { PayoutRecipientType } from '@leonid/shared';
 import { z } from 'zod';
 import type { PayPalClient } from './client.js';
 import { toPayPalMoney } from './money.js';

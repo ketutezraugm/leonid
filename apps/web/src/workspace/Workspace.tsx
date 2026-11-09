@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { UIMessage } from 'ai';
 import { AgentChat } from '../chat/AgentChat';
 import type { EventInfo } from '../shell/event';
-import { venuePickText, type VenueCandidate } from '@quartermaster/shared';
+import { venuePickText, type VenueCandidate } from '@leonid/shared';
 import { latestVenuePick, venueSearches } from '../chat/parts';
 import { VenueBookingPanel } from './VenueBooking';
 import { VenueResults } from './VenueResults';

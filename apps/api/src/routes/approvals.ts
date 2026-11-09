@@ -1,5 +1,5 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
-import { RejectApprovalRequest, type ApprovalItem, type ApprovalsResponse } from '@quartermaster/shared';
+import { RejectApprovalRequest, type ApprovalItem, type ApprovalsResponse } from '@leonid/shared';
 import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getDb, type Db } from '../db/client.js';
 import { getVisibleEvent, visibleEventIds } from '../db/events.js';

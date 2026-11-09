@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UIMessage } from 'ai';
-import { venuePickText, type VenueCandidate } from '@quartermaster/shared';
+import { venuePickText, type VenueCandidate } from '@leonid/shared';
 import type { Db } from '../db/client.js';
 import { createTestDb } from '../db/testing.js';
 import type { SearchClient } from '../search/client.js';

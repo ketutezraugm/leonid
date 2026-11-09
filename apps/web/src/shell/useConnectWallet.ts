@@ -1,4 +1,4 @@
-import { WalletConnectResponse } from '@quartermaster/shared';
+import { WalletConnectResponse } from '@leonid/shared';
 import { useState } from 'react';
 import { useToast } from '../ui/Toast';
 import { ApiFailure, sendJson } from './api';

@@ -133,7 +133,7 @@ describe('New event (setup interview)', () => {
   });
 
   it('saves the event and every answer without starting the agent when the organizer skips', async () => {
-    localStorage.setItem('quartermaster.threadId', 'an-earlier-chat');
+    localStorage.setItem('leonid.threadId', 'an-earlier-chat');
     await answerEverything();
     click('Skip for now');
     expect(await screen.findByText(/Setting up Spring Meetup/)).toBeInTheDocument();
@@ -143,9 +143,9 @@ describe('New event (setup interview)', () => {
     expect(brief).toContain('a hackathon for 80 people in Jakarta on Thursday, May 20, 2027');
     expect(brief).toContain('Book for this event: Venue, Food & drinks');
     await new Promise((r) => setTimeout(r, 700));
-    expect(sessionStorage.getItem('quartermaster.kickoff')).toBeNull();
+    expect(sessionStorage.getItem('leonid.kickoff')).toBeNull();
     // A fresh chat for the new event, not the one open before.
-    expect(localStorage.getItem('quartermaster.threadId')).not.toBe('an-earlier-chat');
+    expect(localStorage.getItem('leonid.threadId')).not.toBe('an-earlier-chat');
   });
 
   it('saves the event in cents, then opens the agent with the answers as its first message', async () => {
@@ -168,9 +168,9 @@ describe('New event (setup interview)', () => {
         { timeout: 3000 },
       ),
     ).toBeInTheDocument();
-    const kickoff = JSON.parse(sessionStorage.getItem('quartermaster.kickoff') ?? 'null');
+    const kickoff = JSON.parse(sessionStorage.getItem('leonid.kickoff') ?? 'null');
     expect(kickoff).toMatchObject({ eventId: created.id, eventName: 'Spring Meetup' });
-    expect(localStorage.getItem('quartermaster.threadId')).toBe(kickoff.threadId);
+    expect(localStorage.getItem('leonid.threadId')).toBe(kickoff.threadId);
     expect(kickoff.text).toContain(
       'a hackathon for 80 people in Jakarta on Thursday, May 20, 2027',
     );
@@ -185,6 +185,6 @@ describe('New event (setup interview)', () => {
     click('Start planning');
     expect(await screen.findByRole('alert')).toHaveTextContent(/./);
     expect(screen.getByRole('button', { name: 'Change answers' })).toBeInTheDocument();
-    expect(sessionStorage.getItem('quartermaster.kickoff')).toBeNull();
+    expect(sessionStorage.getItem('leonid.kickoff')).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { ChecklistItem } from '@quartermaster/shared';
+import { ChecklistItem } from '@leonid/shared';
 import { replaceChecklist } from '../../db/mandates.js';
 import { auditedExecute, type AgentContext } from '../context.js';
 

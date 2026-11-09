@@ -5,7 +5,7 @@ import {
   isBookingAvailable,
   type BookingItemId,
   type ChooseBookingsInput,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 
 // What to book for the event, as a checklist. The items are a fixed list from the shared contract;
 // the agent only pre-ticks its suggestions. The choice goes back as one user message.

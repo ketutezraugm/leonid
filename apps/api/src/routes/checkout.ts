@@ -8,7 +8,7 @@ import {
   type CheckoutCaptureResponse,
   type CheckoutConfig,
   type CheckoutOrderResponse,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { z } from 'zod';
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
 import { getEvent } from '../db/events.js';

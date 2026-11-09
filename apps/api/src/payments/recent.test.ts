@@ -1,4 +1,4 @@
-import { SpendsResponse } from '@quartermaster/shared';
+import { SpendsResponse } from '@leonid/shared';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../db/client.js';

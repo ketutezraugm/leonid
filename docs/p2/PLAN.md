@@ -22,7 +22,7 @@ Written for teammates and their coding agents. Never put secrets in these docs.
 
 ## Context
 
-Quartermaster (PayPal AI Hackathon) is still only a scaffold. It has an Express 5 API with `/api/health`, a React shell with 7 placeholder pages, `@quartermaster/shared` with `HealthResponse`, and `render.yaml`.
+Leonid (PayPal AI Hackathon) is still only a scaffold. It has an Express 5 API with `/api/health`, a React shell with 7 placeholder pages, `@leonid/shared` with `HealthResponse`, and `render.yaml`.
 
 Roles:
 - **P1 Harfi:** agent brain, and also the integration developer who merges `development` → `main`.
@@ -277,7 +277,7 @@ If G1 slips, the Drizzle skeleton and the staging service can move to Oct 29. Th
   - webhook verification against raw fixture bodies
   - executor: allow → charge, needs_approval → no charge, revoked → refused
   - idempotent replays
-- **Manual sandbox smoke:** `pnpm --filter @quartermaster/api smoke:paypal`, never part of `pnpm test`.
+- **Manual sandbox smoke:** `pnpm --filter @leonid/api smoke:paypal`, never part of `pnpm test`.
 - **Browser flows:** Playwright drives Log in with PayPal and the approval popups on staging, using the sandbox logins in `.env`.
 - **Before every push:** `pnpm typecheck && pnpm lint && pnpm test`.
 

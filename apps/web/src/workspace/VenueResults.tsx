@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { VenueCandidate, VenuePick, VenueTerms } from '@quartermaster/shared';
+import type { VenueCandidate, VenuePick, VenueTerms } from '@leonid/shared';
 import type { VenueSearch } from '../chat/parts';
 import { formatMoney } from '../ui/money';
 import {

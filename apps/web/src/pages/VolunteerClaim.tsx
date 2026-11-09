@@ -1,4 +1,4 @@
-import type { ClaimView, VolunteerClaimsResponse } from '@quartermaster/shared';
+import type { ClaimView, VolunteerClaimsResponse } from '@leonid/shared';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { loadMyClaims, photoProblem, submitClaim } from '../claims/api';

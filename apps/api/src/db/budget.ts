@@ -1,4 +1,4 @@
-import { RuleResult } from '@quartermaster/shared';
+import { RuleResult } from '@leonid/shared';
 import { and, eq, gte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Spend } from '../payments/ports.js';

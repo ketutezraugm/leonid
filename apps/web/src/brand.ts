@@ -1,7 +1,7 @@
 // The product's name and public links, in one place. Screens and the landing page read it from here, so a
-// rename is a one-line change. Renamed from Quartermaster to Leonid on Nov 6, 2026 (docs/brand/BRAND.md).
-// (The repo name and the Render service still say quartermaster: both are registered with PayPal and are not
-// renamed; see "Do NOT rename" in the handoff.)
+// rename is a one-line change. The brand is described in docs/brand/BRAND.md.
+// (The staging address still starts with the service's first name: Render fixes an address when the service is
+// created and PayPal has it registered, so it stays.)
 export const BRAND = {
   name: 'Leonid',
 } as const;

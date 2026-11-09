@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { WalletConnectResponse, WalletRevokeResponse, WalletStatus } from '@quartermaster/shared';
+import type { WalletConnectResponse, WalletRevokeResponse, WalletStatus } from '@leonid/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';

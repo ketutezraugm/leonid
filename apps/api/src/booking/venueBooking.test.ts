@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VenueBookingSummary } from '@quartermaster/shared';
+import type { VenueBookingSummary } from '@leonid/shared';
 import { bookingPlanLine } from './venueBooking.js';
 
 const summary: VenueBookingSummary = {

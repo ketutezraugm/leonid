@@ -1,4 +1,4 @@
-import { SpendsResponse, type RuleDecision, type SpendEntry } from '@quartermaster/shared';
+import { SpendsResponse, type RuleDecision, type SpendEntry } from '@leonid/shared';
 import { useFetch } from '../shell/api';
 import { useEvent, withEvent } from '../shell/event';
 import { CopyId } from '../ui/CopyId';

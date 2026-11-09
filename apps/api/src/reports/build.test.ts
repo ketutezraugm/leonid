@@ -1,4 +1,4 @@
-import type { SpendEntry } from '@quartermaster/shared';
+import type { SpendEntry } from '@leonid/shared';
 import { describe, expect, it } from 'vitest';
 import { allocate, buildReport, type ReportInput } from './build.js';
 

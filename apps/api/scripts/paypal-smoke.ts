@@ -1,7 +1,7 @@
 // Day-1 sandbox check (PRD §14), following PayPal's "Getting started with the PayPal sandbox" guide.
 //
-//   pnpm --filter @quartermaster/api paypal:smoke             credentials, a $1.00 order, negative test
-//   pnpm --filter @quartermaster/api paypal:smoke <orderId>   show an order's status after you approve it
+//   pnpm --filter @leonid/api paypal:smoke             credentials, a $1.00 order, negative test
+//   pnpm --filter @leonid/api paypal:smoke <orderId>   show an order's status after you approve it
 //
 // It never captures: capture moves money and only the rules-engine executor may call it.
 import { getPayPalClient, isPayPalAppConfigured, type PayPalApp } from '../src/paypal/client.js';
@@ -35,11 +35,11 @@ async function createTestOrder(): Promise<void> {
     referenceId: `smoke-${Date.now()}`,
     amountMinor: 100,
     currency: 'USD',
-    description: 'Quartermaster sandbox smoke test',
+    description: 'Leonid sandbox smoke test',
   });
   console.log(`✓ order ${order.id} created (${order.status})`);
   console.log(`  Approve it as your sandbox Personal (buyer) account:\n  ${order.approveUrl}`);
-  console.log(`  Then run: pnpm --filter @quartermaster/api paypal:smoke ${order.id}`);
+  console.log(`  Then run: pnpm --filter @leonid/api paypal:smoke ${order.id}`);
 }
 
 async function negativeTest(): Promise<void> {

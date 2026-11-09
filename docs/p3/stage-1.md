@@ -37,7 +37,7 @@ Three branches, three pull requests, all merged into `development` after review 
 | #21 | `p3/f4-invoice-flow` | Invoicing v2 client (create, send, get, search by reference), the draft builder, the send service and the treasurer-only routes |
 | #22 | `p3/f4-treasury-agent` | The treasury subagent and the orchestrator's `delegate_to_treasury` tool |
 
-The branches did not all merge cleanly. The ledger migration was first numbered `0003` and conflicted with P2's `0003` from `p2/db-adapters` (#15, merged first), so it was regenerated as `0005_ledger_entries`. `development` now has migrations `0000` to `0005` in one journal. #21 and #22 were brought up to date with `development` before they landed. The API suite passes on the merged code (`pnpm --filter @quartermaster/api test`: 29 files, 344 tests).
+The branches did not all merge cleanly. The ledger migration was first numbered `0003` and conflicted with P2's `0003` from `p2/db-adapters` (#15, merged first), so it was regenerated as `0005_ledger_entries`. `development` now has migrations `0000` to `0005` in one journal. #21 and #22 were brought up to date with `development` before they landed. The API suite passes on the merged code (`pnpm --filter @leonid/api test`: 29 files, 344 tests).
 
 ### Code paths
 
@@ -134,7 +134,7 @@ The agent has been tested with a scripted model only, as the project rules requi
 
 | Who | What is needed | Why |
 | --- | --- | --- |
-| P2 | Any open branch that adds a migration (for example `p2/order-approved`) regenerates it on top of `0005` (`pnpm --filter @quartermaster/api db:generate`) | A numbering clash breaks the migration journal |
+| P2 | Any open branch that adds a migration (for example `p2/order-approved`) regenerates it on top of `0005` (`pnpm --filter @leonid/api db:generate`) | A numbering clash breaks the migration journal |
 | P2 | Done 2026-10-29: migrations `0003` to `0005` applied by hand on the shared database, and staging runs the merged code | The ledger table and handlers must exist where the webhook lands |
 | P2 | Add the Treasury webhook subscription to `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED` (not there as of 2026-10-29) | Otherwise refunds never reduce cleared income |
 | P2 | Set `custom_id` with `buildCaptureTag()` when creating Treasury orders for tickets and donations | Otherwise those captures cannot be credited to an event |

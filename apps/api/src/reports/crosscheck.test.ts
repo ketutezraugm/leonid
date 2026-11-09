@@ -1,4 +1,4 @@
-import type { SponsorReportLine } from '@quartermaster/shared';
+import type { SponsorReportLine } from '@leonid/shared';
 import { describe, expect, it } from 'vitest';
 import type { FoundTransaction } from '../paypal/search.js';
 import { crossCheckLines, searchWindows } from './crosscheck.js';

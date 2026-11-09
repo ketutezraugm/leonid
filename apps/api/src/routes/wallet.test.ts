@@ -11,7 +11,7 @@ import { walletRouter } from './wallet.js';
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-const env = { TREASURER_TOKEN: 'letmein', APP_BASE_URL: 'https://qm.example.com' };
+const env = { TREASURER_TOKEN: 'letmein', APP_BASE_URL: 'https://leonid.example.com' };
 const treasurer = { 'x-treasurer-token': 'letmein' };
 
 function build(routes: Record<string, () => Response> = {}, envOverride: NodeJS.ProcessEnv = env) {
@@ -53,7 +53,7 @@ describe('treasurer guard', () => {
     expect((await request(app).get('/api/wallet').set('x-treasurer-token', 'nope')).status).toBe(401);
     expect((await request(app).post('/api/wallet/revoke')).status).toBe(401);
     expect((await request(app).post('/api/wallet/connect')).status).toBe(401);
-    const unconfigured = build({}, { APP_BASE_URL: 'https://qm.example.com' });
+    const unconfigured = build({}, { APP_BASE_URL: 'https://leonid.example.com' });
     expect((await request(unconfigured.app).get('/api/wallet').set(treasurer)).status).toBe(503);
   });
 });
@@ -66,8 +66,8 @@ describe('connecting the wallet', () => {
     expect(res.body.approveUrl).toContain('agreements/approve');
     const body = JSON.parse(String(fetch.mock.calls.find(([u]) => String(u).includes('setup-tokens'))![1]!.body));
     expect(body.payment_source.paypal.experience_context).toEqual({
-      return_url: 'https://qm.example.com/api/wallet/return',
-      cancel_url: 'https://qm.example.com/api/wallet/cancel',
+      return_url: 'https://leonid.example.com/api/wallet/return',
+      cancel_url: 'https://leonid.example.com/api/wallet/cancel',
     });
   });
 
@@ -76,19 +76,19 @@ describe('connecting the wallet', () => {
     await request(app).post('/api/wallet/connect').set(treasurer);
     const res = await request(app).get('/api/wallet/return?approval_session_id=ST1');
     expect(res.status).toBe(302);
-    expect(res.headers.location).toBe('https://qm.example.com/?wallet=connected');
+    expect(res.headers.location).toBe('https://leonid.example.com/?wallet=connected');
     expect((await request(app).get('/api/wallet').set(treasurer)).body).toEqual({ status: 'active', payerEmail: 'payer@example.com' });
   });
 
   it('accepts a setup token only once, and only if we created it', async () => {
     const { app, calls } = build({ 'POST /v3/vault/setup-tokens': setupToken, 'POST /v3/vault/payment-tokens': paymentToken });
     const stranger = await request(app).get('/api/wallet/return?approval_session_id=NOT-OURS');
-    expect(stranger.headers.location).toBe('https://qm.example.com/?wallet=error');
+    expect(stranger.headers.location).toBe('https://leonid.example.com/?wallet=error');
     expect(calls).not.toContain('POST /v3/vault/payment-tokens');
     await request(app).post('/api/wallet/connect').set(treasurer);
     await request(app).get('/api/wallet/return?approval_session_id=ST1');
     const replay = await request(app).get('/api/wallet/return?approval_session_id=ST1');
-    expect(replay.headers.location).toBe('https://qm.example.com/?wallet=error');
+    expect(replay.headers.location).toBe('https://leonid.example.com/?wallet=error');
     expect(calls.filter((c) => c === 'POST /v3/vault/payment-tokens')).toHaveLength(1);
   });
 
@@ -99,7 +99,7 @@ describe('connecting the wallet', () => {
     });
     await request(app).post('/api/wallet/connect').set(treasurer);
     const res = await request(app).get('/api/wallet/return?approval_session_id=ST1');
-    expect(res.headers.location).toBe('https://qm.example.com/?wallet=error');
+    expect(res.headers.location).toBe('https://leonid.example.com/?wallet=error');
     expect((await wallet.snapshot()).status).toBe('none');
   });
 
@@ -121,7 +121,7 @@ describe('connecting the wallet', () => {
     await request(app).post('/api/wallet/connect').set(treasurer);
     await wallet.activate({ paymentTokenId: 'pt_existing' }); // a second approval raced in
     const res = await request(app).get('/api/wallet/return?approval_session_id=ST1');
-    expect(res.headers.location).toBe('https://qm.example.com/?wallet=error');
+    expect(res.headers.location).toBe('https://leonid.example.com/?wallet=error');
     expect(calls).toContain('DELETE /v3/vault/payment-tokens/pt_new');
     expect((await wallet.snapshot()).status).toBe('active'); // the existing wallet is untouched
   });
@@ -146,7 +146,7 @@ describe('connecting the wallet', () => {
   it('sends a cancelled approval back to the app', async () => {
     const { app } = build();
     const res = await request(app).get('/api/wallet/cancel');
-    expect(res.headers.location).toBe('https://qm.example.com/?wallet=cancelled');
+    expect(res.headers.location).toBe('https://leonid.example.com/?wallet=cancelled');
   });
 });
 
@@ -177,7 +177,7 @@ describe('kill switch', () => {
     expect((await request(app).post('/api/wallet/revoke').set('Cookie', cookie).set('Origin', 'https://evil.example')).status).toBe(403);
     expect(calls).toEqual([]); // refused before PayPal was asked anything
 
-    const res = await request(app).post('/api/wallet/revoke').set('Cookie', cookie).set('Origin', 'https://qm.example.com');
+    const res = await request(app).post('/api/wallet/revoke').set('Cookie', cookie).set('Origin', 'https://leonid.example.com');
     expect(res.body).toEqual({ revoked: true });
     expect(calls).toEqual(['DELETE /v3/vault/payment-tokens/pt_1']);
     expect(audit.rows.find((r) => r.action === 'wallet.revoke')).toMatchObject({ actor: 'treasurer:paypal:USERID123' });

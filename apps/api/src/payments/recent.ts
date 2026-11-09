@@ -1,4 +1,4 @@
-import { RuleResult, SpendStatus, type SpendEntry } from '@quartermaster/shared';
+import { RuleResult, SpendStatus, type SpendEntry } from '@leonid/shared';
 import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/client.js';

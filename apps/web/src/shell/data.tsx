@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { TreasuryResponse, WalletStatus } from '@quartermaster/shared';
+import { TreasuryResponse, WalletStatus } from '@leonid/shared';
 import { useFetch, type Fetched } from './api';
 
 // What the sidebar and the screens must agree on. The wallet has one copy, so a revoke shows everywhere at

@@ -1,4 +1,4 @@
-const KEY = 'quartermaster.balanceHidden';
+const KEY = 'leonid.balanceHidden';
 
 // Whether the person hid the PayPal balance in the account card. Shown until they choose, and when storage
 // throws (private windows, blocked data).

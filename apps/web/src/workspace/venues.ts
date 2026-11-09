@@ -1,4 +1,4 @@
-import { venueEstimate, type VenueAddOn, type VenueCandidate } from '@quartermaster/shared';
+import { venueEstimate, type VenueAddOn, type VenueCandidate } from '@leonid/shared';
 
 export type VenueSort = 'best' | 'cheapest' | 'roomiest';
 
@@ -29,7 +29,7 @@ export const addOnUnitLabel: Record<VenueAddOn['unit'], string> = {
   event: 'per event',
 };
 
-export { VENUE_DAY_HOURS, venueEstimate, type VenueEstimate } from '@quartermaster/shared';
+export { VENUE_DAY_HOURS, venueEstimate, type VenueEstimate } from '@leonid/shared';
 
 // The short facts on a card: how the venue charges and any minimum.
 export function chargeFacts({ price, terms }: VenueCandidate): string[] {

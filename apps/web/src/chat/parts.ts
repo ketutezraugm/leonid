@@ -7,7 +7,7 @@ import {
   VenueCandidate,
   parseVenuePick,
   type VenuePick,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 
 // Tool parts arrive as `tool-<name>` with a state; these helpers read just what the UI shows.
 interface ToolPart {

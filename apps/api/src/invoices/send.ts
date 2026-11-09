@@ -1,4 +1,4 @@
-import type { InvoiceDraft } from '@quartermaster/shared';
+import type { InvoiceDraft } from '@leonid/shared';
 import { and, desc, eq, gte, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { writeAudit } from '../db/audit.js';

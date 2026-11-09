@@ -1,4 +1,4 @@
-import { SponsorReportView } from '@quartermaster/shared';
+import { SponsorReportView } from '@leonid/shared';
 import { eq } from 'drizzle-orm';
 import type { LanguageModel } from 'ai';
 import type { Db } from '../db/client.js';

@@ -2,7 +2,7 @@
 // feature enabled on the Treasury app. Results lag by up to ~3 hours, so use webhooks for live
 // numbers and this API only for reconciliation and reports.
 //
-//   pnpm --filter @quartermaster/api day1:search
+//   pnpm --filter @leonid/api day1:search
 //   flags: --days 7 (1 to 31)
 
 import { pathToFileURL } from 'node:url';

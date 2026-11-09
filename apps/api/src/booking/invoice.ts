@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-import type { VenueBookingSummary } from '@quartermaster/shared';
+import type { VenueBookingSummary } from '@leonid/shared';
 
 // "IDR 19,300,000" or "USD 1,234.56": the venue currencies' minor units differ, so IDR has none.
 export function formatAmount(amountMinor: number, currency: string): string {

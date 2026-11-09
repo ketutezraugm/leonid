@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import express from 'express';
 import request from 'supertest';
 import { eq, sql } from 'drizzle-orm';
-import { LedgerSource } from '@quartermaster/shared';
+import { LedgerSource } from '@leonid/shared';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../../db/client.js';
 import { clearedIncome, listLedger, recordLedgerEntry } from '../../db/ledger.js';
@@ -183,6 +183,15 @@ describe('PAYMENT.CAPTURE.COMPLETED', () => {
       custom_id: buildCaptureTag(eventId, 'donation'),
       ...resource,
     },
+  });
+
+  it('still records a capture whose tag was written before the rename (qm:), so a checkout paid after the deploy is not lost', async () => {
+    await run(captureCompleted, capture({ custom_id: `qm:${eventId}:donation` }));
+
+    const ledger = await listLedger(db, eventId);
+    expect(ledger).toHaveLength(1);
+    expect(ledger[0]).toMatchObject({ eventId, direction: 'in', source: 'donation', paypalId: 'CAP-1' });
+    expect(buildCaptureTag(eventId, 'donation')).toBe(`leonid:${eventId}:donation`); // new tags are written with the new prefix
   });
 
   it('records a tagged Treasury capture as income for that event', async () => {

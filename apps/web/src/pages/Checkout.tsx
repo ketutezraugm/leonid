@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PayButtons } from '../checkout/PayButtons';
 import { parseDollars } from '../checkout/api';
-import { CheckoutConfig } from '@quartermaster/shared';
+import { CheckoutConfig } from '@leonid/shared';
 import { ApiFailure, useFetch } from '../shell/api';
 import { Card } from '../ui/Card';
 import { Field } from '../ui/Field';

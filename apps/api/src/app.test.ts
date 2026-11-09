@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { HealthResponse } from '@quartermaster/shared';
+import { HealthResponse } from '@leonid/shared';
 import { createApp } from './app.js';
 
 describe('GET /api/health', () => {

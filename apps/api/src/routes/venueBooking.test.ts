@@ -8,7 +8,7 @@ import {
   VenueBookingResponse,
   venueEstimate,
   venuePickText,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import type { Db } from '../db/client.js';
 import { getOrCreateThread, saveMessages } from '../db/mandates.js';
 import { seedDemoEvent } from '../db/seed.js';

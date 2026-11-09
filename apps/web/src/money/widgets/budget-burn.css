@@ -2,13 +2,13 @@
    is the hatched one) and the track is the sunken surface. The fallbacks only keep it readable on a branch
    that predates the tokens. Meaning never rests on colour alone: every figure is also in text, committed
    money is hatched, and a category over its cap says so in words and gets a marker at the cap. */
-.qm-burn {
-  --qm-spent: var(--color-data, var(--color-accent, #0070e0));
-  --qm-danger: var(--color-danger, #c4320a);
-  --qm-text: var(--color-text, #1d1d1b);
-  --qm-muted: var(--color-muted, #6b6b66);
-  --qm-track: var(--color-surface-sunken, #e8ede9);
-  --qm-focus: var(--color-accent, #0070e0);
+.lx-burn {
+  --lx-spent: var(--color-data, var(--color-accent, #0070e0));
+  --lx-danger: var(--color-danger, #c4320a);
+  --lx-text: var(--color-text, #1d1d1b);
+  --lx-muted: var(--color-muted, #6b6b66);
+  --lx-track: var(--color-surface-sunken, #e8ede9);
+  --lx-focus: var(--color-accent, #0070e0);
 
   box-sizing: border-box;
   display: flex;
@@ -17,54 +17,54 @@
   height: 100%;
   padding: 4px 2px;
   overflow: auto;
-  color: var(--qm-text);
+  color: var(--lx-text);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 14px;
 }
 
-.qm-burn__note {
+.lx-burn__note {
   margin: 0;
   padding: 16px;
   color: var(--color-muted, #6b6b66);
   font-family: var(--font-sans, system-ui, sans-serif);
 }
 
-.qm-burn__summary {
+.lx-burn__summary {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.qm-burn__alert {
+.lx-burn__alert {
   margin: 0;
-  color: var(--qm-danger);
+  color: var(--lx-danger);
   font-weight: 700;
 }
 
-.qm-burn__legend {
+.lx-burn__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
   margin: 0;
   padding: 0;
   list-style: none;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
 }
 
-.qm-burn__legend li {
+.lx-burn__legend li {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.qm-burn__swatch {
+.lx-burn__swatch {
   display: inline-block;
   width: 14px;
   height: 10px;
   border-radius: 2px;
 }
 
-.qm-burn__list {
+.lx-burn__list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -76,7 +76,7 @@
 /* The bar sits on its own line, as wide as the row, so every category's bar is measured against the same
    lane and the lengths can be compared. Name, verdict and figures share the line above it, which keeps a
    row to two lines so a handful of categories fit without scrolling. */
-.qm-burn__row {
+.lx-burn__row {
   display: grid;
   grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) auto;
   grid-template-areas:
@@ -98,30 +98,30 @@
     background-color 150ms ease;
 }
 
-.qm-burn__row:hover {
+.lx-burn__row:hover {
   background: var(--color-surface-sunken, #f0f0ec);
 }
 
-.qm-burn__row:focus-visible {
-  outline: 2px solid var(--qm-focus);
+.lx-burn__row:focus-visible {
+  outline: 2px solid var(--lx-focus);
   outline-offset: 2px;
 }
 
-.qm-burn__row[aria-pressed='true'] {
-  border-color: var(--qm-focus);
+.lx-burn__row[aria-pressed='true'] {
+  border-color: var(--lx-focus);
   background: var(--color-accent-soft, #e5f0fc);
 }
 
 /* The selected row's background is nearly the track's colour, so the track turns white to stay visible. */
-.qm-burn__row[aria-pressed='true'] .qm-burn__track {
+.lx-burn__row[aria-pressed='true'] .lx-burn__track {
   background: var(--color-surface, #fff);
 }
 
-.qm-burn__row[data-dimmed='true'] {
+.lx-burn__row[data-dimmed='true'] {
   opacity: 0.5;
 }
 
-.qm-burn__name {
+.lx-burn__name {
   grid-area: name;
   overflow: hidden;
   font-weight: 600;
@@ -130,46 +130,46 @@
   white-space: nowrap;
 }
 
-.qm-burn__lane {
+.lx-burn__lane {
   display: block;
   grid-area: lane;
   min-width: 0;
 }
 
-.qm-burn__track {
+.lx-burn__track {
   position: relative;
   display: flex;
   height: 14px;
   min-width: 2px;
   overflow: hidden;
   border-radius: 4px;
-  background: var(--qm-track);
+  background: var(--lx-track);
 }
 
-.qm-burn__seg {
+.lx-burn__seg {
   display: block;
   height: 100%;
 }
 
-.qm-burn__seg--spent,
-.qm-burn__swatch--spent {
-  background: var(--qm-spent);
+.lx-burn__seg--spent,
+.lx-burn__swatch--spent {
+  background: var(--lx-spent);
 }
 
-.qm-burn__seg--committed,
-.qm-burn__swatch--committed {
-  background: repeating-linear-gradient(135deg, var(--qm-spent) 0 2px, transparent 2px 5px);
-  outline: 1px solid var(--qm-spent);
+.lx-burn__seg--committed,
+.lx-burn__swatch--committed {
+  background: repeating-linear-gradient(135deg, var(--lx-spent) 0 2px, transparent 2px 5px);
+  outline: 1px solid var(--lx-spent);
   outline-offset: -1px;
 }
 
 /* A line at the cap, drawn only when the category has used more than it. */
-.qm-burn__capmark,
-.qm-burn__swatch--cap {
-  background: var(--qm-danger);
+.lx-burn__capmark,
+.lx-burn__swatch--cap {
+  background: var(--lx-danger);
 }
 
-.qm-burn__capmark {
+.lx-burn__capmark {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -178,13 +178,13 @@
   transform: translateX(-1px);
 }
 
-.qm-burn__swatch--cap {
+.lx-burn__swatch--cap {
   width: 2px;
   height: 12px;
   margin: 0 6px;
 }
 
-.qm-burn__figures {
+.lx-burn__figures {
   grid-area: figures;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -192,29 +192,29 @@
   white-space: nowrap;
 }
 
-.qm-burn__of {
-  color: var(--qm-muted);
+.lx-burn__of {
+  color: var(--lx-muted);
   font-weight: 400;
 }
 
-.qm-burn__verdict {
+.lx-burn__verdict {
   grid-area: verdict;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
-.qm-burn__verdict[data-tone='over'] {
-  color: var(--qm-danger);
+.lx-burn__verdict[data-tone='over'] {
+  color: var(--lx-danger);
   font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qm-burn__row {
+  .lx-burn__row {
     transition: none;
   }
 }

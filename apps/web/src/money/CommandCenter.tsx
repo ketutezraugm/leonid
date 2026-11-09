@@ -5,7 +5,7 @@ import { useEvent } from '../shell/event';
 import { commandCenterReport } from './initial-report';
 import { describeSources, type SourceNote } from './sources';
 import { buildStudioData, type CommandCenterData } from './studio-data';
-import { quartermasterStudioTheme } from './studio-theme';
+import { leonidStudioTheme } from './studio-theme';
 import { useCommandCenterData } from './use-command-center-data';
 import { reportState, startFrom } from './widgets/filters-changed';
 import {
@@ -35,13 +35,13 @@ function Studio({ source, note }: { source: CommandCenterData; note: SourceNote 
   useEffect(() => startFrom(commandCenterReport), []);
   return (
     <>
-      <p className="qm-source" data-tone={note.tone} role="status">
+      <p className="lx-source" data-tone={note.tone} role="status">
         {note.text}
       </p>
       <AgStudioProvider licenseKey={import.meta.env.VITE_AG_STUDIO_LICENSE || undefined}>
         <AgStudio
           style={{ height: '75vh', width: '100%' }}
-          theme={quartermasterStudioTheme}
+          theme={leonidStudioTheme}
           layout={{ widgetBorderEnabled: true }}
           data={data}
           widgets={withCustomWidgets}

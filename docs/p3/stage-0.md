@@ -16,7 +16,7 @@ Owner: P3. Source: PRD §14 (day-1 tests) and §11 (roles). Gate: Oct 28, "every
 ### 1. Sandbox accounts and the Treasury app (developer.paypal.com > Apps & Credentials > Sandbox)
 
 1. Sandbox accounts: a **Business** account (the event treasury), a **Personal** account that pays invoices, and a **Personal** account that receives payouts.
-2. A REST app on the Business account named like `quartermaster-treasury`. Enable the features it lists that we use: **Transaction Search** (required for the search test), **Payouts**, and **Invoicing** if it is listed. P2 owns the second app (Procurement).
+2. A REST app on the Business account named like `leonid-treasury`. Enable the features it lists that we use: **Transaction Search** (required for the search test), **Payouts**, and **Invoicing** if it is listed. P2 owns the second app (Procurement).
 3. Put the keys in `.env` (copy `.env.example`): `PAYPAL_TREASURY_CLIENT_ID`, `PAYPAL_TREASURY_CLIENT_SECRET`, `DAY1_SPONSOR_EMAIL` (the paying Personal account), and `DAY1_PAYPAL_RECIPIENT_EMAIL`.
 
 ### 2. Register a webhook for the Treasury app
@@ -26,9 +26,9 @@ PayPal only generates an event for subscribed types, so without this the "webhoo
 ### 3. Run the three tests (from the repo root)
 
 ```sh
-pnpm --filter @quartermaster/api day1:search
-pnpm --filter @quartermaster/api day1:invoicing     # prints a pay link; open it in a private window as the Personal sponsor account
-pnpm --filter @quartermaster/api day1:payouts
+pnpm --filter @leonid/api day1:search
+pnpm --filter @leonid/api day1:invoicing     # prints a pay link; open it in a private window as the Personal sponsor account
+pnpm --filter @leonid/api day1:payouts
 ```
 
 Flags: `day1:invoicing --invoice-id INV2-... | --no-wait | --amount-cents 100 | --wait-minutes 10`, `day1:payouts --batch-id <stable id> | --wait-minutes 3`, `day1:search --days 7`. Each ends with `RESULT <step> PASS|FAIL|WARN|SKIP <detail>` lines and a non-zero exit code on FAIL. Paste those lines into the table below.

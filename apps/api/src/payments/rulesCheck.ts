@@ -1,4 +1,4 @@
-import type { CompiledRules } from '@quartermaster/shared';
+import type { CompiledRules } from '@leonid/shared';
 import type { Db } from '../db/client.js';
 import { loadBudget } from '../db/budget.js';
 import { getEvent } from '../db/events.js';

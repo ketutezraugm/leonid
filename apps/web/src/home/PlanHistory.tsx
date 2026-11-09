@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { VenueBookingHistoryResponse, type VenueBookingHistoryItem } from '@quartermaster/shared';
+import { VenueBookingHistoryResponse, type VenueBookingHistoryItem } from '@leonid/shared';
 import { loadIds, saveActiveId, saveIds, withId } from '../chat/sessions';
 import { eventPath, formatLongDate } from '../shell/event';
 import { Drawer } from '../ui/Drawer';

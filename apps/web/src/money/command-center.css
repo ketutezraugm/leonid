@@ -1,12 +1,12 @@
 /* The line above the command center that says where its numbers come from. The words carry the meaning; the
    marker only helps the eye, so a warning is never colour alone. */
-.qm-source {
+.lx-source {
   margin: 0 0 8px;
   color: var(--color-muted, #56625b);
   font-size: 13px;
 }
 
-.qm-source[data-tone='warning'] {
+.lx-source[data-tone='warning'] {
   color: var(--color-status-blocked, #c4242a);
   font-weight: 700;
 }

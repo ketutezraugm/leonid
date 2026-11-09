@@ -1,6 +1,6 @@
 import { desc } from 'drizzle-orm';
 import type { UIMessage } from 'ai';
-import { bookingChoiceText, type BookingChoice } from '@quartermaster/shared';
+import { bookingChoiceText, type BookingChoice } from '@leonid/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../db/client.js';
 import { auditLog } from '../db/schema.js';

@@ -1,4 +1,4 @@
-import { InvoiceDraft } from '@quartermaster/shared';
+import { InvoiceDraft } from '@leonid/shared';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { events, sponsors } from '../db/schema.js';

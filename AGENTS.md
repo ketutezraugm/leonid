@@ -27,18 +27,18 @@ pnpm lint
 pnpm test
 
 # One package / one test
-pnpm --filter @quartermaster/api test
-pnpm --filter @quartermaster/api exec vitest run src/app.test.ts -t "health"
+pnpm --filter @leonid/api test
+pnpm --filter @leonid/api exec vitest run src/app.test.ts -t "health"
 ```
 
-Add dependencies with `pnpm --filter <package> add <dep>`. Quote `'@quartermaster/shared@workspace:*'` in zsh. TypeScript is pinned to 6.0.x because typescript-eslint does not support TS 7. pnpm 11 blocks install scripts unless the package is listed under `allowBuilds` in `pnpm-workspace.yaml`.
+Add dependencies with `pnpm --filter <package> add <dep>`. Quote `'@leonid/shared@workspace:*'` in zsh. TypeScript is pinned to 6.0.x because typescript-eslint does not support TS 7. pnpm 11 blocks install scripts unless the package is listed under `allowBuilds` in `pnpm-workspace.yaml`.
 
 Run `pnpm typecheck && pnpm lint && pnpm test` before calling work done. `main` auto-deploys to the Render demo URL, so it must stay green.
 
 ## Layout and where new code goes
 
-- `packages/shared` (`@quartermaster/shared`) is the API contract: zod schemas plus inferred types, exported as TS source with no build step. It is the only place request and response shapes are defined. Change it by PR only, since all four owners depend on it.
-- `apps/api` is Express 5. `src/app.ts` builds the app (tests import it via supertest), and `src/index.ts` only listens. tsup bundles `@quartermaster/shared` into `dist/`. In production (`NODE_ENV=production`, set by the `start` script) it also serves `apps/web/dist` with an SPA fallback. Planned folders:
+- `packages/shared` (`@leonid/shared`) is the API contract: zod schemas plus inferred types, exported as TS source with no build step. It is the only place request and response shapes are defined. Change it by PR only, since all four owners depend on it.
+- `apps/api` is Express 5. `src/app.ts` builds the app (tests import it via supertest), and `src/index.ts` only listens. tsup bundles `@leonid/shared` into `dist/`. In production (`NODE_ENV=production`, set by the `start` script) it also serves `apps/web/dist` with an SPA fallback. Planned folders:
   - `src/rules/`: rules engine `check()` and the budget figures. Pure functions, no I/O.
   - `src/agents/`: the five agents and their tool definitions.
   - `src/paypal/`: one client per PayPal app (`treasury`, `procurement`) plus typed wrappers per API.
@@ -63,7 +63,7 @@ These are the product's core promise and appear in the demo's "never cut" list. 
 
 ## Conventions
 
-- TypeScript strict, ESM, named exports. Validate every external boundary (HTTP bodies, webhooks, LLM output, third-party API responses) with zod from `@quartermaster/shared` or a local schema.
+- TypeScript strict, ESM, named exports. Validate every external boundary (HTTP bodies, webhooks, LLM output, third-party API responses) with zod from `@leonid/shared` or a local schema.
 - Money is integer minor units (cents) plus an ISO currency code inside our code and DB. Convert to PayPal's `{ currency_code, value: "140.00" }` only at the PayPal client boundary. Never use floats for money.
 - Secrets come only from env vars (names in `.env.example`) and are never sent to the web bundle. Sandbox only; there are no live PayPal keys anywhere.
 - The demo runs on a seeded event (OpenHack 2027: 200 people, Mar 14, 2027, $8,000, three sponsors). Keep the seed script working; the video and the judges' hosted demo depend on it.

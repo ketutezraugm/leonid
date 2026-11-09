@@ -1,4 +1,4 @@
-import { SponsorReportView } from '@quartermaster/shared';
+import { SponsorReportView } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';

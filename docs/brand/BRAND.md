@@ -78,36 +78,16 @@ Replace the Geist link with:
 - Copy `docs/brand/assets/favicon.svg` to `apps/web/public/favicon.svg` and add `<link rel="icon" href="/favicon.svg" type="image/svg+xml">` to `index.html`. Today there is no favicon at all.
 - Social card: `docs/brand/assets/social-card.png` (1200×630), made from `social-card.html`. Put it in `apps/web/public/` and add `og:title` "Leonid", `og:description` "Every event, on course.", `og:image`.
 
-### 4. The name, user-visible (P4 unless marked)
+### 4. The name in the product: done
 
-| Where | Today | Becomes |
-| --- | --- | --- |
-| `apps/web/src/brand.ts:5` | `name: 'Quartermaster'` | `name: 'Leonid'` (the sidebar and landing read it) |
-| `apps/web/index.html:6` | `<title>Quartermaster</title>` | `<title>Leonid</title>` |
-| `apps/web/src/App.tsx:27` | "Prepared by Quartermaster from PayPal records." | "Prepared by Leonid from PayPal records." |
-| `apps/web/src/pages/SponsorReport.tsx:123` | "Prepared by Quartermaster from PayPal records on…" | "Prepared by Leonid from PayPal records on…" |
-| `apps/web/src/chat/AgentChat.tsx:237` | "Ask Quartermaster" | "Ask Leo" |
-| `apps/web/src/chat/AgentChat.tsx:466` | "Message Quartermaster (Enter to send)" | "Message Leo (Enter to send)" |
-| `apps/web/src/chat/AgentChat.tsx:496` | `'Quartermaster: '` | `'Leo: '` |
-| `apps/web/src/chat/AskUserCard.tsx:68` | "Questions from Quartermaster" | "Questions from Leo" |
-| `apps/web/src/pages/Events.tsx:36` | "…and Quartermaster sets up its plan and money." | "…and Leo sets up its plan and money." |
-| `apps/api/src/agents/orchestrator.ts:22` (**Harfi, P1**) | "You are Quartermaster, the operations agent…" | "You are Leo, the operations agent of Leonid…" |
-| `apps/api/src/payments/executor.ts:95` (**Ezra, P2**) | payout notes "Quartermaster claim" / "Quartermaster payout" (recipients see these in PayPal) | "Leonid claim" / "Leonid payout" |
-| `apps/api/src/agents/model.ts:18` (**Harfi**) | OpenRouter `X-Title: 'Quartermaster'` | `'Leonid'` |
-| `apps/api/src/app.ts:37` | health `service: 'quartermaster-api'` | `'leonid-api'` (check nothing parses it) |
-| `docs/demo-script.md` (2 voice-over lines) | "Quartermaster makes sure…", "Every guarantee in Quartermaster…" | Leonid / Leo |
-| `README.md` (H1 and 1 more), `LICENSE`, `AGENTS.md:7`, `apps/workflows/README.md` | Quartermaster | Leonid |
+Every user-visible place says Leonid, and the agent is Leo ("Ask Leo"). The old working name was dropped from the whole repo on Nov 9, 2026: package names (`@leonid/*`), imports, CSS class prefix (`lx-`), browser storage keys (`leonid.*`), the PayPal `custom_id` tag prefix (`leonid:`), docs and scripts. The root `package.json` and `render.yaml` name the service `leonid`.
 
-Tests that assert the name and must change with it: `apps/web/src/App.test.tsx:47`, `apps/web/src/chat/AgentChat.test.tsx:253` (the "Questions from …" form name), `apps/api/src/payments/executor.test.ts:605`, `apps/api/src/payments/payoutSender.test.ts:18,29` and `apps/api/src/routes/claims.test.ts:156` (payout note; the payout note and these tests are done, in P2's own PR).
+## What still carries the old name, and why
 
-## Do NOT rename (reasons)
-
-- **The `qm:` prefix in PayPal `custom_id` tags** (`paypal/orders.ts` `spendTag`, `webhooks/handlers/capture-completed.ts` `TAG`): the webhook matches existing payments by it; renaming breaks every past ticket, donation and spend.
-- **The Render service name and URL** (`render.yaml` `name: quartermaster`, `quartermaster-staging.onrender.com`): the PayPal webhooks and the Log in with PayPal return URL are registered against it.
-- **The `@quartermaster/*` package names**: internal, about 108 files of import churn, nobody sees them.
-- **localStorage and sessionStorage keys** (`quartermaster.threadId`, `.threadIds`, `.kickoff`, `.lastEventId`, `.sidebarOpen`, `.returnPath`): renaming forgets everyone's saved chats and settings.
-- **`qm-` CSS class prefixes and `quartermasterStudioTheme`**: internal names, no user sees them.
-- PayPal sandbox app names ("Quartermaster Treasury/Procurement") and day-1 scripts: optional, cosmetic, sandbox only.
+- **The staging address `quartermaster-staging.onrender.com`.** Render fixes an address when a service is created and cannot change it, and PayPal has it registered (both webhooks and the Log in with PayPal return URL). The service's display name in the Render dashboard is `leonid-staging`. A new address would mean a new service and re-registering all of that; a custom domain in front of the service is the way to a clean address.
+- **The reader of old payment tags** (`webhooks/handlers/capture-completed.ts`, `TAG`). It accepts both `leonid:` and the earlier `qm:` prefix, so a ticket or donation checkout started before the rename and paid after it is still recorded. New tags are written as `leonid:`. Remove the `qm:` alternative once no old checkout can still be paid.
+- **Binary and historical files:** `docs/PRD.pdf`, and dated log rows in the README that record what was asked at the time.
+- **Saved browser data:** the storage keys were renamed, so a browser that used the app earlier forgets its saved chats once.
 
 ## Cut 2, if time allows
 

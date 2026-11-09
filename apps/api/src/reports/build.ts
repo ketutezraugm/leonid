@@ -1,4 +1,4 @@
-import type { SpendEntry, SponsorReportLine, SponsorReportView } from '@quartermaster/shared';
+import type { SpendEntry, SponsorReportLine, SponsorReportView } from '@leonid/shared';
 
 // The per-sponsor spend report (F22), the numbers only. Pure: no I/O, no clock reads (pass `now`), no model. The narrative is
 // written elsewhere (narrative.ts) from these figures and can never change them.

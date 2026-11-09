@@ -214,10 +214,10 @@ describe('requestSpend', () => {
     const tagOf = (fetch: ReturnType<typeof setup>['fetch']) => JSON.parse(String(orderPosts(fetch)[0]![1]!.body)).purchase_units[0].custom_id;
     const auto = setup({ routes: { 'POST /v2/checkout/orders': () => paid('140.00') } });
     await auto.executor.requestSpend(spend(14000));
-    expect(tagOf(auto.fetch)).toBe(`qm:${EVENT_ID}:spend`);
+    expect(tagOf(auto.fetch)).toBe(`leonid:${EVENT_ID}:spend`);
     const asked = setup({ routes: { 'POST /v2/checkout/orders': orderCreated } });
     await asked.executor.requestSpend(spend(42000, 'prizes-1'));
-    expect(tagOf(asked.fetch)).toBe(`qm:${EVENT_ID}:spend`);
+    expect(tagOf(asked.fetch)).toBe(`leonid:${EVENT_ID}:spend`);
   });
 
   it('does not capture or reject an approval made before spends had an event', async () => {

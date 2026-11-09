@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError } from '@quartermaster/shared';
+import { ApiError } from '@leonid/shared';
 
 // The browser talks only to our own /api (invariant 4: never to PayPal's server APIs).
 // Every response is parsed at this boundary; a failure carries the HTTP status so a screen

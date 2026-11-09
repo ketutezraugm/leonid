@@ -84,7 +84,7 @@ describe('App', () => {
 
   it('opens an old link in the first real event when the remembered one is gone', async () => {
     const meetup = crypto.randomUUID();
-    localStorage.setItem('quartermaster.lastEventId', 'demo');
+    localStorage.setItem('leonid.lastEventId', 'demo');
     stubApi({ events: [{ id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, budget: 120_000, currency: 'USD' }] });
     render(
       <MemoryRouter initialEntries={['/claims']}>

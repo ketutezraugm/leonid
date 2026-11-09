@@ -122,18 +122,18 @@ export function RulesHealth({ dataMapping, widgetApi }: AgWidgetParams<RulesHeal
 
   if (!mapped || !keys) {
     return (
-      <p className="qm-rules__note">Choose the check, its decision and the reasons to show.</p>
+      <p className="lx-rules__note">Choose the check, its decision and the reasons to show.</p>
     );
   }
   const current = loaded && loaded.for === requestKey ? loaded.outcome : null;
-  if (!current) return <p className="qm-rules__note">Loading spend checks…</p>;
+  if (!current) return <p className="lx-rules__note">Loading spend checks…</p>;
   if (current === 'error')
-    return <p className="qm-rules__note">The spend checks could not be loaded.</p>;
+    return <p className="lx-rules__note">The spend checks could not be loaded.</p>;
 
   const { entries, skipped } = toEntries(current.rows, keys);
   if (entries.length === 0 && skipped === 0) {
     return (
-      <p className="qm-rules__note">
+      <p className="lx-rules__note">
         No spend checks to show. Either no spend has been checked yet, or none matches what is
         selected in another widget.
       </p>
@@ -153,47 +153,47 @@ export function RulesHealth({ dataMapping, widgetApi }: AgWidgetParams<RulesHeal
   };
 
   return (
-    <div className="qm-rules" role="group" aria-label="Rules health">
-      <ul className="qm-rules__counts" aria-label="Spend checks by decision">
+    <div className="lx-rules" role="group" aria-label="Rules health">
+      <ul className="lx-rules__counts" aria-label="Spend checks by decision">
         {tiles.map(({ decision, count }) => (
-          <li key={decision} className="qm-rules__count" data-tone={decisionView[decision].tone}>
-            <span className="qm-rules__number">{count}</span>
-            <span className="qm-rules__label">
-              <span className="qm-rules__dot" aria-hidden="true" />
+          <li key={decision} className="lx-rules__count" data-tone={decisionView[decision].tone}>
+            <span className="lx-rules__number">{count}</span>
+            <span className="lx-rules__label">
+              <span className="lx-rules__dot" aria-hidden="true" />
               {decisionView[decision].label}
             </span>
           </li>
         ))}
       </ul>
       {skipped > 0 && (
-        <p className="qm-rules__warn" role="status">
+        <p className="lx-rules__warn" role="status">
           {skipped === 1
             ? '1 check has a decision this widget does not recognise, so it is not counted'
             : `${skipped} checks have a decision this widget does not recognise, so they are not counted`}
         </p>
       )}
-      <p className="qm-rules__scope">
+      <p className="lx-rules__scope">
         {entries.length === 1 ? '1 spend check' : `${entries.length} spend checks`}, newest first
       </p>
-      <ul className="qm-rules__list">
+      <ul className="lx-rules__list">
         {entries.map((entry, i) => {
           const view = decisionView[entry.decision];
           const category = entry.category;
           const isSelected = category !== null && selected.includes(category);
           const body = (
             <>
-              <span className="qm-rules__head">
-                <span className="qm-rules__decision">
-                  <span className="qm-rules__dot" data-tone={view.tone} aria-hidden="true" />
+              <span className="lx-rules__head">
+                <span className="lx-rules__decision">
+                  <span className="lx-rules__dot" data-tone={view.tone} aria-hidden="true" />
                   {view.label}
                 </span>
                 {entry.amount !== null && (
-                  <span className="qm-rules__amount">{formatDollars(entry.amount)}</span>
+                  <span className="lx-rules__amount">{formatDollars(entry.amount)}</span>
                 )}
-                {category && <span className="qm-rules__category">{category}</span>}
+                {category && <span className="lx-rules__category">{category}</span>}
               </span>
-              {entry.date && <span className="qm-rules__date">{entry.date}</span>}
-              <span className="qm-rules__why">{entry.reasons || NO_REASON}</span>
+              {entry.date && <span className="lx-rules__date">{entry.date}</span>}
+              <span className="lx-rules__why">{entry.reasons || NO_REASON}</span>
             </>
           );
           return (
@@ -201,7 +201,7 @@ export function RulesHealth({ dataMapping, widgetApi }: AgWidgetParams<RulesHeal
               {category ? (
                 <button
                   type="button"
-                  className="qm-rules__row"
+                  className="lx-rules__row"
                   aria-pressed={isSelected}
                   aria-label={describeEntry(entry)}
                   data-dimmed={selected.length > 0 && !isSelected}
@@ -210,7 +210,7 @@ export function RulesHealth({ dataMapping, widgetApi }: AgWidgetParams<RulesHeal
                   {body}
                 </button>
               ) : (
-                <div className="qm-rules__row" role="group" aria-label={describeEntry(entry)}>
+                <div className="lx-rules__row" role="group" aria-label={describeEntry(entry)}>
                   {body}
                 </div>
               )}

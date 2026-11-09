@@ -1,4 +1,4 @@
-import { SponsorReportView } from '@quartermaster/shared';
+import { SponsorReportView } from '@leonid/shared';
 import { useParams } from 'react-router-dom';
 import { ApiFailure, useFetch } from '../shell/api';
 import { Card } from '../ui/Card';

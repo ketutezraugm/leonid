@@ -1,4 +1,4 @@
-import type { WalletState } from '@quartermaster/shared';
+import type { WalletState } from '@leonid/shared';
 
 // What the agent can do in each state, in the words the screens use.
 export function walletConsequence(status: WalletState): string {

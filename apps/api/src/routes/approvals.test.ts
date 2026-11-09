@@ -1,7 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApprovalsResponse } from '@quartermaster/shared';
+import { ApprovalsResponse } from '@leonid/shared';
 import { createExecutor } from '../payments/executor.js';
 import { createMemoryApprovals, createMemoryAudit, createMemoryReferences, createMemoryWalletStore } from '../payments/memory.js';
 import { stubCheck } from '../payments/stub-check.js';
