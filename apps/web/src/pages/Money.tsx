@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Payouts } from '../money/Payouts';
+import { Sponsors } from '../money/Sponsors';
 import { prefetchCommandCenter } from '../money/use-command-center-data';
 import { useEvent } from '../shell/event';
 import { PageHeader } from '../ui/PageHeader';
@@ -39,12 +40,7 @@ export function Money() {
           </Suspense>
         )}
         {tab === 'payouts' && <Payouts />}
-        {tab === 'sponsors' && (
-          <PageState kind="empty" title="Sponsors and invoices">
-            Each sponsor’s tier, amount, contact email and invoice status will list here with one
-            action per row. It needs the sponsor list endpoint from P3.
-          </PageState>
-        )}
+        {tab === 'sponsors' && <Sponsors />}
         {tab === 'audit' && (
           <PageState kind="empty" title="Audit log">
             Every agent action with its rule result, reason and PayPal ID will list here. It needs
