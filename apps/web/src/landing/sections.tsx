@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { Fragment, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../ui/BrandMark';
 import { BudgetBar, unlockedToSpend, type BudgetFigures } from '../ui/BudgetBar';
@@ -467,32 +467,53 @@ export function Closing({ onEnter, busy, signedIn }: { onEnter: () => void; busy
   );
 }
 
+// The footer is an inset card: the links, the motto with one way in, then the name set as big as the card is wide,
+// cropped by its bottom edge. Leo sits on a sticker that overlaps the name's top edge.
 export function LandingFooter() {
+  const ring = `lp-ring-${useId().replace(/:/g, '')}`;
   return (
     <footer className="lp-footer">
-      <div className="lp-wrap">
-        <div className="lp-cols">
-          <div>
-            <b>{BRAND.name}</b>
-            <p>Built for the PayPal AI Hackathon. PayPal sandbox, no real money.</p>
-          </div>
-          <div>
-            <b>Product</b>
-            <a href="#how">How it works</a>
-            <a href="#try">Try the demo</a>
-            <a href="#faq">FAQ</a>
-          </div>
-          <div>
-            <b>Build</b>
-            <a href={LINKS.github}>GitHub (MIT)</a>
-            {LINKS.video && <a href={LINKS.video}>Demo video</a>}
+      <div className="lp-footer-card">
+        <div className="lp-footer-top">
+          <nav className="lp-footer-cols" aria-label="Footer">
+            <div>
+              <b>Product</b>
+              <a href="#how">How it works</a>
+              <a href="#try">Try the demo</a>
+              <a href="#faq">FAQ</a>
+            </div>
+            <div>
+              <b>Build</b>
+              <a href={LINKS.github}>GitHub (MIT)</a>
+              {LINKS.video && <a href={LINKS.video}>Demo video</a>}
+            </div>
+          </nav>
+          <div className="lp-footer-cta">
+            <p className="lp-footer-motto">Every event, on course.</p>
+            <a className="btn lp-btn-light" href="#try">
+              Try the demo
+            </a>
+            <p className="lp-footer-fine">
+              {BRAND.name} · Built for the PayPal AI Hackathon. PayPal sandbox, no real money.
+            </p>
           </div>
         </div>
-        <div className="lp-footer-mark">
-          <p className="lp-wordmark" aria-hidden="true">
+        <div className="lp-footer-mark" aria-hidden="true">
+          <span className="lp-wordmark">
             {BRAND.name}
-          </p>
-          <LeoMascot decorative className="lp-footer-leo" />
+            <span className="lp-sticker">
+              <svg className="lp-sticker-ring" viewBox="0 0 200 200">
+                <defs>
+                  <path id={ring} d="M100 100 m-82 0 a82 82 0 1 1 164 0 a82 82 0 1 1 -164 0" />
+                </defs>
+                <circle cx="100" cy="100" r="98" />
+                <text>
+                  <textPath href={`#${ring}`}>EVERY EVENT · ON COURSE · EVERY EVENT · ON COURSE ·</textPath>
+                </text>
+              </svg>
+              <LeoMascot decorative className="lp-sticker-leo" />
+            </span>
+          </span>
         </div>
       </div>
     </footer>

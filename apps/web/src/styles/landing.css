@@ -847,66 +847,153 @@ button.leo:focus-visible {
 }
 
 .lp-footer {
-  padding-top: var(--space-5);
+  padding: 0 var(--space-3) var(--space-3);
+  background: var(--color-bg);
+}
+
+/* An inset card; container units size the name to the card's width. */
+.lp-footer-card {
+  position: relative;
+  overflow: hidden;
+  container-type: inline-size;
+  padding: var(--space-6) clamp(var(--space-4), 5vw, var(--space-6)) 0;
+  border-radius: var(--radius-sheet);
   background: var(--color-accent);
   color: var(--color-data-soft);
-  overflow: hidden;
 }
 
-.lp-cols {
+.lp-footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-5) var(--space-6);
+}
+
+.lp-footer-cols {
+  display: flex;
+  gap: clamp(var(--space-5), 6vw, 96px);
+}
+
+.lp-footer-cols div {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
-  gap: var(--space-4);
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.lp-footer-cols b {
+  margin-bottom: var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-brass-on-dark);
+}
+
+.lp-footer-cols a {
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-sky-ink);
 }
 
-.lp-cols b {
-  display: block;
-  margin-bottom: var(--space-2);
-  color: var(--color-on-accent);
+.lp-footer-cols a:hover {
+  color: var(--color-brass-on-dark);
 }
 
-.lp-cols p {
+.lp-footer-cta {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  max-width: 360px;
+}
+
+.lp-footer-motto {
   margin: 0;
-  max-width: 36ch;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--color-sky-ink);
 }
 
-.lp-cols a {
-  display: block;
-  color: var(--color-data-soft);
-  line-height: 1.9;
-}
-
-.lp-cols a:hover {
-  color: var(--color-on-accent);
+.lp-footer-fine {
+  margin: 0;
+  font-size: var(--font-size-xs);
 }
 
 .lp-footer a:focus-visible {
   outline-color: var(--color-brass-on-dark);
 }
 
+/* The name runs edge to edge and is cut by the card's bottom; Leo's sticker overlaps its top edge. */
 .lp-footer-mark {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-2);
-}
-
-/* Leo stands at the end of the footer's wordmark, still following the pointer. */
-.lp-footer-leo {
-  flex: none;
-  width: clamp(56px, 9vw, 128px);
+  margin-top: clamp(var(--space-6), 9cqw, 140px);
+  text-align: center;
 }
 
 .lp-wordmark {
-  margin: var(--space-5) 0 0;
+  position: relative;
+  display: inline-block;
+  margin-bottom: -0.09em;
   font-family: var(--font-display);
-  font-size: clamp(56px, 13vw, 190px);
+  font-size: 34cqw;
   font-weight: var(--font-weight-bold);
-  letter-spacing: -0.05em;
+  letter-spacing: -0.06em;
   line-height: 0.8;
-  color: rgba(255, 255, 255, 0.1);
+  color: var(--color-sky-ink);
   white-space: nowrap;
   user-select: none;
+}
+
+.lp-sticker {
+  position: absolute;
+  right: -0.12em;
+  top: -0.22em;
+  width: 0.4em;
+  aspect-ratio: 1;
+  transform: rotate(-8deg);
+}
+
+.lp-sticker-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: lp-spin 24s linear infinite;
+}
+
+.lp-sticker-ring circle {
+  fill: var(--color-brass-on-dark);
+}
+
+.lp-sticker-ring text {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.12em;
+  fill: var(--color-accent);
+}
+
+.lp-sticker-leo {
+  position: absolute;
+  inset: 17%;
+  width: auto;
+}
+
+@keyframes lp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-sticker-ring {
+    animation: none;
+  }
 }
 
 /* --- Tablet and phone --- */
@@ -948,14 +1035,9 @@ button.leo:focus-visible {
   }
 
   .lp-rule,
-  .lp-proofs > div,
-  .lp-cols {
+  .lp-proofs > div {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-1);
-  }
-
-  .lp-cols {
-    gap: var(--space-4);
   }
 
   .lp-steps li {
