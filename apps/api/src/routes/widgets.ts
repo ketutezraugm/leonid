@@ -151,7 +151,7 @@ export function widgetsRouter(options: WidgetsRouterOptions = {}) {
     '/command-center',
     guard,
     handle(z.object({ eventId: z.uuid().optional() }), async ({ eventId }, res, { db, now }) => {
-      const id = await eventIdOf(db, eventId);
+      const id = await eventIdOf(db, eventId, res);
       const [funding, budget, payouts, rules, delivery] = id
         ? await Promise.all([
             getFundingThermometer(db, id, {}, now),
