@@ -42,9 +42,14 @@ export function Tabs({
     if (!list) return;
     // Transitions switch on only after the first placement.
     const raf = requestAnimationFrame(() => (list.dataset.ready = 'true'));
+    // Labels change width when the web font arrives or the window resizes, so measure again then.
     const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null;
     ro?.observe(list);
+    for (const tab of Object.values(refs.current)) if (tab) ro?.observe(tab);
+    let live = true;
+    void document.fonts?.ready.then(() => live && place());
     return () => {
+      live = false;
       cancelAnimationFrame(raf);
       ro?.disconnect();
     };

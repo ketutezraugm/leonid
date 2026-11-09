@@ -784,7 +784,7 @@ a:hover {
 
 .tab {
   min-height: 40px;
-  padding: 0 2px;
+  padding: 0; /* the box is the label, so the underline is exactly as long as the text */
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
