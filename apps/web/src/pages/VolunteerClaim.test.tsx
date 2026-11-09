@@ -19,7 +19,8 @@ const approved = {
   paypalBatchId: 'BATCH-1',
   submittedAt: '2027-03-14T10:00:00.000Z',
 };
-const mineOk = () => json({ volunteer: { name: 'Ana', eventName: 'OpenHack 2027' }, claims: [] });
+const mineOk = () =>
+  json({ volunteer: { name: 'Ana', eventName: 'OpenHack 2027' }, claims: [], dailyLimit: { amount: 5_000, currency: 'USD' } });
 
 function serve(mine: () => Response = mineOk) {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
@@ -49,6 +50,7 @@ describe('VolunteerClaim', () => {
     open();
 
     expect(await screen.findByRole('heading', { name: 'Hi Ana' })).toBeInTheDocument();
+    expect(screen.getByText(/Claims up to \$50\.00 a day are paid automatically/)).toBeInTheDocument();
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/claims/mine');
     expect(init.headers).toMatchObject({ 'x-claim-token': 'tok123' });

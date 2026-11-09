@@ -9,6 +9,7 @@ export function ConfirmDialog({
   busyLabel,
   danger = false,
   busy = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
   children,
@@ -18,6 +19,8 @@ export function ConfirmDialog({
   busyLabel?: string;
   danger?: boolean;
   busy?: boolean;
+  /** Keeps the confirm button off until there is something to confirm, e.g. while a draft loads. */
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   children: ReactNode;
@@ -49,7 +52,13 @@ export function ConfirmDialog({
           <button ref={cancel} type="button" className="btn btn-secondary" disabled={busy} onClick={onCancel}>
             Cancel
           </button>
-          <Button variant={danger ? 'danger' : 'primary'} busy={busy} busyLabel={busyLabel} onClick={onConfirm}>
+          <Button
+            variant={danger ? 'danger' : 'primary'}
+            busy={busy}
+            busyLabel={busyLabel}
+            disabled={confirmDisabled}
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
         </div>
