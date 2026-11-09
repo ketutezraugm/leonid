@@ -17,7 +17,7 @@ import { createPayPalClient } from '../paypal/client.js';
 import { payoutsRouter } from '../routes/payouts.js';
 import { widgetsRouter } from '../routes/widgets.js';
 import type { WebhookEvent } from '../webhooks/registry.js';
-import { createPayoutItemHandler } from '../webhooks/handlers/payout-item.js';
+import { createPayoutBatchDeniedHandler, createPayoutItemHandler } from '../webhooks/handlers/payout-item.js';
 
 const TREASURER = { 'x-treasurer-token': 'secret' };
 
@@ -199,5 +199,36 @@ describe('payouts ledger widget, live', () => {
       ['claim', 'Ana', 'processing'],
     ]);
     expect(prizes.data.rows.map((r) => r.kind)).toEqual(['prize']);
+  });
+});
+
+describe('a batch PayPal denied (there is no item event for a denial)', () => {
+  it('marks the prize failed, found by the batch sender_batch_id', async () => {
+    const item = await pay(prize());
+
+    await createPayoutBatchDeniedHandler(() => db)(
+      {
+        id: 'WH-D1',
+        event_type: 'PAYMENT.PAYOUTSBATCH.DENIED',
+        resource: { batch_header: { payout_batch_id: 'BATCH-1', batch_status: 'DENIED', sender_batch_header: { sender_batch_id: `payout:${item.id}` } } },
+      },
+      { app: 'treasury' },
+    );
+
+    expect((await listed())[0]).toMatchObject({ id: item.id, status: 'failed' });
+  });
+
+  it('ignores a denied batch from the Procurement app, and audits one it cannot read', async () => {
+    const item = await pay(prize());
+    const denied = createPayoutBatchDeniedHandler(() => db);
+
+    await denied(
+      { id: 'WH-D2', event_type: 'PAYMENT.PAYOUTSBATCH.DENIED', resource: { batch_header: { payout_batch_id: 'B', sender_batch_header: { sender_batch_id: `payout:${item.id}` } } } },
+      { app: 'procurement' },
+    );
+    await denied({ id: 'WH-D3', event_type: 'PAYMENT.PAYOUTSBATCH.DENIED', resource: { nope: true } }, { app: 'treasury' });
+
+    expect((await listed())[0]!.status).toBe('processing');
+    expect((await db.select().from(auditLog)).map((r) => r.action)).toContain('payout.status_ignored');
   });
 });

@@ -116,6 +116,8 @@ export type ClaimView = z.infer<typeof ClaimView>;
 export const VolunteerClaimsResponse = z.object({
   volunteer: z.object({ name: z.string(), eventName: z.string() }),
   claims: z.array(ClaimView),
+  // The most one person may claim per day under the rules in force, so the page can say it. Null: no such rule.
+  dailyLimit: z.object({ amount: MinorUnits, currency: CurrencyCode }).nullable(),
 });
 export type VolunteerClaimsResponse = z.infer<typeof VolunteerClaimsResponse>;
 
