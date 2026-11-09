@@ -6,6 +6,7 @@ import { formatMoney } from '../ui/money';
 import { StatusBadge } from '../ui/StatusBadge';
 import { BRAND, LANDING, LINKS } from '../brand';
 import { LeoMascot } from './LeoMascot';
+import { revealAt, useReveal } from './useReveal';
 
 // The demo event's figures, as the demo shows them (cleared $3,000 − committed $1,860 = $1,140 unlocked).
 const DEMO_BUDGET: BudgetFigures = {
@@ -89,12 +90,19 @@ export function BuiltWith() {
 
 // --- In one view: a real screenshot of Event home.
 export function InOneView() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section className="lp-section lp-center" aria-labelledby="lp-view">
+    <section ref={ref} className="lp-section lp-center" aria-labelledby="lp-view">
       <div className="lp-wrap">
-        <h2 id="lp-view">Your event, planned and paid, in one view.</h2>
-        <p className="lp-sub">The plan, the money and what needs you, side by side.</p>
+        <h2 id="lp-view" data-reveal style={revealAt(0)}>
+          Your event, planned and paid, in one view.
+        </h2>
+        <p className="lp-sub" data-reveal style={revealAt(1)}>
+          The plan, the money and what needs you, side by side.
+        </p>
         <img
+          data-reveal="drop"
+          style={revealAt(2)}
           className="lp-shot"
           src="/landing/event-home.png"
           width={1440}
@@ -108,20 +116,30 @@ export function InOneView() {
 }
 
 // --- Four feature rows: text beside a real piece of the product, alternating sides.
+// Each row reveals as it scrolls in: the title, line and points rise one by one while the product card drops in.
 function Feature({ id, flip, title, text, points, children }: { id: string; flip?: boolean; title: string; text: string; points: string[]; children: ReactNode }) {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section className="lp-section" aria-labelledby={id}>
+    <section ref={ref} className="lp-section" aria-labelledby={id}>
       <div className={`lp-wrap lp-feature${flip ? ' lp-feature--flip' : ''}`}>
         <div>
-          <h2 id={id}>{title}</h2>
-          <p className="lp-sub">{text}</p>
+          <h2 id={id} data-reveal style={revealAt(0)}>
+            {title}
+          </h2>
+          <p className="lp-sub" data-reveal style={revealAt(1)}>
+            {text}
+          </p>
           <ul className="lp-points">
-            {points.map((p) => (
-              <li key={p}>{p}</li>
+            {points.map((p, i) => (
+              <li key={p} data-reveal style={revealAt(i + 2)}>
+                {p}
+              </li>
             ))}
           </ul>
         </div>
-        <div className="lp-piece">{children}</div>
+        <div className="lp-piece" data-reveal="drop" style={revealAt(1)}>
+          {children}
+        </div>
       </div>
     </section>
   );
