@@ -1076,18 +1076,85 @@ button.leo:focus-visible {
   display: none;
 }
 
+.lp-q summary {
+  transition: color var(--motion-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lp-q summary:hover {
+    color: var(--color-accent);
+  }
+}
+
+/* The plus: two bars. Opening turns it a quarter and folds the flat bar away, so the upright one lands as a minus. */
 .lp-q summary::after {
-  content: '+';
+  content: '';
+  flex: none;
+  align-self: center;
+  width: 12px;
+  height: 12px;
   color: var(--color-muted);
+  background:
+    linear-gradient(currentColor, currentColor) center / 12px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 2px 12px no-repeat;
+  transition:
+    transform 250ms var(--ease-out-strong),
+    background-size 250ms var(--ease-out-strong);
 }
 
 .lp-q[open] summary::after {
-  content: '–';
+  transform: rotate(90deg);
+  background-size:
+    0 2px,
+    2px 12px;
 }
 
 .lp-q p {
   margin: 0 0 var(--space-3);
   color: var(--color-muted);
+}
+
+/* The answer rises out of a light blur as it opens. */
+.lp-q[open] p {
+  animation: lp-answer-in 300ms var(--ease-out-strong) both;
+}
+
+@keyframes lp-answer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(2px);
+  }
+}
+
+/* Where the browser can animate <details>, the answer's space eases open and closed instead of jumping. */
+@supports (interpolate-size: allow-keywords) {
+  .lp-faq {
+    interpolate-size: allow-keywords;
+  }
+
+  .lp-q::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size 300ms var(--ease-out-strong),
+      content-visibility 300ms allow-discrete;
+  }
+
+  .lp-q[open]::details-content {
+    block-size: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-q[open] p {
+    animation: lp-fade 200ms ease both;
+  }
+
+  .lp-q::details-content,
+  .lp-q summary::after {
+    transition: none;
+  }
 }
 
 /* --- Closing line and the wordmark footer --- */
