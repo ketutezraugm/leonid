@@ -1,8 +1,9 @@
-// The product's name and public links, in one place. The team may rename the product, so nothing else
-// should spell the name: screens and the landing page read it from here, and a rename is a one-line change.
-// (Test files, the PRD and the repo name still say Quartermaster; they follow the decision, not this file.)
+// The product's name and public links, in one place. Screens and the landing page read it from here, so a
+// rename is a one-line change. Renamed from Quartermaster to Leonid on Nov 6, 2026 (docs/brand/BRAND.md).
+// (The repo name and the Render service still say quartermaster: both are registered with PayPal and are not
+// renamed; see "Do NOT rename" in the handoff.)
 export const BRAND = {
-  name: 'Quartermaster',
+  name: 'Leonid',
 } as const;
 
 // Public links shown on the landing page. A link that is null is not shown: never invent a URL.

@@ -92,6 +92,34 @@
       "when": 1793977366000,
       "tag": "0012_payouts",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793981849618,
+      "tag": "0013_event_owners",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794116874072,
+      "tag": "0014_event_brief",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794119799346,
+      "tag": "0015_task_invoice_sponsor",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794121185675,
+      "tag": "0016_event_max_spend",
+      "breakpoints": true
     }
   ]
 }

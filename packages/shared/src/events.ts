@@ -15,11 +15,21 @@ export const EventSummary = z.object({
   people: z.number().int().positive(),
   budget: MinorUnits.positive(), // the event's total budget, in minor units; only cleared income is ever spendable
   currency: CurrencyCode,
+  // Every setup answer as the agent's first message (kind, city, venue, what to book...). Saved with the event so
+  // the organizer can start planning later from the agent chat. Null for events made without the setup interview.
+  // At most CHAT_MESSAGE_MAX_LENGTH (not imported: index.ts re-exports this file).
+  brief: z.string().trim().min(1).max(4000).nullable().optional(),
+  // The most the agent may commit for this event, set by the organizer. Null or missing: no maximum is set.
+  maxSpend: MinorUnits.positive().nullable().optional(),
 });
 export type EventSummary = z.infer<typeof EventSummary>;
 
 export const EventsResponse = z.object({ events: z.array(EventSummary) });
 export type EventsResponse = z.infer<typeof EventsResponse>;
 
-export const CreateEventRequest = EventSummary.omit({ id: true });
+export const CreateEventRequest = EventSummary.omit({ id: true, maxSpend: true });
 export type CreateEventRequest = z.infer<typeof CreateEventRequest>;
+
+// PUT /api/events/:id/max-spend (treasurer only) sets the event's maximum spend and answers its EventSummary. null clears it.
+export const SetMaxSpendRequest = z.object({ maxSpend: MinorUnits.positive().nullable() });
+export type SetMaxSpendRequest = z.infer<typeof SetMaxSpendRequest>;

@@ -65,7 +65,7 @@ export function AskUserCard({
   }
 
   return (
-    <form className="ask-user" onSubmit={onSubmit} aria-label="Questions from Quartermaster">
+    <form className="ask-user" onSubmit={onSubmit} aria-label="Questions from Leo">
       {input.questions.map((q, i) => {
         const answer = answers[i] ?? empty;
         return (

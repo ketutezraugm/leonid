@@ -44,7 +44,7 @@ export function BookingsCard({
           <strong>What do you want to book for this event?</strong>
           <span className="muted">
             These are what events usually pay for. The venue is ready today, with seeded venues and
-            a PayPal deposit; the rest are still in development.
+            a plan you pay for with PayPal; the rest are still in development.
           </span>
         </legend>
         <ul className="bookings-list">

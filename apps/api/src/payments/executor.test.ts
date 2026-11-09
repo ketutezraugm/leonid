@@ -602,7 +602,7 @@ describe('payouts (claims and payouts)', () => {
     const out = await executor.requestSpend(claim(5000));
     expect(out).toEqual({ status: 'submitted', batchId: 'PB-1' });
     expect(payouts.fn).toHaveBeenCalledOnce();
-    expect(payouts.fn).toHaveBeenCalledWith({ referenceId: 'claim-1', recipientEmail: 'dana@example.com', amountMinor: 5000, currency: 'USD', note: 'Quartermaster claim' });
+    expect(payouts.fn).toHaveBeenCalledWith({ referenceId: 'claim-1', recipientEmail: 'dana@example.com', amountMinor: 5000, currency: 'USD', note: 'Leonid claim' });
     expect(orderPosts(fetch)).toHaveLength(0);
     expect(auditRows[0]!.entry.ruleResult?.decision).toBe('allow');
     expect(auditRows[0]!.patch).toMatchObject({ outcome: 'submitted', paypalId: 'PB-1' });

@@ -18,7 +18,7 @@ const lanyards = (amountMinor = 14_000, extra: Partial<Spend> = {}) =>
   spend(amountMinor, { category: 'swag', vendor: 'Lanyard Co', ...extra });
 
 const budget = (over: Partial<NonNullable<Budget['funds']>> = {}, rest: Partial<Budget> = {}): Budget => ({
-  funds: { unlockedMinor: 300_000, committedByCategoryMinor: {}, paidSponsorIds: [SPONSOR], ...over },
+  funds: { unlockedMinor: 300_000, committedMinor: 0, committedByCategoryMinor: {}, paidSponsorIds: [SPONSOR], ...over },
   autoPaidTodayMinor: 0,
   claimedTodayMinor: 0,
   ...rest,
@@ -142,6 +142,29 @@ describe('check: claims and payouts', () => {
 
   it('applies the swag list to purchases only', () => {
     expect(check(claim(1_000, { category: 'swag', vendor: 'Corner Shop' }), DEMO_RULES, budget()).decision).toBe('allow');
+  });
+});
+
+describe('check: the maximum spend', () => {
+  const MAX = [{ id: 'max-spend', type: 'max_spend', amountMinor: 50_000, currency: 'USD' } as const];
+
+  it('allows a spend that brings the event exactly to the maximum', () => {
+    expect(check(spend(20_000), MAX, budget({ committedMinor: 30_000 })).decision).toBe('allow');
+  });
+
+  it('blocks a spend that would pass the maximum, counting what is already committed', () => {
+    const result = check(spend(20_001), MAX, budget({ committedMinor: 30_000 }));
+    expect(result).toMatchObject({ decision: 'block', ruleIds: ['max-spend'] });
+    expect(result.reasons[0]).toContain('500.00 USD maximum');
+  });
+
+  it('blocks a spend that names no event, since there is no total to measure', () => {
+    const noEvent = spend(1_000, { eventId: undefined });
+    expect(check(noEvent, MAX, { ...budget(), funds: null }).decision).toBe('block');
+  });
+
+  it('sends a spend in another currency to a person', () => {
+    expect(check(spend(1_000, { currency: 'EUR' }), MAX, budget()).decision).toBe('needs_approval');
   });
 });
 

@@ -26,7 +26,10 @@ export function formatMoney(minorUnits: number, currency = 'USD', locale = 'en-U
 
 // What a person typed in a money field ("8,000" or "8000.50") as integer minor units of a two-decimal currency,
 // or null when it isn't an amount. Parsed as text, so no float ever touches it.
-export function parseMoneyInput(text: string): number | null {
+export function parseMoneyInput(text: string, currency = 'USD'): number | null {
+  if (WHOLE_UNIT_CURRENCIES.has(currency.toUpperCase())) {
+    return /^\d{1,12}$/.test(text.trim().replace(/,/g, '')) ? Number(text.trim().replace(/,/g, '')) : null;
+  }
   const match = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(
     text.trim().replace(/^\$/, '').replace(/,/g, ''),
   );

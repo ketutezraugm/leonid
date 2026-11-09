@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type RequestHandler } from 'express';
 import { z } from 'zod';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { getDb, type Db } from '../db/client.js';
+import { getVisibleEvent } from '../db/events.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import type { SpendOutcome } from '../payments/executor.js';
 
 export interface DemoRouterOptions {
   env?: NodeJS.ProcessEnv;
   payments?: () => PaymentsContext;
+  db?: () => Db;
 }
 
 // Largest demo spend, in cents. Sandbox money only, but it keeps a stray click from draining the test balance.
@@ -62,6 +65,11 @@ export function demoRouter(options: DemoRouterOptions = {}) {
     }
     try {
       const { amountMinor, label, category, vendor, referenceId, eventId } = body.data;
+      const owner = ownerOf(currentTreasurer(res));
+      if (owner !== null && !(await getVisibleEvent((options.db ?? getDb)(), eventId, owner))) {
+        res.status(404).json({ error: 'No such event' });
+        return;
+      }
       const outcome = await ctx.executor.requestSpend({
         referenceId: referenceId ?? `demo-${randomUUID()}`,
         amountMinor,

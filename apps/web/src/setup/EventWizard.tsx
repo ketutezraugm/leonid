@@ -27,7 +27,7 @@ import {
 // How long the "setting up" summary stays up at least, so the organizer sees their answers land.
 export const BUILDING_MIN_MS = 600;
 
-type Phase = 'kind' | 'intro' | 'questions' | 'building';
+type Phase = 'kind' | 'intro' | 'questions' | 'review' | 'building';
 
 export function EventWizard() {
   const [phase, setPhase] = useState<Phase>('kind');
@@ -35,6 +35,10 @@ export function EventWizard() {
   const [kindNote, setKindNote] = useState('');
   const [brief, setBrief] = useState<Brief | null>(null);
   const [index, setIndex] = useState(0);
+  // Set once the organizer reaches the summary: a changed answer goes back to it, not onward.
+  const [reviewing, setReviewing] = useState(false);
+  // Whether the agent starts planning once the event is saved, or the organizer starts it later.
+  const [startAgent, setStartAgent] = useState(true);
   const navigate = useNavigate();
 
   // Esc closes the popup, like the ×; not while the event is being saved.
@@ -56,13 +60,17 @@ export function EventWizard() {
         onNote={setKindNote}
         onContinue={() => {
           if (!kind) return;
-          // A different kind brings its own defaults; the same kind keeps what was answered.
-          setBrief((current) =>
-            current?.kind === kind
-              ? { ...current, kindNote: kindNote.trim() }
-              : newBrief(kind, kindNote),
-          );
-          setPhase('intro');
+          // A different kind brings its own defaults, so the interview starts over; the same kind
+          // keeps what was answered.
+          const same = brief !== null && brief.kind === kind;
+          setBrief(same ? { ...brief, kindNote: kindNote.trim() } : newBrief(kind, kindNote));
+          if (same && reviewing) {
+            setPhase('review');
+          } else {
+            setReviewing(false);
+            setIndex(0);
+            setPhase('intro');
+          }
         }}
       />
     );
@@ -76,8 +84,8 @@ export function EventWizard() {
           Let’s set up your {kindOf(brief.kind).label.toLowerCase()}
         </h1>
         <p className="interview-lead">
-          I’ll ask {QUESTIONS.length} quick questions in {PARTS.length} parts. Then the agent starts
-          researching, and nothing is bought without your rules. Ready?
+          I’ll ask {QUESTIONS.length} quick questions in {PARTS.length} parts. You check the summary,
+          then the agent starts researching, and nothing is bought without your rules. Ready?
         </p>
         <Button variant="primary" onClick={() => setPhase('questions')} autoFocus>
           I’m ready
@@ -86,16 +94,32 @@ export function EventWizard() {
     );
   }
 
-  if (phase === 'building') {
+  if (phase === 'review') {
     return (
-      <Building
+      <Review
         brief={brief}
-        onEdit={() => {
+        onBack={() => {
           setIndex(QUESTIONS.length - 1);
           setPhase('questions');
         }}
+        onEdit={(at) => {
+          if (at === null) {
+            setPhase('kind');
+            return;
+          }
+          setIndex(at);
+          setPhase('questions');
+        }}
+        onStart={(agent) => {
+          setStartAgent(agent);
+          setPhase('building');
+        }}
       />
     );
+  }
+
+  if (phase === 'building') {
+    return <Building brief={brief} startAgent={startAgent} onEdit={() => setPhase('review')} />;
   }
 
   const question = QUESTIONS[index]!;
@@ -114,8 +138,10 @@ export function EventWizard() {
         onNext={index < QUESTIONS.length - 1 && answered(index) ? () => setIndex(index + 1) : null}
         onAnswer={(next) => {
           setBrief(next);
-          if (index === QUESTIONS.length - 1) setPhase('building');
-          else setIndex(index + 1);
+          if (reviewing || index === QUESTIONS.length - 1) {
+            setReviewing(true);
+            setPhase('review');
+          } else setIndex(index + 1);
         }}
       />
     </Panel>
@@ -493,10 +519,14 @@ function QuestionCard({
         <>
           <div className="question-needs" role="group" aria-labelledby={`q-${id}`}>
             {BOOKING_ITEMS.map((item) => (
-              <label key={item.id} className="question-need">
+              <label
+                key={item.id}
+                className={item.available ? 'question-need' : 'question-need is-unavailable'}
+              >
                 <input
                   type="checkbox"
-                  checked={needs.includes(item.id)}
+                  checked={item.available && needs.includes(item.id)}
+                  disabled={!item.available}
                   onChange={(e) =>
                     setNeeds(
                       e.target.checked
@@ -511,7 +541,7 @@ function QuestionCard({
                   <strong>{item.label}</strong>
                   <span className="question-hint">
                     {item.description}
-                    {!item.available && ' · agent help coming soon'}
+                    {!item.available && ' · under development'}
                   </span>
                 </span>
               </label>
@@ -616,9 +646,66 @@ function resolve(
   }
 }
 
-// --- Step 3: save the event and hand over to the agent ----------------------------------------
+// --- Step 3: the summary, before anything is saved --------------------------------------------
 
-function Building({ brief, onEdit }: { brief: Brief; onEdit: () => void }) {
+function Review({
+  brief,
+  onBack,
+  onEdit,
+  onStart,
+}: {
+  brief: Brief;
+  onBack: () => void;
+  /** The question index to change, or null for the kind of event. */
+  onEdit: (at: number | null) => void;
+  /** Saves the event; true also hands the answers to the agent to start planning. */
+  onStart: (startAgent: boolean) => void;
+}) {
+  return (
+    <Panel onBack={onBack}>
+      <Orb small />
+      <h1 className="interview-title">Here’s your event</h1>
+      <p className="interview-lead">
+        Check the answers. When you start, the agent begins planning {brief.name}. You can also
+        save the event now and start planning later from the agent chat.
+      </p>
+      <ul className="answer-list">
+        {answers(brief).map(({ question, answer }, i) => (
+          <li key={question}>
+            <strong>{question}</strong>
+            <span>{answer}</span>
+            <button
+              type="button"
+              className="answer-edit"
+              aria-label={`Change: ${question}`}
+              onClick={() => onEdit(i === 0 ? null : i - 1)}
+            >
+              Change
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="btn-row">
+        <Button variant="primary" onClick={() => onStart(true)} autoFocus>
+          Start planning
+        </Button>
+        <Button onClick={() => onStart(false)}>Skip for now</Button>
+      </div>
+    </Panel>
+  );
+}
+
+// --- Step 4: save the event and hand over to the agent ----------------------------------------
+
+function Building({
+  brief,
+  startAgent,
+  onEdit,
+}: {
+  brief: Brief;
+  startAgent: boolean;
+  onEdit: () => void;
+}) {
   const navigate = useNavigate();
   const { refresh } = useEvents();
   const [problem, setProblem] = useState<string | null>(null);
@@ -644,22 +731,27 @@ function Building({ brief, onEdit }: { brief: Brief; onEdit: () => void }) {
       people: brief.people,
       budget: brief.budget,
       currency: 'USD',
+      brief: kickoffText(brief),
     })
       .then((created) => {
         rememberEvent(created.id);
         refresh();
-        // A fresh chat for this event, opened as the active one; it sends the answers itself.
+        // A fresh chat for this event, opened as the active one. Starting now, it sends the answers
+        // itself; skipped, it offers to start planning with the answers saved on the event.
         const threadId = newThreadId();
         saveActiveId(threadId);
         saveIds(withId(loadIds(), threadId));
-        saveKickoff({
-          threadId,
-          eventId: created.id,
-          eventName: created.name,
-          text: kickoffText(brief),
-        });
+        if (startAgent) {
+          saveKickoff({
+            threadId,
+            eventId: created.id,
+            eventName: created.name,
+            text: kickoffText(brief),
+          });
+        }
         const wait = Math.max(0, BUILDING_MIN_MS - (Date.now() - started));
-        setTimeout(() => mounted.current && navigate(eventPath(created.id, 'agent')), wait);
+        const to = eventPath(created.id, 'agent');
+        setTimeout(() => mounted.current && navigate(to), wait);
       })
       .catch((err: unknown) => {
         if (!mounted.current) return;
@@ -671,7 +763,7 @@ function Building({ brief, onEdit }: { brief: Brief; onEdit: () => void }) {
           setProblem(`${title}. ${detail}`);
         } else setProblem("Couldn't save the event. Try again.");
       });
-  }, [attempt, brief, navigate, refresh]);
+  }, [attempt, brief, startAgent, navigate, refresh]);
 
   return (
     <Panel onBack={problem ? onEdit : undefined}>

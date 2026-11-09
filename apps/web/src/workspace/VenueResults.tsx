@@ -93,8 +93,8 @@ export function VenueResults({
 
       {!running && candidates.length > 0 && !candidates.some((v) => isPicked(v, picked)) && (
         <p className="results-next" role="note">
-          Pick a venue to continue. The agent then plans booking it, and you can pay its deposit
-          with PayPal.
+          Pick a venue to continue. The agent then plans booking it, and you review the plan and
+          pay for it with PayPal.
         </p>
       )}
 

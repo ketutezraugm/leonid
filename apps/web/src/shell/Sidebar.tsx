@@ -1,28 +1,30 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { BRAND } from '../brand';
 import { BrandMark } from '../ui/BrandMark';
 import { Icon, type IconName } from '../ui/icons';
+import { AccountMenu } from './AccountMenu';
 import { useShellData } from './data';
-import { eventPath, useCurrentEvent } from './event';
-import { EventSwitcher } from './EventSwitcher';
-import { useSession } from './session';
-import { walletLabel } from './wallet';
+import { countdown, eventPath, formatEventDate, useCurrentEvent, useEvent, useEvents } from './event';
 
 // The screens of one event, in the order of the event's life. Paths are relative to /events/:eventId/.
 const nav: { screen: string; label: string; icon: IconName }[] = [
-  { screen: '', label: 'Event home', icon: 'home' },
   { screen: 'agent', label: 'Agent', icon: 'agent' },
   { screen: 'plan', label: 'Plan', icon: 'plan' },
   { screen: 'money', label: 'Money', icon: 'money' },
   { screen: 'approvals', label: 'Approvals', icon: 'approvals' },
-  { screen: 'rules', label: 'Rules', icon: 'rules' },
   { screen: 'claims', label: 'Claims', icon: 'claims' },
 ];
 
 export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  const { session, signOut } = useSession();
-  const { wallet, waiting } = useShellData();
-  const event = useCurrentEvent();
+  const { waiting } = useShellData();
+  const current = useCurrentEvent();
+  const { pathname } = useLocation();
+  const { events } = useEvents();
+  const lastOpened = useEvent();
+  // Settings and Profile belong to the account, not an event, but the sidebar keeps the last-opened event's
+  // screens so opening them does not look like leaving for All events.
+  const onAccountPage = pathname === '/settings' || pathname === '/profile';
+  const event = current ?? (onAccountPage && events.some((e) => e.routeId === lastOpened.routeId) ? lastOpened : null);
 
   return (
     <aside className="shell-side">
@@ -45,13 +47,22 @@ export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => voi
 
       {event ? (
         <>
-          <EventSwitcher current={event} />
+          <div className="event-label" title={event.name}>
+            <span className="event-initial" aria-hidden="true">
+              {event.name.charAt(0)}
+            </span>
+            <span className="event-label-text shell-label">
+              <strong>{event.name}</strong>
+              <span className="muted">
+                {formatEventDate(event.date)} · {countdown(event.date)}
+              </span>
+            </span>
+          </div>
           <nav className="shell-nav" aria-label="Main">
             {nav.map((item) => (
               <NavLink
-                key={item.screen || 'home'}
+                key={item.screen}
                 to={eventPath(event.routeId, item.screen)}
-                end={item.screen === ''}
                 title={item.label}
               >
                 <Icon name={item.icon} />
@@ -71,30 +82,15 @@ export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => voi
             <Icon name="events" />
             <span className="shell-label">All events</span>
           </NavLink>
+          <NavLink to="/history" title="History">
+            <Icon name="history" />
+            <span className="shell-label">History</span>
+          </NavLink>
         </nav>
       )}
 
-      <div className="shell-foot">
-        {event && (
-          <NavLink to="/events" end title="All events">
-            <Icon name="events" />
-            <span className="shell-label">All events</span>
-          </NavLink>
-        )}
-        <NavLink to="/settings" title="Settings">
-          <Icon name="settings" />
-          <span className="shell-label">Settings</span>
-        </NavLink>
-        {wallet.kind === 'ready' && (
-          <NavLink to="/settings" className={`wallet-status wallet-status--${wallet.data.status} shell-label`}>
-            {walletLabel(wallet.data.status)}
-          </NavLink>
-        )}
-        {session.status === 'signed-in' && (
-          <button type="button" className="shell-signout shell-label" onClick={() => void signOut()}>
-            Sign out
-          </button>
-        )}
+      <div className="shell-account">
+        <AccountMenu />
       </div>
     </aside>
   );

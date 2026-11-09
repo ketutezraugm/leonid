@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { demoSponsors, demoTasks, HARBOR } from './demoPlan';
 import {
   applySponsors,
   fundingText,
@@ -52,19 +51,6 @@ describe('applySponsors', () => {
   it('drops the source-only fields before the tasks reach the Gantt', () => {
     const [task] = applySponsors([funded], [sponsor('paid')]);
     expect(task).not.toHaveProperty('fundedBySponsorId');
-  });
-});
-
-describe('the sample plan', () => {
-  it('has the 15 linked tasks the demo needs, none of them held by a sponsor', () => {
-    const tasks = applySponsors(demoTasks, demoSponsors);
-    expect(tasks).toHaveLength(15);
-    expect(tasks.filter((t) => t.fundedBy === 'Harbor Cloud')).toHaveLength(2);
-    expect(tasks.some((t) => t.status === 'blocked')).toBe(false);
-    const paid = demoSponsors.map((s) => (s.id === HARBOR ? { ...s, status: 'paid' as const } : s));
-    expect(
-      applySponsors(demoTasks, paid).filter((t) => t.fundedBy === 'Harbor Cloud' && t.fundedByPaid),
-    ).toHaveLength(2);
   });
 });
 

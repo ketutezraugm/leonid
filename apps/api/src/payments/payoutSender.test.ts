@@ -15,7 +15,7 @@ function clientFor(app: 'treasury' | 'procurement') {
   return { client: createPayPalClient({ app, clientId: 'i', clientSecret: 's', fetch }), calls };
 }
 
-const input = { referenceId: 'claim-1', recipientEmail: 'dana@example.com', amountMinor: 3_000, currency: 'USD', note: 'Quartermaster claim' };
+const input = { referenceId: 'claim-1', recipientEmail: 'dana@example.com', amountMinor: 3_000, currency: 'USD', note: 'Leonid claim' };
 
 describe('createPayoutSender', () => {
   it('pays one person by email from the Treasury app, with the reference id as the batch id and the request id', async () => {
@@ -26,7 +26,7 @@ describe('createPayoutSender', () => {
     expect(calls[0]!.requestId).toBe('payout-claim-1');
     expect(calls[0]!.body.sender_batch_header.sender_batch_id).toBe('claim-1');
     expect(calls[0]!.body.items).toEqual([
-      expect.objectContaining({ recipient_type: 'EMAIL', receiver: 'dana@example.com', amount: { currency_code: 'USD', value: '30.00' }, note: 'Quartermaster claim', sender_item_id: 'claim-1' }),
+      expect.objectContaining({ recipient_type: 'EMAIL', receiver: 'dana@example.com', amount: { currency_code: 'USD', value: '30.00' }, note: 'Leonid claim', sender_item_id: 'claim-1' }),
     ]);
   });
 

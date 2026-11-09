@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { CHAT_TITLE_MAX_LENGTH, type ChatThreadPatchRequest } from '@quartermaster/shared';
 import type { Db } from './client.js';
+import { ownerThread } from './mandates.js';
 import { chatThreads, events, mandateItems, mandates } from './schema.js';
 
 const AUTO_TITLE_MAX = 60;
@@ -21,8 +22,8 @@ export async function setTitleIfMissing(db: Db, threadId: string, text: string) 
     .where(and(eq(chatThreads.id, threadId), isNull(chatThreads.title)));
 }
 
-// Archived and never-messaged threads are left out; newest first.
-export async function listThreadSummaries(db: Db, ids: string[]) {
+// Archived, never-messaged and other people's threads are left out; newest first.
+export async function listThreadSummaries(db: Db, ids: string[], owner: string | null) {
   const rows = await db
     .select({
       id: chatThreads.id,
@@ -36,6 +37,7 @@ export async function listThreadSummaries(db: Db, ids: string[]) {
     .where(
       and(
         inArray(chatThreads.id, ids),
+        owner === null ? undefined : eq(chatThreads.ownerSub, owner),
         isNull(chatThreads.archivedAt),
         sql`jsonb_array_length(${chatThreads.messages}) > 0`,
       ),
@@ -49,23 +51,34 @@ export async function listThreadSummaries(db: Db, ids: string[]) {
   }));
 }
 
-// Returns false when the thread does not exist.
-export async function updateThread(db: Db, threadId: string, patch: ChatThreadPatchRequest) {
+// Returns false when the thread does not exist or is not this owner's.
+export async function updateThread(
+  db: Db,
+  threadId: string,
+  patch: ChatThreadPatchRequest,
+  owner: string | null,
+) {
   const set: Partial<typeof chatThreads.$inferInsert> = {};
   if (patch.title !== undefined) set.title = patch.title.slice(0, CHAT_TITLE_MAX_LENGTH);
   if (patch.archived !== undefined) set.archivedAt = patch.archived ? new Date() : null;
   const updated = await db
     .update(chatThreads)
     .set(set)
-    .where(eq(chatThreads.id, threadId))
+    .where(ownerThread(threadId, owner))
     .returning({ id: chatThreads.id });
   return updated.length > 0;
 }
 
 // Removes the thread with its checklist for good. Events it created and audit rows stay: they are
-// event and money history, not chat. Returns false when the thread does not exist.
-export async function deleteThread(db: Db, threadId: string) {
+// event and money history, not chat. Returns false when the thread does not exist or is not this owner's.
+export async function deleteThread(db: Db, threadId: string, owner: string | null) {
   return db.transaction(async (tx) => {
+    const [thread] = await tx
+      .select({ id: chatThreads.id })
+      .from(chatThreads)
+      .where(ownerThread(threadId, owner))
+      .for('update');
+    if (!thread) return false;
     const owned = tx
       .select({ id: mandates.id })
       .from(mandates)

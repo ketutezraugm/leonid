@@ -96,6 +96,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  font-family: var(--font-display);
   font-weight: var(--font-weight-semibold);
   color: var(--color-on-accent);
 }
@@ -730,6 +731,7 @@
 
 .lp-wordmark {
   margin: var(--space-5) 0 0;
+  font-family: var(--font-display);
   font-size: clamp(56px, 13vw, 190px);
   font-weight: var(--font-weight-bold);
   letter-spacing: -0.05em;

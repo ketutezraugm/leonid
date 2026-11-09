@@ -37,14 +37,14 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('App', () => {
-  it('renders the shell and event home inside an event', async () => {
+  it('renders the shell and lands on the agent inside an event', async () => {
     render(
       <MemoryRouter initialEntries={['/events/demo']}>
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByRole('heading', { name: 'Event home' })).toBeInTheDocument();
-    expect(screen.getByText('Quartermaster')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Agent' })).toBeInTheDocument();
+    expect(screen.getByText('Leonid')).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
   });
 
@@ -73,13 +73,13 @@ describe('App', () => {
         <App />
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole('button', { name: /OpenHack 2027.*Switch event/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Account.*Open menu/ }));
     const other = screen.getByRole('link', { name: /Spring Meetup/ });
     expect(other).toHaveAttribute('href', `/events/${meetup}/approvals`);
     expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('aria-current', 'true');
     fireEvent.click(other);
-    expect(await screen.findByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+    expect(await screen.findByTitle('Spring Meetup')).toBeInTheDocument();
   });
 
   it('opens an old link in the first real event when the remembered one is gone', async () => {
@@ -92,7 +92,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
+    expect(await screen.findByTitle('Spring Meetup')).toBeInTheDocument();
     expect(screen.queryByText('This event isn’t here')).toBeNull();
   });
 
@@ -105,7 +105,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Spring Meetup.*Switch event/ })).toBeInTheDocument();
+    expect(await screen.findByTitle('Spring Meetup')).toBeInTheDocument();
   });
 
   it('says so when the event in the link is not one of yours', async () => {
@@ -237,7 +237,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close sidebar' }));
     expect(shell).toHaveClass('shell--rail');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Rules' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Claims' }));
     expect(shell).toHaveClass('shell--rail');
     expect(screen.getByRole('button', { name: 'Open sidebar' })).toHaveAttribute('aria-expanded', 'false');
 

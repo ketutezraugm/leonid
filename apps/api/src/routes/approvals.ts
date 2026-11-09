@@ -1,12 +1,15 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { RejectApprovalRequest, type ApprovalItem, type ApprovalsResponse } from '@quartermaster/shared';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { getDb, type Db } from '../db/client.js';
+import { getVisibleEvent, visibleEventIds } from '../db/events.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
 import type { ApprovalView } from '../payments/memory.js';
 
 export interface ApprovalsRouterOptions {
   env?: NodeJS.ProcessEnv;
   payments?: () => PaymentsContext;
+  db?: () => Db;
 }
 
 // Spends the rules sent to the treasurer. Each one has a PayPal order that only the treasurer can approve:
@@ -15,6 +18,8 @@ export interface ApprovalsRouterOptions {
 //   POST /:id/capture   (treasurer) after the PayPal popup: PayPal is asked whether the order is approved, then it is captured.
 //                       409 for every refusal, including already_paid / in_progress when the webhook got there first.
 //   POST /:id/reject    (treasurer) body { reason? } (shared RejectApprovalRequest); the reason goes to the audit log
+// A treasurer sees and acts on approvals of the events they can see (canSeeEvent in db/events.ts); any other approval
+// is left out of the list and refused like an unknown one.
 const toItem = (v: ApprovalView): ApprovalItem => ({
   id: v.id,
   status: v.status,
@@ -38,7 +43,16 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
   const env = options.env ?? process.env;
   const payments = options.payments ?? getPayments;
   const guard = requireTreasurer(env);
+  const db = options.db ?? getDb;
   const router = Router();
+
+  // Whether the caller may act on this approval. The ops token is answered without a query.
+  const canSeeApproval = async (res: Response, id: string, approvals: PaymentsContext['approvals']) => {
+    const owner = ownerOf(currentTreasurer(res));
+    if (owner === null) return true;
+    const eventId = (await approvals.get(id))?.spend.eventId;
+    return Boolean(eventId && (await getVisibleEvent(db(), eventId, owner)));
+  };
 
   const withPayments =
     (fn: (req: Request, res: Response, ctx: PaymentsContext) => Promise<void>): RequestHandler =>
@@ -71,7 +85,12 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
     '/',
     guard,
     withPayments(async (_req, res, { approvals }) => {
-      const body: ApprovalsResponse = { approvals: (await approvals.list()).map(toItem) };
+      const owner = ownerOf(currentTreasurer(res));
+      const visible = owner === null ? undefined : new Set(await visibleEventIds(db(), owner));
+      const rows = (await approvals.list()).filter(
+        (v) => !visible || (v.spend.eventId !== undefined && visible.has(v.spend.eventId)),
+      );
+      const body: ApprovalsResponse = { approvals: rows.map(toItem) };
       res.json(body);
     }),
   );
@@ -79,7 +98,11 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
   router.post(
     '/:id/capture',
     guard,
-    withPayments(async (req, res, { executor }) => {
+    withPayments(async (req, res, { approvals, executor }) => {
+      if (!(await canSeeApproval(res, String(req.params.id), approvals))) {
+        res.status(404).json({ error: 'No such approval' });
+        return;
+      }
       const outcome = await executor.captureApproved(String(req.params.id), treasurerActor(res));
       if (outcome.status === 'paid' || outcome.status === 'submitted') res.json(outcome);
       else res.status(outcome.status === 'refused' ? 409 : 502).json(outcome);
@@ -89,7 +112,11 @@ export function approvalsRouter(options: ApprovalsRouterOptions = {}) {
   router.post(
     '/:id/reject',
     guard,
-    withPayments(async (req, res, { executor }) => {
+    withPayments(async (req, res, { approvals, executor }) => {
+      if (!(await canSeeApproval(res, String(req.params.id), approvals))) {
+        res.status(404).json({ error: 'No such approval' });
+        return;
+      }
       const parsed = RejectApprovalRequest.safeParse(req.body ?? {});
       if (!parsed.success) {
         res.status(400).json({ error: 'reason must be text of at most 200 characters' });

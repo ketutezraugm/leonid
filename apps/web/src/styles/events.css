@@ -1,69 +1,36 @@
 /*
- * Multiple events (owner: P4): the sidebar's event switcher and the All events page.
+ * Multiple events (owner: P4): the sidebar's event label and the All events page.
  * Values come only from tokens.css.
  */
 
-/* --- The switcher: the sidebar's event block, as a button --- */
-.event-switch {
-  position: relative;
-}
-
-.event-switch-button {
+/* --- The current event, as a plain label at the top of the sidebar --- */
+.event-label {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  width: 100%;
   padding: var(--space-2);
-  border: 1px solid transparent;
-  border-radius: var(--radius-card);
-  background: none;
-  font: inherit;
-  color: var(--color-text);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color var(--motion-fast) var(--ease-standard),
-    border-color var(--motion-fast) var(--ease-standard);
 }
 
-.event-switch-button:hover,
-.event-switch-button[aria-expanded='true'] {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-
-.event-switch-text {
+.event-label-text {
   display: grid;
   gap: 2px;
   flex: 1;
   min-width: 0;
 }
 
-.event-switch-text strong {
+.event-label-text strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.event-switch-text .muted {
+.event-label-text .muted {
   font-size: var(--font-size-xs);
-}
-
-.event-switch-chevron {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  color: var(--color-muted);
-  transition: transform var(--motion-fast) var(--ease-standard);
-}
-
-.event-switch-button[aria-expanded='true'] .event-switch-chevron {
-  transform: rotate(180deg);
 }
 
 /* In the icon rail the block is the event's first letter on a brass-edged tile. */
 .event-initial {
-  display: none;
+  display: grid;
   place-items: center;
   width: 32px;
   height: 32px;
@@ -75,101 +42,7 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.shell--rail .event-initial {
-  display: grid;
-}
-
-.shell--rail .event-switch-button {
-  justify-content: center;
-  padding: var(--space-1);
-}
-
-.shell--rail .shell-side:hover .event-initial,
-.shell--rail .shell-side:focus-within .event-initial {
-  display: none;
-}
-
-.shell--rail .shell-side:hover .event-switch-button,
-.shell--rail .shell-side:focus-within .event-switch-button {
-  justify-content: flex-start;
-  padding: var(--space-2);
-}
-
-.event-menu {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  left: 0;
-  z-index: 15;
-  display: grid;
-  gap: var(--space-1);
-  width: max(100%, 260px);
-  padding: var(--space-2);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-menu);
-  animation: event-menu-in var(--motion-base) var(--ease-standard);
-}
-
-@keyframes event-menu-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
-
-.event-menu-title {
-  margin: 0;
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-muted);
-}
-
-.event-menu ul {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.event-menu a {
-  display: grid;
-  gap: 2px;
-  padding: var(--space-2);
-  border-radius: var(--radius);
-  color: var(--color-text);
-  text-decoration: none;
-}
-
-.event-menu a:hover {
-  background: var(--color-surface-sunken);
-}
-
-.event-menu a[aria-current='true'] {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-}
-
 .event-menu-name {
-  font-weight: var(--font-weight-medium);
-}
-
-.event-menu a .muted {
-  font-size: var(--font-size-xs);
-}
-
-.event-menu-foot {
-  display: grid;
-  gap: 2px;
-  margin-top: var(--space-1);
-  padding-top: var(--space-1);
-  border-top: 1px solid var(--color-border);
-}
-
-.event-menu-foot a {
-  display: block;
   font-weight: var(--font-weight-medium);
 }
 
@@ -178,10 +51,6 @@
   .shell {
     grid-template-rows: auto 1fr;
     align-content: start;
-  }
-
-  .event-menu {
-    width: min(320px, calc(100vw - 2 * var(--space-3)));
   }
 }
 
@@ -344,8 +213,76 @@
   margin: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .event-menu {
-    animation: none;
-  }
+.plan-history {
+  margin-top: var(--space-6);
+}
+
+.plan-history-title {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--font-size-md);
+  color: var(--color-muted);
+}
+
+.plan-history-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-history-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-history-row:hover {
+  border-color: var(--color-accent);
+}
+
+.plan-history-name {
+  font-weight: var(--font-weight-medium);
+}
+
+.plan-history-meta {
+  grid-column: 1;
+  color: var(--color-muted);
+}
+
+.plan-history-total {
+  grid-column: 2;
+  grid-row: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+.plan-history-status {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  color: var(--color-muted);
+}
+
+.plan-history-status--paid {
+  color: var(--color-accent);
+}
+
+.plan-history-drawer {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+.plan-history-note {
+  margin-top: var(--space-6);
 }

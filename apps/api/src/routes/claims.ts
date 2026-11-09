@@ -9,10 +9,11 @@ import {
   VolunteerClaimsResponse,
 } from '@quartermaster/shared';
 import type { LanguageModel } from 'ai';
+import { eq } from 'drizzle-orm';
 import express, { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
 import { chatModel } from '../agents/model.js';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import {
   claimView,
   createVolunteer,
@@ -25,7 +26,8 @@ import {
   type ClaimDeps,
 } from '../claims/service.js';
 import { getDb, type Db } from '../db/client.js';
-import { getDemoEvent, getEvent } from '../db/events.js';
+import { getDemoEvent, getEvent, getVisibleEvent } from '../db/events.js';
+import { claims } from '../db/schema.js';
 import { getPayments } from '../payments/context.js';
 import { createDbApprovals } from '../payments/db.js';
 import type { Executor } from '../payments/executor.js';
@@ -101,8 +103,19 @@ export function claimsRouter(options: ClaimsRouterOptions = {}) {
       }
     };
 
-  const eventIdOf = async (db: Db, eventId: string | undefined) =>
-    eventId ? (await getEvent(db, eventId))?.id : (await getDemoEvent(db))?.id;
+  // The named event when the caller can see it (canSeeEvent in db/events.ts), else the seeded demo event.
+  const eventIdOf = async (db: Db, eventId: string | undefined, res: Response) =>
+    eventId
+      ? (await getVisibleEvent(db, eventId, ownerOf(currentTreasurer(res))))?.id
+      : (await getDemoEvent(db))?.id;
+
+  // Whether the caller can see the event this claim belongs to; someone else's claim answers like an unknown one.
+  const canSeeClaim = async (db: Db, claimId: string, res: Response) => {
+    const owner = ownerOf(currentTreasurer(res));
+    if (owner === null) return true;
+    const [row] = await db.select({ eventId: claims.eventId }).from(claims).where(eq(claims.id, claimId));
+    return Boolean(row && (await getVisibleEvent(db, row.eventId, owner)));
+  };
 
   // The volunteer, by their claim token. Sent as a header, so it stays out of request logs.
   const volunteerOf = (req: Request, db: Db) => findVolunteerByToken(db, String(req.get('x-claim-token') ?? ''));
@@ -163,7 +176,7 @@ export function claimsRouter(options: ClaimsRouterOptions = {}) {
         res.status(422).json({ error: 'invalid volunteer', issues: body.error.issues });
         return;
       }
-      const eventId = await eventIdOf(db, body.data.eventId);
+      const eventId = await eventIdOf(db, body.data.eventId, res);
       if (!eventId) {
         res.status(404).json({ error: 'No such event' });
         return;
@@ -182,7 +195,7 @@ export function claimsRouter(options: ClaimsRouterOptions = {}) {
         res.status(400).json({ error: 'invalid query' });
         return;
       }
-      const eventId = await eventIdOf(db, query.data.eventId);
+      const eventId = await eventIdOf(db, query.data.eventId, res);
       if (!eventId) {
         res.status(404).json({ error: 'No such event' });
         return;
@@ -196,7 +209,7 @@ export function claimsRouter(options: ClaimsRouterOptions = {}) {
     guard,
     handle(async (req, res, db) => {
       const id = z.uuid().safeParse(req.params.id);
-      const receipt = id.success ? await getReceipt(db, id.data) : undefined;
+      const receipt = id.success && (await canSeeClaim(db, id.data, res)) ? await getReceipt(db, id.data) : undefined;
       if (!receipt) {
         res.status(404).json({ error: 'No such claim' });
         return;
@@ -215,6 +228,10 @@ export function claimsRouter(options: ClaimsRouterOptions = {}) {
       const body = ReviewClaimRequest.safeParse(req.body);
       if (!id.success || !body.success) {
         res.status(422).json({ error: 'invalid review' });
+        return;
+      }
+      if (!(await canSeeClaim(db, id.data, res))) {
+        res.status(404).json({ error: 'No such claim', code: 'not_found' });
         return;
       }
       const result = await reviewClaim(depsFor(db), id.data, body.data.amount, treasurerActor(res));

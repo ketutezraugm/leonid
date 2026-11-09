@@ -28,6 +28,10 @@ export interface EventInfo {
   people: number;
   /** ISO 4217 currency code, e.g. USD. */
   currency: string;
+  /** The setup answers as the agent's first message; the chat offers to start planning with it. */
+  brief?: string | null;
+  /** The most the agent may commit for this event, in minor units. Null or missing: none set. */
+  maxSpend?: number | null;
 }
 
 const DEMO_EVENT: EventInfo = { id: null, routeId: DEMO_ROUTE_ID, ...EVENT };

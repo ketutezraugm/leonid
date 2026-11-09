@@ -9,7 +9,7 @@ Tue Nov 3. Written for the team and their coding agents. No secrets in this file
 - [ ] `development` has the P2 PRs (login refusal log, `POST /api/demo/spend`, shared session and wallet types) and Abel's web build. Harfi merges them.
 - [ ] Harfi's `check()` is wired into `apps/api/src/payments/context.ts` in place of `stubCheck`. If it has not landed, say so in the report: the rehearsal then runs on the stand-in rule ("nothing over $200 without approval") and Gate 2 is only partly met.
 - [ ] Render (`quartermaster-staging`, branch `development`) has `DEMO_SPEND=true`. Set it back to `false` afterwards.
-- [ ] The Procurement webhook is subscribed to `CHECKOUT.ORDER.APPROVED`; the Treasury webhook to `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED`.
+- [ ] The Procurement webhook is subscribed to `CHECKOUT.ORDER.APPROVED`; the Treasury webhook to `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.REVERSED` and the payout item events `PAYMENT.PAYOUTS-ITEM.` `BLOCKED`, `CANCELED`, `FAILED`, `HELD`, `REFUNDED`, `RETURNED`, `SUCCEEDED` and `UNCLAIMED` (subscribed Nov 6; PayPal has no `...ITEM.DENIED`, a denied batch arrives as `PAYMENT.PAYOUTSBATCH.DENIED`, which nothing handles yet).
 - [ ] The agent wallet is active. If not: `pnpm --filter @quartermaster/api gate2:check -- --connect`, open the link, log in as the sandbox **Personal** payer and agree. It returns to `/?wallet=connected`.
 - [ ] Your gitignored `.env` has `STAGING_TREASURER_TOKEN`. For the stronger checks it also has `STAGING_DATABASE_URL` (the Supabase Session pooler string, port 5432) and the Procurement credentials.
 

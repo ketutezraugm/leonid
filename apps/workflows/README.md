@@ -1,6 +1,6 @@
 # Render Workflows (P2)
 
-Durable background jobs for Quartermaster, run by [Render Workflows](https://render.com/docs/workflows) (beta). A task only
+Durable background jobs for Leonid, run by [Render Workflows](https://render.com/docs/workflows) (beta). A task only
 orchestrates: steps, retries, parallel subtasks. The work happens in the API's own job endpoints (`apps/api/src/routes/jobs.ts`),
 so the rules engine, the audit log and the ledger stay in one place and a task never holds PayPal credentials.
 

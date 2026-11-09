@@ -4,7 +4,7 @@ Shared instructions for every coding agent working in this repo (Claude Code, Cu
 
 ## Project
 
-Quartermaster is an AI operations agent for community tech events that runs all of an event's money on PayPal (sandbox). Sponsor money comes in, purchases and people payouts go out, and every outflow passes spending rules that no agent can break. It is a PayPal AI Hackathon entry: the internal submit date is **Nov 10, 2026**, and the official deadline is Nov 12, 12:00 PM PST. The spec is `docs/PRD.pdf`. Features are F1–F25 and owners are P1–P4, so reference those IDs in PRs and commits.
+Leonid is an AI operations agent for community tech events that runs all of an event's money on PayPal (sandbox). Sponsor money comes in, purchases and people payouts go out, and every outflow passes spending rules that no agent can break. It is a PayPal AI Hackathon entry: the internal submit date is **Nov 10, 2026**, and the official deadline is Nov 12, 12:00 PM PST. The spec is `docs/PRD.pdf`. Features are F1–F25 and owners are P1–P4, so reference those IDs in PRs and commits.
 
 | Role | Owns                                                                                                      | Rules file                                                 |
 | ---- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -54,7 +54,7 @@ Run `pnpm typecheck && pnpm lint && pnpm test` before calling work done. `main` 
 These are the product's core promise and appear in the demo's "never cut" list. Do not weaken them, even temporarily.
 
 1. **Rules are code, not prompts.** Every money-moving call (order capture, vault charge, payout, refund) is reachable only through the deterministic `check(spend, rules, budget) → allow | needs_approval | block`, and the result and reason go to the audit log. An LLM may draft rules but never enforces them.
-2. **No funds gate (changed Nov 6, 2026):** the agent pays from the organizer's own logged-in PayPal account, so cleared sponsor income is no longer a spending limit and a spend no longer waits on a sponsor's invoice. Unlocked budget (cleared income − committed spend) is still computed and shown, but not enforced. A user-set maximum spend will replace it as the limit; until then the rules (approval threshold, daily and category caps) are the limit.
+2. **No funds gate (changed Nov 6, 2026):** the agent pays from the organizer's own logged-in PayPal account, so cleared sponsor income is no longer a spending limit and a spend no longer waits on a sponsor's invoice. Unlocked budget (cleared income − committed spend) is still computed and shown, but not enforced. The organizer's max spend (the "Add rule" button in the agent chat) is the limit, together with the rules (approval threshold, daily and category caps).
 3. **The kill switch is PayPal-enforced:** it deletes the vault payment token. Never cache or fall back to another payment path when the token is gone.
 4. **The web app never calls PayPal server APIs** or holds PayPal secrets. Only the PayPal JS SDK (approval buttons) runs in the browser.
 5. **Webhooks are the live source of truth** for money state. Transaction Search lags, so use it for reconciliation and reports only.

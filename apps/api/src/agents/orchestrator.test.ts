@@ -20,7 +20,7 @@ beforeEach(async () => {
   db = await createTestDb();
   eventId = (await seedDemoEvent(db)).id;
   threadId = crypto.randomUUID();
-  await getOrCreateThread(db, threadId, eventId);
+  await getOrCreateThread(db, threadId, eventId, null);
 });
 
 const chosen: BookingChoice = { chosen: ['venue', 'swag'], extra: null };
@@ -126,7 +126,7 @@ describe('orchestrator', () => {
 
   it('refuses to plan tasks before the chat has an event', async () => {
     const empty = crypto.randomUUID();
-    await getOrCreateThread(db, empty, null);
+    await getOrCreateThread(db, empty, null, null);
     const agent = createOrchestrator({
       db,
       model: scriptedModel([
@@ -183,7 +183,7 @@ describe('orchestrator', () => {
 
   it('tells the agents today and refuses an event date in the past', async () => {
     const empty = crypto.randomUUID();
-    await getOrCreateThread(db, empty, null);
+    await getOrCreateThread(db, empty, null, null);
     const model = scriptedModel([
       {
         tool: 'create_event',
@@ -247,21 +247,35 @@ describe('orchestrator', () => {
   it('ends the turn after choose_bookings so the organizer can tick the list', async () => {
     const { model, result } = run(
       [
-        { tool: 'choose_bookings', input: { suggested: ['venue', 'catering'] } },
+        { tool: 'choose_bookings', input: { suggested: ['venue', 'catering', 'swag'] } },
         { text: 'never reached' },
       ],
       { bookings: null },
     );
     const { steps } = await result;
     expect(model.callCount()).toBe(1);
-    // Catering is still in development, so it is never pre-ticked.
+    // Swag is still in development, so it is never pre-ticked.
     expect(steps.at(-1)?.toolResults[0]?.output).toEqual({
       shown: 8,
-      suggested: ['venue'],
+      suggested: ['venue', 'catering'],
     });
     expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain(
       'The organizer has not chosen what to book yet.',
     );
+  });
+
+  it('does not ask what to book again in the turn that answers it', () => {
+    const choice = { chosen: ['venue'], extra: null } satisfies BookingChoice;
+    const kickoff = `Plan our new event, OpenHack.\n${bookingChoiceText(choice)}`;
+    const agent = createOrchestrator({
+      db,
+      model: scriptedModel([{ text: 'x' }]),
+      eventId,
+      threadId,
+      goal: kickoff,
+      bookings: choice,
+    });
+    expect(Object.keys(agent.tools)).not.toContain('choose_bookings');
   });
 
   it('tells the agents what the organizer chose', async () => {

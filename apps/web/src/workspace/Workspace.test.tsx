@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Workspace } from './Workspace';
 
@@ -153,105 +153,130 @@ describe('Workspace', () => {
     });
   });
 
-  it('marks the chosen venue once the organizer has picked it', async () => {
-    stubThread(
-      [scoutPart('s1', 'Jakarta', [loft, hall])],
-      [
-        {
-          id: 'u2',
-          role: 'user',
-          parts: [
-            {
-              type: 'text',
-              text: 'Venue chosen: Harbor Hall\nSource: https://harbor.example/rooms',
-            },
-          ],
-        },
-      ],
+const summary = {
+  event: {
+    name: 'OpenHack 2027',
+    date: '2027-03-14T09:00:00.000Z',
+    headcount: 200,
+    maxSpend: { amountMinor: 800_000, currency: 'USD' },
+  },
+  venue: {
+    name: 'Harbor Hall',
+    area: 'Central, Jakarta',
+    includes: ['Stage', 'Sound system'],
+    catering: 'no',
+    sourceUrl: 'https://harbor.example/rooms',
+  },
+  estimate: {
+    lines: [
+      { label: '1 day', amountMinor: 16_000_000 },
+      { label: 'Cleaning fee', amountMinor: 800_000 },
+    ],
+    total: 16_800_000,
+    currency: 'IDR',
+  },
+  fx: { from: 'IDR', localMinorPerUsd: 16_000 },
+  payable: { amountMinor: 105_000, currency: 'USD' },
+  overMaxSpend: false,
+};
+
+const harborPick = {
+  id: 'u2',
+  role: 'user',
+  parts: [{ type: 'text', text: 'Venue chosen: Harbor Hall\nSource: https://harbor.example/rooms' }],
+};
+
+// Serves the chat thread, and the booking summary and payment for it.
+function stubBooking(
+  pay: (() => Response) | null = null,
+  body: unknown = summary,
+  payment: unknown = { status: 'unpaid' },
+) {
+  const threadFetch = stubThread([scoutPart('s1', 'Jakarta', [loft, hall])], [harborPick]);
+  const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>((url, init) => {
+    if (!url.startsWith('/api/venue-booking/')) return threadFetch(url, init);
+    return Promise.resolve(
+      init?.method === 'POST' && pay ? pay() : Response.json({ summary: body, payment }),
     );
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+  it('shows the plan in place of the venue list once a venue is picked, and goes back to the list', async () => {
+    stubBooking();
     render(<Workspace />);
 
-    const canvas = await screen.findByRole('region', { name: 'Results' });
+    const panel = await screen.findByRole('region', { name: 'Plan summary' });
+    expect(within(panel).getByRole('heading', { name: /OpenHack 2027 at Harbor Hall/ })).toBeInTheDocument();
+    expect(within(panel).getByText('200')).toBeInTheDocument();
+    expect(within(panel).getByText('Total to pay').nextSibling).toHaveTextContent('$1,050.00');
+    expect(screen.queryByText('Chosen')).not.toBeInTheDocument();
+
+    fireEvent.click(within(panel).getByRole('button', { name: 'Back to venues' }));
+    const canvas = screen.getByRole('region', { name: 'Results' });
     expect(await within(canvas).findByText('Chosen')).toBeInTheDocument();
-    expect(within(canvas).queryByText(/Pick a venue to continue/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Plan summary' })).not.toBeInTheDocument();
     const chat = screen.getByRole('region', { name: 'Agent chat' });
     expect(within(chat).getByText(/Chosen: Harbor Hall/)).toBeInTheDocument();
   });
 
-  it('offers the picked venue deposit and pays it with PayPal', async () => {
-    const pick = {
-      id: 'u2',
-      role: 'user',
-      parts: [
-        { type: 'text', text: 'Venue chosen: Harbor Hall\nSource: https://harbor.example/rooms' },
-      ],
-    };
-    const threadFetch = stubThread([scoutPart('s1', 'Jakarta', [loft, hall])], [pick]);
-    const deposit = {
-      venue: 'Harbor Hall',
-      area: 'Central, Jakarta',
-      amountMinor: 15_000,
-      currency: 'USD',
-    };
-    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>((url, init) => {
-      if (!url.startsWith('/api/venue-deposit/')) return threadFetch(url, init);
-      return Promise.resolve(
-        init?.method === 'POST'
-          ? Response.json({
-              deposit,
-              outcome: { status: 'paid', orderId: 'ORD-1', captureId: 'CAP-1' },
-            })
-          : Response.json({ deposit }),
-      );
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    render(<Workspace />);
-
-    const panel = await screen.findByRole('region', { name: 'Venue deposit' });
-    expect(
-      within(panel).getByRole('heading', { name: /deposit for Harbor Hall/ }),
-    ).toHaveTextContent('$150.00');
-    fireEvent.click(within(panel).getByRole('button', { name: 'Pay deposit with PayPal' }));
-
-    expect(await within(panel).findByText(/Deposit paid with PayPal/)).toHaveTextContent('CAP-1');
-    const post = fetchMock.mock.calls.find(
-      ([url, init]) => url.startsWith('/api/venue-deposit/') && init?.method === 'POST',
-    );
-    expect(post?.[0]).toMatch(/^\/api\/venue-deposit\/[0-9a-f-]{36}$/);
-    // The browser sends no amount: the server takes it from the venue catalog.
-    expect(post?.[1]?.body).toBeUndefined();
-  });
-
-  it('asks the treasurer to sign in before paying', async () => {
-    const pick = {
-      id: 'u2',
-      role: 'user',
-      parts: [
-        { type: 'text', text: 'Venue chosen: Harbor Hall\nSource: https://harbor.example/rooms' },
-      ],
-    };
-    const threadFetch = stubThread([scoutPart('s1', 'Jakarta', [loft, hall])], [pick]);
-    const deposit = {
-      venue: 'Harbor Hall',
-      area: 'Central, Jakarta',
-      amountMinor: 45_000,
-      currency: 'USD',
-    };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string, init?: RequestInit) => {
-        if (!url.startsWith('/api/venue-deposit/')) return threadFetch(url, init);
-        return Promise.resolve(
-          init?.method === 'POST'
-            ? Response.json({ error: 'treasurer only' }, { status: 401 })
-            : Response.json({ deposit }),
-        );
+  it('pays the plan with PayPal only after the organizer agrees', async () => {
+    const fetchMock = stubBooking(() =>
+      Response.json({
+        summary,
+        outcome: { status: 'paid', orderId: 'ORD-1', captureId: 'CAP-1' },
       }),
     );
     render(<Workspace />);
 
-    const panel = await screen.findByRole('region', { name: 'Venue deposit' });
-    fireEvent.click(within(panel).getByRole('button', { name: 'Pay deposit with PayPal' }));
+    const panel = await screen.findByRole('region', { name: 'Plan summary' });
+    const pay = within(panel).getByRole('button', { name: 'Agree and pay with PayPal' });
+    expect(pay).toBeDisabled();
+    fireEvent.click(within(panel).getByRole('checkbox'));
+    expect(pay).toBeEnabled();
+    fireEvent.click(pay);
+
+    expect(await within(panel).findByText(/Paid with PayPal/)).toHaveTextContent('CAP-1');
+    const post = fetchMock.mock.calls.find(
+      ([url, init]) => url.startsWith('/api/venue-booking/') && init?.method === 'POST',
+    );
+    expect(post?.[0]).toMatch(/^\/api\/venue-booking\/[0-9a-f-]{36}$/);
+    // The browser sends no amount: the server works the total out itself.
+    expect(post?.[1]?.body).toBeUndefined();
+  });
+
+  it('keeps showing a paid plan after a reload, and lets the organizer ask about it', async () => {
+    const fetchMock = stubBooking(null, summary, { status: 'paid', reference: 'ORD-7' });
+    render(<Workspace />);
+
+    const panel = await screen.findByRole('region', { name: 'Plan summary' });
+    expect(within(panel).getByText('Your plan · paid')).toBeInTheDocument();
+    expect(await within(panel).findByText(/Paid with PayPal/)).toHaveTextContent('ORD-7');
+    expect(within(panel).queryByRole('button', { name: 'Agree and pay with PayPal' })).toBeNull();
+    expect(within(panel).queryByRole('button', { name: 'Back to venues' })).toBeNull();
+
+    fireEvent.click(within(panel).getByRole('button', { name: 'Is catering covered?' }));
+    await waitFor(() => {
+      const chat = fetchMock.mock.calls.find(([url]) => url === '/api/chat');
+      expect(String(chat?.[1]?.body)).toContain('Is catering covered?');
+    });
+  });
+
+  it('warns when the total is over the max spend', async () => {
+    stubBooking(null, { ...summary, overMaxSpend: true });
+    render(<Workspace />);
+    const panel = await screen.findByRole('region', { name: 'Plan summary' });
+    expect(await within(panel).findByRole('alert')).toHaveTextContent(/over your max spend/);
+  });
+
+  it('asks the treasurer to sign in before paying', async () => {
+    stubBooking(() => Response.json({ error: 'treasurer only' }, { status: 401 }));
+    render(<Workspace />);
+
+    const panel = await screen.findByRole('region', { name: 'Plan summary' });
+    fireEvent.click(within(panel).getByRole('checkbox'));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Agree and pay with PayPal' }));
     expect(await within(panel).findByRole('link', { name: 'Log in with PayPal' })).toHaveAttribute(
       'href',
       '/api/auth/paypal/login',
