@@ -15,7 +15,6 @@ function stubServer(revokeStatus: number) {
     vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/auth/me') return json({ via: 'demo' });
       if (url === '/api/wallet') return json(wallet);
-      if (url === '/api/approvals') return json({ approvals: [] });
       if (url === '/api/wallet/revoke' && init?.method === 'POST') {
         wallet = { status: 'revoked', payerEmail: '' };
         return json(revokeStatus === 200 ? { revoked: true } : { error: 'wallet request failed' }, revokeStatus);

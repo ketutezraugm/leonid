@@ -306,7 +306,7 @@ export function PaysPeople() {
 
 // --- Try it in 3 minutes: three cards that open the demo at its strongest moments.
 const TRIES = [
-  { n: 1, title: 'See what waits for your approval', text: 'Spends over your limit wait here. See why, then approve in PayPal.', to: '/approvals' },
+  { n: 1, title: 'Ask the agent to plan it', text: 'Tell it what you need; it builds the plan and you review it before paying.', to: '/agent' },
   { n: 2, title: 'Watch the plan wait for a sponsor', text: 'The swag order stays blocked until its sponsor’s invoice is paid.', to: '/plan' },
   { n: 3, title: 'Stop the agent in one click', text: 'Revoke its wallet; PayPal refuses the next payment, in every event.', to: '/settings' },
 ];

@@ -13,7 +13,7 @@ import { PageState } from '../ui/PageState';
 // F16, the treasurer's side. Register a volunteer (their claims are only ever paid to the PayPal email given
 // here) and hand them their link; every claim then shows here with what the rules engine decided. A claim the
 // receipt reader was unsure of waits for the treasurer to confirm the amount, and that still goes through the
-// rules engine. Claims over the approval threshold are approved on the Approvals screen, like any payout.
+// rules engine.
 
 // The volunteer's link as a QR code, so it can be opened on a phone straight from the screen (and on camera).
 // The QR library loads only when a link is shown.

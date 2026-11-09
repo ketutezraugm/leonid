@@ -246,6 +246,17 @@
   cursor: pointer;
 }
 
+.plan-history-list > li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.plan-history-invoice {
+  justify-self: end;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-accent);
+}
+
 .plan-history-row:hover {
   border-color: var(--color-accent);
 }
