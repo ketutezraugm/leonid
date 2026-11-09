@@ -740,8 +740,10 @@ a:hover {
   }
 }
 
-/* --- Tabs --- */
+/* --- Tabs: the underline slides to the new tab, and the accent copy of the labels (clipped to the active tab)
+   slides with it, so each label changes color as the line passes. Positions come from Tabs.tsx. --- */
 .tabs {
+  position: relative;
   display: flex;
   gap: var(--space-4);
   margin-bottom: var(--space-4);
@@ -760,18 +762,69 @@ a:hover {
   color: var(--color-muted);
   white-space: nowrap;
   cursor: pointer;
-  transition:
-    color var(--motion-fast) var(--ease-standard),
-    border-bottom-color var(--motion-base) var(--ease-out-strong);
+  transition: color var(--motion-fast) var(--ease-standard);
 }
 
 .tab:hover {
   color: var(--color-text);
 }
 
-.tab[aria-selected='true'] {
+/* Before the slider is placed (and without script) the selected tab still shows on its own. */
+.tabs:not([data-ready]) .tab[aria-selected='true'] {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
+}
+
+.tabs-copy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: var(--space-4);
+  pointer-events: none;
+}
+
+.tab-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  cursor: default;
+  color: var(--color-accent);
+}
+
+.tab-copy::before {
+  content: attr(data-label);
+}
+
+/* A 1px line, scaled to the active tab's width: it moves on transform only. */
+.tabs-line {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--color-accent);
+  transform-origin: left;
+}
+
+.tabs:not([data-ready]) .tabs-line,
+.tabs:not([data-ready]) .tabs-copy {
+  visibility: hidden;
+}
+
+.tabs[data-ready] .tabs-line,
+.tabs[data-ready] .tabs-copy {
+  transition:
+    transform 320ms var(--ease-in-out-strong),
+    clip-path 320ms var(--ease-in-out-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs[data-ready] .tabs-line,
+  .tabs[data-ready] .tabs-copy {
+    transition: none;
+  }
 }
 
 /* --- Dialog --- */
