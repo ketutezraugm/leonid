@@ -33,7 +33,6 @@ volunteer: opens the link on a phone, snaps a receipt
    -> executor.requestSpend({ kind: 'claim', referenceId: 'claim:<id>', payeeEmail: the registered email })
         rules: $50 per person per day, $200 approval threshold, funds gate   -> audit row
         allow -> Treasury payout (sender_batch_id = sender_item_id = claim:<id>)   -> "Approved"
-        needs_approval -> Approvals screen                                      -> "Waiting on approval"
         block -> "Declined", with the rule's reason
    -> PAYMENT.PAYOUTS-ITEM.SUCCEEDED (Treasury webhook)                         -> "Paid"
 ```
@@ -68,9 +67,13 @@ The transaction pooler (port 6543) never answers a query that waits behind anoth
 | P2 | Subscribe the Treasury webhook to `PAYMENT.PAYOUTS-ITEM.*` | Otherwise nothing ever shows "Paid" |
 | P2 | Apply `0011_claims` and `0012_payouts` to the shared database by hand | As for `0003` to `0005` |
 | P2 | Confirm `OPENROUTER_MODEL` on Render reads images | Otherwise every claim waits for the treasurer (safe, slower) |
-| P3 | One sandbox run: a $32.50 claim to a sandbox personal account, one prize over the threshold approved on the Approvals screen; keep the webhook events as fixtures | Evidence for the README; checks the item resource shape |
+| P3 | One sandbox run: a $32.50 claim to a sandbox personal account, one prize over $200 (sent directly, no approval step since #115); keep the webhook events as fixtures | Evidence for the README; checks the item resource shape |
 | P4 | Design review of the Claims screen and `/claim/:token` | Shares the design system |
 
 ## What is next for P3
 
 The sandbox run above, then F21 (the dashboard agent; if it is cut, show the four widgets cross-filtering). The sponsor report (F22) and reminders (F5) were built by P2.
+
+## No approval step (Nov 9)
+
+The team decided with #115 that nothing waits for approval: payouts and purchases are checked by the rules engine and audited, and an allowed one is sent at once. P1 removes `payout_threshold` and `approval_threshold` from `DEMO_RULES`. The Payouts tab no longer links to the removed Approvals page, and `p3/approve-in-place` is not merged. When the thresholds go, P1's change must also update `payouts/payouts.test.ts` ("holds a prize over the threshold…"), which expects a prize over $200 to wait.

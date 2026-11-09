@@ -1,8 +1,7 @@
 import { PayoutsResponse, type PayoutItem } from '@leonid/shared';
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';
-import { useEvent, useEventPath, withEvent } from '../shell/event';
+import { useEvent, withEvent } from '../shell/event';
 import { Button } from '../ui/Button';
 import { Field } from '../ui/Field';
 import { formatMoney, parseMoneyInput } from '../ui/money';
@@ -11,8 +10,8 @@ import { StatusBadge, type Status } from '../ui/StatusBadge';
 import '../claims/claims.css';
 
 // F17 on the Money screen: pay a prize winner or a speaker, and follow every payout (claims included) as
-// PayPal reports it. Each one goes through the rules engine; above the payout threshold it waits on the
-// Approvals screen. "Paid" comes only from PayPal's payout webhooks.
+// PayPal reports it. Each one goes through the rules engine (checked and audited) and, when allowed, is sent at
+// once: there is no approval step. "Paid" comes only from PayPal's payout webhooks.
 
 const STATUS: Record<PayoutItem['status'], { label: string; status: Status }> = {
   pending_approval: { label: 'Waiting on approval', status: 'risk' },
@@ -39,7 +38,6 @@ const COUNTRIES = COUNTRY_CODES.map((code) => ({ code, name: countryName(code) }
 );
 
 function NewPayout({ eventId, onSent }: { eventId: string | null; onSent: () => void }) {
-  const path = useEventPath();
   const [kind, setKind] = useState<'prize' | 'speaker'>('prize');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -132,13 +130,7 @@ function NewPayout({ eventId, onSent }: { eventId: string | null; onSent: () => 
       {result && (
         <p role="status" className="muted">
           {result.recipientName}: {STATUS[result.status].label}
-          {result.status === 'pending_approval' ? (
-            <>
-              . <Link to={path('approvals')}>Review it in Approvals</Link>
-            </>
-          ) : (
-            <>{result.note ? ` (${result.note})` : ''}.</>
-          )}
+          {result.note ? ` (${result.note})` : ''}.
         </p>
       )}
     </section>

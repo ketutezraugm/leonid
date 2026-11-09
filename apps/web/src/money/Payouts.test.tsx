@@ -43,10 +43,10 @@ describe('Payouts tab', () => {
     expect(countryName('BR')).toBe('Brazil');
   });
 
-  it('points to Approvals when a payout waits there', async () => {
+  it('sends a prize straight away and says so: there is no approval step', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       void url;
-      return Promise.resolve(init?.method === 'POST' ? json({ payouts: [item()] }, 201) : json({ payouts: [] }));
+      return Promise.resolve(init?.method === 'POST' ? json({ payouts: [item({ status: 'processing' })] }, 201) : json({ payouts: [] }));
     });
     vi.stubGlobal('fetch', fetchMock);
     render(
@@ -62,7 +62,8 @@ describe('Payouts tab', () => {
     fireEvent.change(screen.getByLabelText('Amount (US dollars)'), { target: { value: '500.00' } });
     fireEvent.click(screen.getByRole('button', { name: 'Pay through the rules' }));
 
-    expect(await screen.findByRole('link', { name: 'Review it in Approvals' })).toHaveAttribute('href', expect.stringContaining('approvals'));
+    expect(await screen.findByRole('status')).toHaveTextContent('Ravi: Sent to PayPal.');
+    expect(screen.queryByRole('link', { name: /Approvals/ })).not.toBeInTheDocument();
     const [, init] = fetchMock.mock.calls.find(([, i]) => i?.method === 'POST') as unknown as [string, RequestInit];
     expect(JSON.parse(String(init.body))).toMatchObject({ countryCode: 'IN', amount: 50_000, kind: 'prize' });
   });
