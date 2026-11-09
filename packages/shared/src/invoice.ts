@@ -75,3 +75,24 @@ export type SponsorSummary = z.infer<typeof SponsorSummary>;
 // GET /api/sponsors[?eventId=]: the event's sponsors, by name.
 export const SponsorsResponse = z.object({ sponsors: z.array(SponsorSummary) });
 export type SponsorsResponse = z.infer<typeof SponsorsResponse>;
+
+// GET /api/sponsors/:id/draft[?eventId=]: the pledge as an invoice draft, for the treasurer to read before sending.
+// Drafts are not stored, so each call builds a fresh one.
+export const InvoiceDraftResponse = z.object({
+  sponsor: SponsorSummary.pick({ id: true, name: true, tier: true, pledged: true, status: true }),
+  event: z.object({ id: Id, name: z.string(), currency: CurrencyCode }),
+  draft: InvoiceDraft,
+});
+export type InvoiceDraftResponse = z.infer<typeof InvoiceDraftResponse>;
+
+// POST /api/sponsors/:id/send[?eventId=] body { draft, recipientEmail }. resumed: an earlier attempt had already
+// created the PayPal invoice and this one finished it (the sponsor is never invoiced twice).
+export const SendInvoiceRequest = z.object({ draft: InvoiceDraft, recipientEmail: z.email() });
+export type SendInvoiceRequest = z.infer<typeof SendInvoiceRequest>;
+export const SentInvoiceResponse = z.object({
+  paypalInvoiceId: z.string().min(1),
+  invoiceNumber: z.string().nullable(),
+  recipientViewUrl: z.string().nullable(),
+  resumed: z.boolean(),
+});
+export type SentInvoiceResponse = z.infer<typeof SentInvoiceResponse>;

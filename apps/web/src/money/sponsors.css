@@ -1,0 +1,52 @@
+/* Sponsors and invoices (Money tab): the table uses .table; these are the summary line and the send dialog. */
+.sponsors {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.sponsors-summary {
+  margin: 0;
+}
+
+.sponsor-action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.invoice-draft {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.invoice-draft p {
+  margin: 0;
+}
+
+.sponsors .copy-id {
+  white-space: nowrap;
+}
+
+.invoice-lines tfoot th,
+.invoice-lines tfoot td {
+  height: 40px;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 0;
+}
+
+/* The refusal code or PayPal's debug id, quoted in an error. */
+.invoice-draft .id {
+  font-family: var(--font-mono);
+}
+
+.invoice-total {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-bold);
+}
+
+.invoice-note {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius);
+}
