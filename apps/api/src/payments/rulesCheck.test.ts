@@ -221,8 +221,9 @@ describe('the executor with the real check()', () => {
 
     const auto = await requestSpend(demo('gate2-140', 14_000, { category: 'swag', vendor: 'Lanyard Co' }));
     expect(auto.status).toBe('paid');
-    const held = await requestSpend(demo('gate2-420', 42_000, { category: 'prizes', vendor: 'Prize Co' }));
-    expect(held.status).toBe('needs_approval');
+    // No approval step since #115: the $420 cart is checked and paid like the $140 one.
+    const big = await requestSpend(demo('gate2-420', 42_000, { category: 'prizes', vendor: 'Prize Co' }));
+    expect(big.status).toBe('paid');
 
     await revokeWallet('treasurer').catch(() => undefined); // the fake PayPal does not do token deletes; our flag still flips
     expect(await requestSpend(demo('gate2-after-kill', 14_000, {}))).toEqual({ status: 'refused', reason: 'no_wallet' });

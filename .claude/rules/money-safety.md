@@ -30,4 +30,4 @@ Owner: P1. Features: F8 rules compiler, F9 rules engine, F10 budget figures (no 
 
 ## Tests
 
-`check()` and the budget function must have unit tests for every demo beat. Examples: a $140 cart is allowed, a $420 cart needs approval, an off-list vendor is blocked, and a spend after the kill switch is refused. These tests are cheap and are the strongest protection for the demo.
+`check()` and the budget function must have unit tests for every demo beat. Examples: a $140 cart is allowed, a $420 cart is allowed too (there is no approval step since Nov 9, #115; it is still checked and audited), an off-list vendor is blocked, and a spend after the kill switch is refused. These tests are cheap and are the strongest protection for the demo.
