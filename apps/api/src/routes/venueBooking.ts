@@ -10,7 +10,9 @@ import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
 import { getVisibleThread, listOwnerEventThreads } from '../db/mandates.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
+import { invoiceNumber, venueInvoicePdf } from '../booking/invoice.js';
 import {
+  bookingPaidAt,
   bookingPayment,
   bookingReference,
   bookingSummary,
@@ -28,6 +30,7 @@ export interface VenueBookingRouterOptions {
 //   GET  /           (treasurer) every plan in the caller's chats with its payment status: the plan history
 //   GET  /:threadId  (treasurer) the summary (event, venue, one-day estimate, USD total), or null (nothing picked, not a
 //                    catalog venue, no event on the chat, or not the caller's chat)
+//   GET  /:threadId/invoice (treasurer) the paid plan as a PDF invoice; 404 without a plan, 409 until it is paid
 //   POST /:threadId  (treasurer) pays the USD total through the executor: rules check -> audit -> PayPal. Within the rules it
 //                    is charged to the agent wallet; over them it becomes a PayPal order the treasurer approves.
 // Nothing here trusts the browser or the agent: the pick is read from the thread's own messages (and must be a venue the
@@ -129,6 +132,36 @@ export function venueBookingRouter(options: VenueBookingRouterOptions = {}) {
             : { status: 'unpaid' },
       };
       res.json(body);
+    }),
+  );
+
+  router.get(
+    '/:threadId/invoice',
+    requireTreasurer(env),
+    handle(async (_req, res, threadId) => {
+      const pick = await picked(threadId, ownerOf(currentTreasurer(res)));
+      const summary = pick && (await bookingSummary(db(), pick.listing, pick.eventId));
+      if (!pick || !summary) {
+        res.status(404).json({ error: 'No plan to invoice.' });
+        return;
+      }
+      const referenceId = bookingReference(threadId, pick.listing);
+      const payment = await bookingPayment(db(), referenceId);
+      if (payment.status !== 'paid') {
+        res.status(409).json({ error: 'Only a paid plan has an invoice.' });
+        return;
+      }
+      const pdf = await venueInvoicePdf({
+        threadId,
+        summary,
+        reference: payment.reference,
+        paidAt: (await bookingPaidAt(db(), referenceId)) ?? new Date(),
+      });
+      res
+        .status(200)
+        .type('application/pdf')
+        .set('Content-Disposition', `attachment; filename="invoice-${invoiceNumber(threadId)}.pdf"`)
+        .send(Buffer.from(pdf));
     }),
   );
 

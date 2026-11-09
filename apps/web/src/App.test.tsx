@@ -69,16 +69,16 @@ describe('App', () => {
       ],
     });
     render(
-      <MemoryRouter initialEntries={[`/events/${hack}/approvals`]}>
+      <MemoryRouter initialEntries={[`/events/${hack}/claims`]}>
         <App />
       </MemoryRouter>,
     );
     fireEvent.click(await screen.findByRole('button', { name: /Account.*Open menu/ }));
     const other = screen.getByRole('link', { name: /Spring Meetup/ });
-    expect(other).toHaveAttribute('href', `/events/${meetup}/approvals`);
+    expect(other).toHaveAttribute('href', `/events/${meetup}/claims`);
     expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('aria-current', 'true');
     fireEvent.click(other);
-    expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Claims', level: 1 })).toBeInTheDocument();
     expect(await screen.findByTitle('Spring Meetup')).toBeInTheDocument();
   });
 
@@ -87,11 +87,11 @@ describe('App', () => {
     localStorage.setItem('quartermaster.lastEventId', 'demo');
     stubApi({ events: [{ id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, budget: 120_000, currency: 'USD' }] });
     render(
-      <MemoryRouter initialEntries={['/approvals']}>
+      <MemoryRouter initialEntries={['/claims']}>
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Claims', level: 1 })).toBeInTheDocument();
     expect(await screen.findByTitle('Spring Meetup')).toBeInTheDocument();
     expect(screen.queryByText('This event isn’t here')).toBeNull();
   });
@@ -100,11 +100,11 @@ describe('App', () => {
     const meetup = crypto.randomUUID();
     stubApi({ events: [{ id: meetup, name: 'Spring Meetup', date: '2027-05-02', people: 60, budget: 120_000, currency: 'USD' }] });
     render(
-      <MemoryRouter initialEntries={['/events/demo/approvals']}>
+      <MemoryRouter initialEntries={['/events/demo/claims']}>
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByRole('heading', { name: 'Approvals' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Claims', level: 1 })).toBeInTheDocument();
     expect(await screen.findByTitle('Spring Meetup')).toBeInTheDocument();
   });
 
@@ -194,11 +194,11 @@ describe('App', () => {
     await waitFor(() => expect(container.querySelector('.shell')).toHaveClass('shell--rail'), { timeout: 5000 });
     unmount();
     const home = render(
-      <MemoryRouter initialEntries={['/approvals']}>
+      <MemoryRouter initialEntries={['/claims']}>
         <App />
       </MemoryRouter>,
     );
-    await screen.findByRole('heading', { name: 'Approvals' }, { timeout: 5000 });
+    await screen.findByRole('heading', { name: 'Claims', level: 1 }, { timeout: 5000 });
     expect(home.container.querySelector('.shell')).not.toHaveClass('shell--rail');
   });
 
@@ -228,7 +228,7 @@ describe('App', () => {
 
   it('closes the sidebar on the other screens too, and that choice carries to every screen', async () => {
     const { container } = render(
-      <MemoryRouter initialEntries={['/events/demo/approvals']}>
+      <MemoryRouter initialEntries={['/events/demo/claims']}>
         <App />
       </MemoryRouter>,
     );
@@ -237,7 +237,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close sidebar' }));
     expect(shell).toHaveClass('shell--rail');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Claims' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Money' }));
     expect(shell).toHaveClass('shell--rail');
     expect(screen.getByRole('button', { name: 'Open sidebar' })).toHaveAttribute('aria-expanded', 'false');
 

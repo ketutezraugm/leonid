@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Agent } from './pages/Agent';
-import { Approvals } from './pages/Approvals';
 import { Checkout } from './pages/Checkout';
 import { Claims } from './pages/Claims';
 import { VolunteerClaim } from './pages/VolunteerClaim';
@@ -46,7 +45,7 @@ function ToEventScreen({ screen }: { screen: string }) {
   return <Navigate to={`${eventPath(routeId, screen)}${search}`} replace />;
 }
 
-const SCREENS = ['agent', 'plan', 'money', 'approvals', 'claims'] as const;
+const SCREENS = ['agent', 'plan', 'money', 'claims'] as const;
 
 export function App() {
   return (
@@ -65,7 +64,6 @@ export function App() {
                 <Route path="agent" element={<Agent />} />
                 <Route path="plan" element={<Plan />} />
                 <Route path="money" element={<Money />} />
-                <Route path="approvals" element={<Approvals />} />
                 <Route path="claims" element={<Claims />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
