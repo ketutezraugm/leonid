@@ -16,7 +16,7 @@ import { walletPoolRouter } from './walletPool.js';
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-const env = { TREASURER_TOKEN: 'letmein', APP_BASE_URL: 'https://qm.example.com' };
+const env = { TREASURER_TOKEN: 'letmein', APP_BASE_URL: 'https://leonid.example.com' };
 const treasurer = { 'x-treasurer-token': 'letmein' };
 
 let db: Db;
@@ -86,7 +86,7 @@ describe('the wallet pool', () => {
     const setup = h.bodies[0] as { payment_source: { paypal: Record<string, unknown> } };
     expect(setup.payment_source.paypal).toMatchObject({
       permit_multiple_payment_tokens: true,
-      experience_context: { return_url: 'https://qm.example.com/api/wallet/pool/return', cancel_url: 'https://qm.example.com/api/wallet/cancel' },
+      experience_context: { return_url: 'https://leonid.example.com/api/wallet/pool/return', cancel_url: 'https://leonid.example.com/api/wallet/cancel' },
     });
     expect(await poolCounts(db)).toEqual({ waiting: 2, standby: 0 });
     const before = h.calls.length;
@@ -99,13 +99,13 @@ describe('the wallet pool', () => {
     const h = build();
     await request(h.app).post('/api/wallet/pool/fill').set(treasurer).send({ count: 1 }).expect(200);
     const bad = await request(h.app).get('/api/wallet/pool/return?approval_session_id=NOPE').expect(302);
-    expect(bad.headers.location).toBe('https://qm.example.com/?pool=error');
+    expect(bad.headers.location).toBe('https://leonid.example.com/?pool=error');
     expect(h.calls).not.toContain('POST /v3/vault/payment-tokens');
     const ok = await request(h.app).get('/api/wallet/pool/return?approval_session_id=ST-1').expect(302);
-    expect(ok.headers.location).toBe('https://qm.example.com/?pool=added');
+    expect(ok.headers.location).toBe('https://leonid.example.com/?pool=added');
     expect(await poolCounts(db)).toEqual({ waiting: 0, standby: 1 });
     const again = await request(h.app).get('/api/wallet/pool/return?approval_session_id=ST-1').expect(302);
-    expect(again.headers.location).toBe('https://qm.example.com/?pool=error');
+    expect(again.headers.location).toBe('https://leonid.example.com/?pool=error');
     expect(h.calls.filter((c) => c === 'POST /v3/vault/payment-tokens')).toHaveLength(1);
     // A standby token is not a wallet: nothing can spend from it.
     expect(await h.wallet.getActive()).toBeNull();

@@ -10,7 +10,7 @@ import { createRateLimiter } from './rateLimit.js';
 const SECRET = 's'.repeat(40);
 const env = {
   SESSION_SECRET: SECRET,
-  APP_BASE_URL: 'https://qm.example.com',
+  APP_BASE_URL: 'https://leonid.example.com',
   PAYPAL_TREASURY_CLIENT_ID: 'cid',
   PAYPAL_TREASURY_CLIENT_SECRET: 'csecret',
   TREASURER_ALLOWLIST: 'Treasurer@Example.com, USERID123',
@@ -51,7 +51,7 @@ describe('Log in with PayPal', () => {
     expect(res.status).toBe(302);
     expect(url.origin + url.pathname).toBe('https://www.sandbox.paypal.com/connect');
     expect(url.searchParams.get('client_id')).toBe('cid');
-    expect(url.searchParams.get('redirect_uri')).toBe('https://qm.example.com/api/auth/paypal/callback');
+    expect(url.searchParams.get('redirect_uri')).toBe('https://leonid.example.com/api/auth/paypal/callback');
     expect(url.searchParams.get('scope')).toBe('openid email');
     expect(state.length).toBeGreaterThan(10);
   });
@@ -61,7 +61,7 @@ describe('Log in with PayPal', () => {
     const { state, stateCookie } = await startLogin(app);
     const cb = await request(app).get(`/api/auth/paypal/callback?code=abc&state=${state}`).set('Cookie', stateCookie);
     expect(cb.status).toBe(302);
-    expect(cb.headers.location).toBe('https://qm.example.com/?login=ok');
+    expect(cb.headers.location).toBe('https://leonid.example.com/?login=ok');
     expect(calls).toEqual(['/v1/oauth2/token', '/v1/identity/openidconnect/userinfo']);
     const session = cookieOf(cb, 'qm_session')!;
     expect((cb.headers['set-cookie'] as unknown as string[]).join(';')).toMatch(/HttpOnly.*SameSite=Lax.*Secure/);
@@ -76,7 +76,7 @@ describe('Log in with PayPal', () => {
     const { app } = build(env, { user_id: 'OTHER', email: 'stranger@example.com', email_verified: true });
     const { state, stateCookie } = await startLogin(app);
     const cb = await request(app).get(`/api/auth/paypal/callback?code=abc&state=${state}`).set('Cookie', stateCookie);
-    expect(cb.headers.location).toBe('https://qm.example.com/?login=denied');
+    expect(cb.headers.location).toBe('https://leonid.example.com/?login=denied');
     expect(cookieOf(cb, 'qm_session')).toBeUndefined();
     // the log names the PayPal id to copy into the allowlist, and never the email or a token
     const line = String(warn.mock.calls.at(-1)?.[0]);
@@ -91,8 +91,8 @@ describe('Log in with PayPal', () => {
     const { stateCookie } = await startLogin(app);
     const wrong = await request(app).get('/api/auth/paypal/callback?code=abc&state=forged').set('Cookie', stateCookie);
     const none = await request(app).get('/api/auth/paypal/callback?code=abc&state=forged');
-    expect(wrong.headers.location).toBe('https://qm.example.com/?login=error');
-    expect(none.headers.location).toBe('https://qm.example.com/?login=error');
+    expect(wrong.headers.location).toBe('https://leonid.example.com/?login=error');
+    expect(none.headers.location).toBe('https://leonid.example.com/?login=error');
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -101,7 +101,7 @@ describe('Log in with PayPal', () => {
     fetch.mockResolvedValueOnce(json(400, { error: 'invalid_grant', error_description: 'bad code' }));
     const { state, stateCookie } = await startLogin(app);
     const cb = await request(app).get(`/api/auth/paypal/callback?code=abc&state=${state}`).set('Cookie', stateCookie);
-    expect(cb.headers.location).toBe('https://qm.example.com/?login=error');
+    expect(cb.headers.location).toBe('https://leonid.example.com/?login=error');
   });
 
   it('rejects a tampered, foreign-signed or expired session cookie; the ops token works only while it is set', async () => {
@@ -127,7 +127,7 @@ describe('Log in with PayPal', () => {
     // and a session is not accepted as a state
     const sessionAsState = `qm_oauth_state=${sign('session', { state: 'forged' }, SECRET, 60)}`;
     const cb = await request(app).get('/api/auth/paypal/callback?code=abc&state=forged').set('Cookie', sessionAsState);
-    expect(cb.headers.location).toBe('https://qm.example.com/?login=error');
+    expect(cb.headers.location).toBe('https://leonid.example.com/?login=error');
   });
 
   it('keeps demo login off unless DEMO_LOGIN=true, and answers 503 when login is not configured', async () => {
@@ -226,22 +226,22 @@ describe('CSRF on cookie sessions', () => {
   const app = build({ ...env, TREASURER_TOKEN: 'letmein' }).app;
 
   it('accepts a state-changing cookie request from our own origin (Origin, or Referer when Origin is absent)', async () => {
-    const ok = await request(app).post('/api/secret').set('Cookie', session).set('Origin', 'https://qm.example.com');
+    const ok = await request(app).post('/api/secret').set('Cookie', session).set('Origin', 'https://leonid.example.com');
     expect(ok.status).toBe(200);
     expect(ok.body).toEqual({ actor: 'treasurer:paypal:USERID123' });
-    expect((await request(app).post('/api/secret').set('Cookie', session).set('Referer', 'https://qm.example.com/approvals')).status).toBe(200);
+    expect((await request(app).post('/api/secret').set('Cookie', session).set('Referer', 'https://leonid.example.com/approvals')).status).toBe(200);
   });
 
   it('refuses a cookie POST from another origin, or with no Origin and no Referer', async () => {
     expect((await request(app).post('/api/secret').set('Cookie', session).set('Origin', 'https://evil.example')).status).toBe(403);
     expect((await request(app).post('/api/secret').set('Cookie', session).set('Origin', 'null')).status).toBe(403);
-    expect((await request(app).post('/api/secret').set('Cookie', session).set('Referer', 'https://evil.example/qm.example.com')).status).toBe(403);
+    expect((await request(app).post('/api/secret').set('Cookie', session).set('Referer', 'https://evil.example/leonid.example.com')).status).toBe(403);
     expect((await request(app).post('/api/secret').set('Cookie', session)).status).toBe(403);
   });
 
   it('fails closed when APP_BASE_URL is not set', async () => {
     const noBase = build({ SESSION_SECRET: SECRET }).app;
-    expect((await request(noBase).post('/api/secret').set('Cookie', session).set('Origin', 'https://qm.example.com')).status).toBe(403);
+    expect((await request(noBase).post('/api/secret').set('Cookie', session).set('Origin', 'https://leonid.example.com')).status).toBe(403);
   });
 
   it('does not check Origin on GET, or on a request authenticated with the ops token header', async () => {
