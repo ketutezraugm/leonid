@@ -112,6 +112,8 @@
   --motion-fast: 150ms; /* hover, press, focus */
   --motion-base: 200ms; /* color and border changes on controls */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1); /* entrances: fast start, soft landing */
+  --ease-in-out-sine: cubic-bezier(0.45, 0, 0.55, 1); /* looping drift */
 
   /* --- Gantt tokens (consumed by the plan view, the runway and the Bryntum theme) --- */
   --gantt-row-height: 32px;

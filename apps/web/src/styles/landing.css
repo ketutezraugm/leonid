@@ -193,9 +193,11 @@
     color var(--motion-base) var(--ease-standard);
 }
 
-.lp-ch:hover {
-  transform: translateY(-0.08em) rotate(-4deg);
-  color: var(--color-brass-on-dark);
+@media (hover: hover) and (pointer: fine) {
+  .lp-ch:hover {
+    transform: translateY(-0.08em) rotate(-4deg);
+    color: var(--color-brass-on-dark);
+  }
 }
 
 .lp-hero h1 .lp-accent {
@@ -272,8 +274,8 @@
   transform: translateY(20px);
   transition:
     opacity 500ms var(--ease-standard),
-    transform 700ms cubic-bezier(0.34, 1.36, 0.64, 1);
-  transition-delay: calc(var(--i, 0) * 150ms);
+    transform 700ms cubic-bezier(0.34, 1.2, 0.64, 1);
+  transition-delay: calc(var(--i, 0) * 80ms);
 }
 
 .lp-reveal [data-reveal='drop'] {
@@ -288,9 +290,196 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lp-reveal [data-reveal] {
-    opacity: 1;
     transform: none;
-    transition: none;
+    transition: opacity 300ms ease;
+  }
+}
+
+/* --- Meteors on the dark grounds (Meteors in sections.tsx): they drift a few pixels along their own streak, down
+   and to the left; one shoots across in under a second every few seconds. Never behind text or buttons. --- */
+.lp-hero,
+.lp-dark {
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-hero > .lp-wrap,
+.lp-dark > .lp-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.lp-meteors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lp-meteor {
+  position: absolute;
+  aspect-ratio: 1;
+  fill: var(--color-brass-on-dark);
+  opacity: 0.5;
+  animation: lp-drift var(--drift, 8s) var(--ease-in-out-sine) var(--delay, 0s) infinite;
+}
+
+.lp-meteor--shoot {
+  opacity: 0;
+  animation: lp-shoot 9s linear var(--delay, 0s) infinite;
+}
+
+@keyframes lp-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(-6px, 6px);
+    opacity: 0.95;
+  }
+}
+
+@keyframes lp-shoot {
+  0%,
+  88% {
+    opacity: 0;
+    transform: translate(0, 0);
+    animation-timing-function: var(--ease-out-strong);
+  }
+  90% {
+    opacity: 1;
+  }
+  97%,
+  100% {
+    opacity: 0;
+    transform: translate(-160px, 160px);
+  }
+}
+
+/* --- Pays people back: the list presses in, the picked line's detail rises in, and the phone's screen slides from
+   the side the list moved to (--dir), its lines one after another, softened by a short blur. --- */
+.lp-fitem {
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    transform 160ms var(--ease-out-strong);
+}
+
+.lp-fitem:active {
+  transform: scale(0.98);
+}
+
+.lp-fitem span {
+  animation: lp-detail-in 220ms var(--ease-out-strong) both;
+}
+
+.lp-phone {
+  overflow: hidden;
+}
+
+.lp-phone-screen {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.lp-phone-screen > * {
+  animation: lp-screen-in 320ms var(--ease-out-strong) both;
+}
+
+.lp-phone-screen > :nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.lp-phone-screen > :nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.lp-phone-screen > :nth-child(4) {
+  animation-delay: 120ms;
+}
+
+/* The phone's own button lands last, then gives one small tap. */
+.lp-phone-screen > .lp-phone-btn {
+  animation:
+    lp-screen-in 320ms var(--ease-out-strong) 120ms both,
+    lp-tap 280ms var(--ease-in-out-sine) 800ms;
+}
+
+@keyframes lp-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes lp-screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--dir, 1) * 14px));
+    filter: blur(3px);
+  }
+}
+
+@keyframes lp-tap {
+  50% {
+    transform: scale(0.96);
+  }
+}
+
+/* --- Headings from "Try it" to "Questions": words rise out of a light blur one after another (RevealWords). --- */
+.lp-rw {
+  display: inline-block;
+}
+
+.lp-reveal .lp-rw {
+  opacity: 0;
+  transform: translateY(0.35em);
+  filter: blur(6px);
+  transition:
+    opacity 500ms var(--ease-out-strong),
+    transform 650ms var(--ease-out-strong),
+    filter 500ms var(--ease-out-strong);
+  transition-delay: calc(var(--w, 0) * 60ms);
+}
+
+.lp-reveal.is-in .lp-rw {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Reduced motion keeps the fades, which help, and drops the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-meteor {
+    animation: none;
+  }
+
+  .lp-meteor--shoot {
+    display: none;
+  }
+
+  .lp-fitem,
+  .lp-fitem:active {
+    transform: none;
+  }
+
+  .lp-fitem span,
+  .lp-phone-screen > *,
+  .lp-phone-screen > .lp-phone-btn {
+    animation: lp-fade 200ms ease both;
+  }
+
+  .lp-reveal .lp-rw {
+    transform: none;
+    filter: none;
+    transition: opacity 300ms ease;
+  }
+}
+
+@keyframes lp-fade {
+  from {
+    opacity: 0;
   }
 }
 
@@ -960,16 +1149,17 @@ button.leo:focus-visible {
 
 /* The name runs edge to edge and is cut by the card's bottom; Leo's sticker overlaps its top edge. */
 .lp-footer-mark {
-  margin-top: clamp(var(--space-6), 9cqw, 140px);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: clamp(var(--space-6), 7cqw, 112px);
 }
 
 .lp-wordmark {
-  position: relative;
-  display: inline-block;
   margin-bottom: -0.09em;
   font-family: var(--font-display);
-  font-size: 34cqw;
+  font-size: 26cqw;
   font-weight: var(--font-weight-bold);
   letter-spacing: -0.06em;
   line-height: 0.8;
@@ -979,10 +1169,9 @@ button.leo:focus-visible {
 }
 
 .lp-sticker {
-  position: absolute;
-  right: -0.12em;
-  top: -0.22em;
-  width: 0.4em;
+  position: relative;
+  flex: none;
+  width: clamp(72px, 16cqw, 220px);
   aspect-ratio: 1;
   transform: rotate(-8deg);
 }
@@ -1051,6 +1240,11 @@ button.leo:focus-visible {
 
 @media (max-width: 720px) {
   .lp-nav a:not(.btn) {
+    display: none;
+  }
+
+  .lp-hero .lp-meteor:nth-child(3),
+  .lp-hero .lp-meteor:nth-child(5) {
     display: none;
   }
 

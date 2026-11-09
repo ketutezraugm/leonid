@@ -1,4 +1,4 @@
-import { Fragment, useId, useState, type ReactNode } from 'react';
+import { Fragment, useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../ui/BrandMark';
 import { BudgetBar, unlockedToSpend, type BudgetFigures } from '../ui/BudgetBar';
@@ -70,6 +70,55 @@ export function HeroLeo() {
       <LeoMascot className="lp-leo" />
     </div>
   );
+}
+
+// --- Small meteors on the dark grounds (the hero and the credibility band): copies of the mark that drift a few
+// pixels along their own streak; one now and then shoots across in under a second. Placed clear of text and buttons.
+type Meteor = { top: string; left: string; size: number; drift: number; delay: number; shoot?: boolean };
+const METEORS: Record<'hero' | 'dark', Meteor[]> = {
+  hero: [
+    { top: '9%', left: '47%', size: 18, drift: 7, delay: 0 },
+    { top: '16%', left: '93%', size: 12, drift: 9, delay: -3 },
+    { top: '84%', left: '50%', size: 14, drift: 8, delay: -5 },
+    { top: '74%', left: '95%', size: 10, drift: 10, delay: -2 },
+    { top: '40%', left: '3%', size: 9, drift: 11, delay: -6 },
+    { top: '4%', left: '70%', size: 16, drift: 9, delay: 0, shoot: true },
+  ],
+  dark: [
+    { top: '12%', left: '88%', size: 14, drift: 8, delay: -1 },
+    { top: '22%', left: '95%', size: 9, drift: 10, delay: -4 },
+    { top: '8%', left: '62%', size: 14, drift: 10, delay: 2, shoot: true },
+  ],
+};
+
+export function Meteors({ set }: { set: 'hero' | 'dark' }) {
+  return (
+    <div className="lp-meteors" aria-hidden="true">
+      {METEORS[set].map((m, i) => (
+        <svg
+          key={i}
+          className={m.shoot ? 'lp-meteor lp-meteor--shoot' : 'lp-meteor'}
+          viewBox="0 0 32 32"
+          style={{ top: m.top, left: m.left, width: m.size * 2, '--drift': `${m.drift}s`, '--delay': `${m.delay}s` } as CSSProperties}
+        >
+          <path d="M26.5 5.5 10.4 19.6 12.6 21.8Z" />
+          <circle cx="10.6" cy="21.4" r="3.4" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+// A heading whose words rise out of a light blur one after another when its section scrolls in (useReveal).
+function RevealWords({ text }: { text: string }) {
+  return text.split(' ').map((word, i, words) => (
+    <Fragment key={i}>
+      <span className="lp-rw" style={{ '--w': i } as CSSProperties}>
+        {word}
+      </span>
+      {i < words.length - 1 ? ' ' : null}
+    </Fragment>
+  ));
 }
 
 // --- Built with: names only, never logos.
@@ -297,7 +346,9 @@ const PAYOUTS: { title: string; text: string; phone: ReactNode }[] = [
 ];
 
 export function PaysPeople() {
-  const [open, setOpen] = useState(0);
+  // dir: which way the list moved, so the phone's screen slides in from the same side.
+  const [{ open, dir }, setView] = useState({ open: 0, dir: 1 });
+  const show = (i: number) => setView((v) => (v.open === i ? v : { open: i, dir: i > v.open ? 1 : -1 }));
   return (
     <section className="lp-section" aria-labelledby="lp-pay">
       <div className="lp-wrap lp-phonefeat">
@@ -312,8 +363,8 @@ export function PaysPeople() {
                 role="tab"
                 aria-selected={open === i}
                 className="lp-fitem"
-                onClick={() => setOpen(i)}
-                onMouseEnter={() => setOpen(i)}
+                onClick={() => show(i)}
+                onMouseEnter={() => show(i)}
               >
                 <b>{item.title}</b>
                 {open === i && <span>{item.text}</span>}
@@ -322,7 +373,9 @@ export function PaysPeople() {
           </div>
         </div>
         <div className="lp-phone" role="tabpanel" aria-label={PAYOUTS[open]!.title}>
-          {PAYOUTS[open]!.phone}
+          <div key={open} className="lp-phone-screen" style={{ '--dir': dir } as CSSProperties}>
+            {PAYOUTS[open]!.phone}
+          </div>
         </div>
       </div>
     </section>
@@ -338,16 +391,19 @@ const TRIES = [
 
 // A signed-in visitor just goes there: running the demo login again would replace their own session.
 export function TryIt({ onTry, busy, signedIn }: { onTry: (to: string) => void; busy: boolean; signedIn: boolean }) {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section id="try" className="lp-section lp-tint" aria-labelledby="lp-try">
+    <section ref={ref} id="try" className="lp-section lp-tint" aria-labelledby="lp-try">
       <div className="lp-wrap">
-        <h2 id="lp-try">Try it in 3 minutes.</h2>
-        <p className="lp-sub">
+        <h2 id="lp-try">
+          <RevealWords text="Try it in 3 minutes." />
+        </h2>
+        <p className="lp-sub" data-reveal style={revealAt(2)}>
           {signedIn ? 'Each card opens that moment in the demo.' : 'Each card signs you in to the demo and opens it at that moment.'}
         </p>
         <ul className="lp-tries">
-          {TRIES.map((t) => (
-            <li key={t.n} className="lp-try">
+          {TRIES.map((t, i) => (
+            <li key={t.n} className="lp-try" data-reveal style={revealAt(i + 3)}>
               <span className="lp-try-n">{t.n}</span>
               <h3>{t.title}</h3>
               <p>{t.text}</p>
@@ -376,13 +432,16 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section id="how" className="lp-section lp-center" aria-labelledby="lp-how">
+    <section ref={ref} id="how" className="lp-section lp-center" aria-labelledby="lp-how">
       <div className="lp-wrap">
-        <h2 id="lp-how">How it works</h2>
+        <h2 id="lp-how">
+          <RevealWords text="How it works" />
+        </h2>
         <ol className="lp-steps">
           {STEPS.map((s, i) => (
-            <li key={s.title}>
+            <li key={s.title} data-reveal style={revealAt(i + 2)}>
               <span className="lp-step-n num">{String(i + 1).padStart(2, '0')}</span>
               <div>
                 <h3>{s.title}</h3>
@@ -405,14 +464,20 @@ const PROOF = [
 ];
 
 export function Credibility() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section className="lp-dark" aria-labelledby="lp-proof">
+    <section ref={ref} className="lp-dark" aria-labelledby="lp-proof">
+      <Meteors set="dark" />
       <div className="lp-wrap">
-        <h2 id="lp-proof">Rules are code, not prompts.</h2>
-        <p className="lp-sub">An AI drafts and proposes. Fixed code decides what gets paid, and PayPal enforces the stop.</p>
+        <h2 id="lp-proof">
+          <RevealWords text="Rules are code, not prompts." />
+        </h2>
+        <p className="lp-sub" data-reveal style={revealAt(2)}>
+          An AI drafts and proposes. Fixed code decides what gets paid, and PayPal enforces the stop.
+        </p>
         <dl className="lp-proofs">
-          {PROOF.map((p) => (
-            <div key={p.k}>
+          {PROOF.map((p, i) => (
+            <div key={p.k} data-reveal style={revealAt(i + 3)}>
               <dt>{p.k}</dt>
               <dd>
                 <b>{p.title}</b>
@@ -438,16 +503,21 @@ const FAQ = [
 ];
 
 export function Faq() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section id="faq" className="lp-section" aria-labelledby="lp-faq">
+    <section ref={ref} id="faq" className="lp-section" aria-labelledby="lp-faq">
       <div className="lp-wrap lp-faq">
         <div>
-          <h2 id="lp-faq">Questions</h2>
-          <p className="lp-sub">The things organisers and judges ask first.</p>
+          <h2 id="lp-faq">
+            <RevealWords text="Questions" />
+          </h2>
+          <p className="lp-sub" data-reveal style={revealAt(1)}>
+            The things organisers and judges ask first.
+          </p>
         </div>
         <div>
           {FAQ.map((item, i) => (
-            <details key={item.q} className="lp-q" open={i === 0}>
+            <details key={item.q} className="lp-q" open={i === 0} data-reveal style={revealAt(i + 2)}>
               <summary>{item.q}</summary>
               <p>{item.a}</p>
             </details>
@@ -485,8 +555,8 @@ export function Closing({ onEnter, busy, signedIn }: { onEnter: () => void; busy
   );
 }
 
-// The footer is an inset card: the links, the motto with one way in, then the name set as big as the card is wide,
-// cropped by its bottom edge. Leo sits on a sticker that overlaps the name's top edge.
+// The footer is an inset card: the links and the motto with one way in, then one line along the bottom: the name,
+// cropped by the card's edge, and Leo's sticker beside it.
 export function LandingFooter() {
   const ring = `lp-ring-${useId().replace(/:/g, '')}`;
   return (
@@ -517,20 +587,18 @@ export function LandingFooter() {
           </div>
         </div>
         <div className="lp-footer-mark" aria-hidden="true">
-          <span className="lp-wordmark">
-            {BRAND.name}
-            <span className="lp-sticker">
-              <svg className="lp-sticker-ring" viewBox="0 0 200 200">
-                <defs>
-                  <path id={ring} d="M100 100 m-82 0 a82 82 0 1 1 164 0 a82 82 0 1 1 -164 0" />
-                </defs>
-                <circle cx="100" cy="100" r="98" />
-                <text>
-                  <textPath href={`#${ring}`}>EVERY EVENT · ON COURSE · EVERY EVENT · ON COURSE ·</textPath>
-                </text>
-              </svg>
-              <LeoMascot decorative className="lp-sticker-leo" />
-            </span>
+          <span className="lp-wordmark">{BRAND.name}</span>
+          <span className="lp-sticker">
+            <svg className="lp-sticker-ring" viewBox="0 0 200 200">
+              <defs>
+                <path id={ring} d="M100 100 m-82 0 a82 82 0 1 1 164 0 a82 82 0 1 1 -164 0" />
+              </defs>
+              <circle cx="100" cy="100" r="98" />
+              <text>
+                <textPath href={`#${ring}`}>EVERY EVENT · ON COURSE · EVERY EVENT · ON COURSE ·</textPath>
+              </text>
+            </svg>
+            <LeoMascot decorative className="lp-sticker-leo" />
           </span>
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
   HowItWorks,
   InOneView,
   LandingFooter,
+  Meteors,
   PaysPeople,
   TryIt,
   Wordmark,
@@ -33,6 +34,7 @@ export function Landing({ problem }: { problem: string | null }) {
     <div className="landing">
       <main>
         <section className="lp-hero" aria-labelledby="lp-title">
+          <Meteors set="hero" />
           <div className="lp-wrap">
             <header className="lp-top">
               <Wordmark />
