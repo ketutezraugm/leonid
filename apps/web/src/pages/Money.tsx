@@ -4,7 +4,6 @@ import { Sponsors } from '../money/Sponsors';
 import { prefetchCommandCenter } from '../money/use-command-center-data';
 import { useEvent } from '../shell/event';
 import { PageHeader } from '../ui/PageHeader';
-import { PageState } from '../ui/PageState';
 import { TabPanel, Tabs } from '../ui/Tabs';
 
 // AG Studio is a large bundle, so it loads only when the Command center tab is first shown.
@@ -14,7 +13,6 @@ const tabs = [
   { id: 'command', label: 'Command center' },
   { id: 'payouts', label: 'Payouts' },
   { id: 'sponsors', label: 'Sponsors and invoices' },
-  { id: 'audit', label: 'Audit log' },
 ];
 
 export function Money() {
@@ -41,12 +39,6 @@ export function Money() {
         )}
         {tab === 'payouts' && <Payouts />}
         {tab === 'sponsors' && <Sponsors />}
-        {tab === 'audit' && (
-          <PageState kind="empty" title="Audit log">
-            Every agent action with its rule result, reason and PayPal ID will list here. It needs
-            the audit entries endpoint from P1.
-          </PageState>
-        )}
       </TabPanel>
     </section>
   );
