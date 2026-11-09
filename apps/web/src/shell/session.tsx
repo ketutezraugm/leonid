@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { SessionInfo } from '@quartermaster/shared';
+import { SessionInfo } from '@leonid/shared';
 import { ApiFailure, getJson, sendJson } from './api';
 
 // Who is signed in. 'signed-out' is a 401 from /api/auth/me; 'unconfigured' is a 503 (this server has no

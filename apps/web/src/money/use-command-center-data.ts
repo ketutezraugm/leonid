@@ -1,12 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  BudgetBurnResponse,
-  DeliveryRiskResponse,
-  FundingThermometerResponse,
-  PayoutsLedgerResponse,
-  RulesHealthResponse,
-  type WidgetSource,
-} from '@quartermaster/shared';
+import { CommandCenterResponse, type WidgetSource } from '@leonid/shared';
 import { ApiFailure, getJson } from '../shell/api';
 import { sampleCommandCenterData } from './sample-data';
 import type { CommandCenterData } from './studio-data';
@@ -49,22 +42,17 @@ export function problemOf(err: unknown): Problem {
   return err instanceof Error && err.name === 'ZodError' ? 'bad-response' : 'unreachable';
 }
 
-// Asks the five widget endpoints (treasurer-only, so a signed-in session) and parses each answer with its
-// shared schema. All five or none: if any fails, the caller gets the failure, never a half-live page.
-export async function loadCommandCenter(
-  eventId?: string | null,
-): Promise<{ data: CommandCenterData; origins: Record<WidgetName, Origin> }> {
-  const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : '';
-  const get = <T>(path: string, parser: { parse(value: unknown): T }) =>
-    getJson(`/api/widgets/${path}${query}`, parser);
+type Loaded = { data: CommandCenterData; origins: Record<WidgetName, Origin> };
 
-  const [funding, budget, payouts, rules, delivery] = await Promise.all([
-    get('funding', FundingThermometerResponse),
-    get('budget-burn', BudgetBurnResponse),
-    get('payouts', PayoutsLedgerResponse),
-    get('rules-health', RulesHealthResponse),
-    get('delivery-risk', DeliveryRiskResponse),
-  ]);
+// Asks the command-center endpoint (treasurer-only, so a signed-in session): all five widgets in one answer,
+// parsed with the shared schema. All five or none: if any part is bad, the caller gets the failure, never a
+// half-live page.
+async function fetchCommandCenter(eventId?: string | null): Promise<Loaded> {
+  const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : '';
+  const { funding, budget, payouts, rules, delivery } = await getJson(
+    `/api/widgets/command-center${query}`,
+    CommandCenterResponse,
+  );
   return {
     data: {
       funding: funding.data,
@@ -82,6 +70,34 @@ export async function loadCommandCenter(
     },
   };
 }
+
+// One request per event at a time. The Money page starts it (prefetchCommandCenter) while AG Studio's large
+// bundle is still downloading, and the command center then picks up that same request instead of asking
+// again; a second mount (React's StrictMode, a quick tab switch) does too. A settled answer is reused only for
+// that double-mount window, so an approval or a webhook shows on the next visit and a signed-out session never
+// sees an earlier answer for long. A failure is never reused.
+const REUSE_MS = 2_000;
+const requests = new Map<string, { promise: Promise<Loaded>; at: number }>();
+
+export function loadCommandCenter(eventId?: string | null): Promise<Loaded> {
+  const key = eventId ?? '';
+  const now = Date.now();
+  const kept = requests.get(key);
+  if (kept && now - kept.at < REUSE_MS) return kept.promise;
+  const promise = fetchCommandCenter(eventId);
+  requests.set(key, { promise, at: now });
+  promise.catch(() => {
+    if (requests.get(key)?.promise === promise) requests.delete(key);
+  });
+  return promise;
+}
+
+export const prefetchCommandCenter = (eventId?: string | null): void => {
+  loadCommandCenter(eventId).catch(() => {}); // the command center reports a failure when it asks
+};
+
+// For tests: each one starts with no request in flight.
+export const forgetCommandCenterRequests = (): void => requests.clear();
 
 // The command center's data. With no event id the server uses the seeded demo event. If the server cannot be
 // asked, this falls back to the browser's own sample *as a whole*: sample sponsor ids would not match a live

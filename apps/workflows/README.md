@@ -23,7 +23,7 @@ Blueprints (`render.yaml`) do not support Workflows yet, so this is created by h
 | --- | --- |
 | Repository / branch | this repo, `development` for staging |
 | Root Directory | leave empty (the repo root) |
-| Build Command | `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quartermaster/workflows build` |
+| Build Command | `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @leonid/workflows build` |
 | Start Command | `node apps/workflows/dist/main.js` |
 | Environment | `API_BASE_URL` (the API's URL, no trailing slash) and `JOBS_TOKEN` |
 
@@ -33,7 +33,7 @@ Task names are `{slug}/budget-recompute` and `{slug}/recompute-event`.
 ## Run it locally
 
 ```sh
-pnpm --filter @quartermaster/workflows build
+pnpm --filter @leonid/workflows build
 render workflows dev -- node apps/workflows/dist/main.js    # Render CLI 2.11+, local task server on :8120
 render workflows tasks list --local
 ```

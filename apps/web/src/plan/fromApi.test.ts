@@ -1,4 +1,4 @@
-import type { PlanResponse, PlanTaskRow } from '@quartermaster/shared';
+import type { PlanResponse, PlanTaskRow } from '@leonid/shared';
 import { describe, expect, it } from 'vitest';
 import { taskStatus, toPlanSource } from './fromApi';
 

@@ -15,7 +15,7 @@ Every account: **country = United States** (Vault is US-only). Note the generate
 | Purpose | Type | `.env` keys |
 | --- | --- | --- |
 | Treasury (the event's business account) | Business | used by the Treasury app, no login needed in `.env` |
-| Procurement (Quartermaster merchant) | Business | used by the Procurement app |
+| Procurement (Leonid merchant) | Business | used by the Procurement app |
 | Treasurer payer wallet | Personal | `SANDBOX_TREASURER_EMAIL/PASSWORD` |
 | Sponsor 1, 2, 3 | Personal (or Business) | `SANDBOX_SPONSOR_{1,2,3}_EMAIL/PASSWORD` |
 | Volunteer / speaker / winner | Personal x3 | `SANDBOX_VOLUNTEER_EMAIL/PASSWORD` (+ speaker, winner) |
@@ -26,11 +26,11 @@ Day-1 question for the vault test: can the **Treasury business account** be the 
 
 Create two apps:
 
-1. **Quartermaster Treasury** (Merchant, sandbox business = Treasury account). Features to enable (verify names):
+1. **Leonid Treasury** (Merchant, sandbox business = Treasury account). Features to enable (verify names):
    - Log in with PayPal (Advanced settings: Return URL = the Render URL + `/api/auth/paypal/callback`, scopes openid, email, account verification status + PayPal account ID; privacy/terms URLs can be `https://example.com`)
    - Transaction Search (needed for `reporting/balances/read`)
    - Invoicing, Payouts
-2. **Quartermaster Procurement** (Merchant, sandbox business = Procurement account). Features:
+2. **Leonid Procurement** (Merchant, sandbox business = Procurement account). Features:
    - Save payment methods / Vault (verify), Accept payments (Orders)
    - Disputes if offered
 

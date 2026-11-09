@@ -1,4 +1,4 @@
-import { DashboardAgentTurnResponse } from '@quartermaster/shared';
+import { DashboardAgentTurnResponse } from '@leonid/shared';
 import {
   createAiHarness,
   directLlmRunner,

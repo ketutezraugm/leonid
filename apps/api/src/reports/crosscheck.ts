@@ -1,4 +1,4 @@
-import type { SponsorReportLine } from '@quartermaster/shared';
+import type { SponsorReportLine } from '@leonid/shared';
 import type { FoundTransaction } from '../paypal/search.js';
 import { SEARCH_MAX_DAYS } from '../paypal/search.js';
 

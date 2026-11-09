@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VenueCandidate } from '@quartermaster/shared';
+import type { VenueCandidate } from '@leonid/shared';
 import {
   chargeFacts,
   filterVenues,

@@ -63,7 +63,7 @@ Public repos that mention the hackathon by name, as of Nov 6 (517 in total):
 
 **Sponsor prize choice:** we can win only one. Lead with Bryntum, through late-delivery rescheduling, which no rival has. Treat AG Grid as a second chance that needs F21 done well.
 
-## Where Quartermaster stands (PRD against `development`, Nov 6)
+## Where Leonid stands (PRD against `development`, Nov 6)
 
 The PRD says Core had to work by Nov 3 and Upgrades by Nov 7.
 

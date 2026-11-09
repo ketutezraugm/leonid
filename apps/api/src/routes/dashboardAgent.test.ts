@@ -1,4 +1,4 @@
-import { DashboardAgentTurnResponse } from '@quartermaster/shared';
+import { DashboardAgentTurnResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';

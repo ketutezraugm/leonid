@@ -36,7 +36,7 @@ export const sponsors = pgTable('sponsors', {
     .default('pledged'),
 }).enableRLS();
 
-// Same values as LedgerSource in @quartermaster/shared; a test keeps the two in step.
+// Same values as LedgerSource in @leonid/shared; a test keeps the two in step.
 export const LEDGER_SOURCES = [
   'sponsor_invoice',
   'subscription',

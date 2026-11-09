@@ -1,9 +1,9 @@
 import { createContext, createElement, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { useMatch } from 'react-router-dom';
-import { EventsResponse } from '@quartermaster/shared';
+import { EventsResponse } from '@leonid/shared';
 import { useFetch } from './api';
 
-// Quartermaster runs several events (UX plan 3, "Multiple events"). Every event screen lives under
+// Leonid runs several events (UX plan 3, "Multiple events"). Every event screen lives under
 // /events/:eventId/ and reads its event through useEvent(), never a constant, so the API and a switcher
 // change only this file.
 
@@ -113,7 +113,7 @@ export function useEvents(): EventsState {
 
 // --- The current event
 
-const LAST_KEY = 'quartermaster.lastEventId';
+const LAST_KEY = 'leonid.lastEventId';
 
 export function rememberEvent(routeId: string) {
   try {

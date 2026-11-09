@@ -1,4 +1,4 @@
-import { BOOKING_ITEMS, EventSummary, type BookingItemId } from '@quartermaster/shared';
+import { BOOKING_ITEMS, EventSummary, type BookingItemId } from '@leonid/shared';
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loadIds, newThreadId, saveActiveId, saveIds, saveKickoff, withId } from '../chat/sessions';

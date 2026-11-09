@@ -1,7 +1,8 @@
-import { PayoutsResponse, type PayoutItem } from '@quartermaster/shared';
+import { PayoutsResponse, type PayoutItem } from '@leonid/shared';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';
-import { useEvent, withEvent } from '../shell/event';
+import { useEvent, useEventPath, withEvent } from '../shell/event';
 import { Button } from '../ui/Button';
 import { Field } from '../ui/Field';
 import { formatMoney, parseMoneyInput } from '../ui/money';
@@ -25,7 +26,20 @@ const STATUS: Record<PayoutItem['status'], { label: string; status: Status }> = 
 };
 const KIND = { prize: 'Prize', speaker: 'Speaker', claim: 'Claim' } as const;
 
+// Where winners and speakers are most likely to be. The names come from the browser, so they read "India", not "IN".
+const COUNTRY_CODES = [
+  'AR', 'AU', 'AT', 'BE', 'BR', 'CA', 'CL', 'CN', 'CO', 'CZ', 'DK', 'EG', 'FI', 'FR', 'DE', 'GH', 'GR', 'HK', 'HU', 'IN',
+  'ID', 'IE', 'IL', 'IT', 'JP', 'KE', 'KR', 'MY', 'MX', 'NL', 'NZ', 'NG', 'NO', 'PK', 'PE', 'PH', 'PL', 'PT', 'RO', 'SA',
+  'SG', 'ZA', 'ES', 'SE', 'CH', 'TW', 'TH', 'TR', 'AE', 'GB', 'US', 'VN',
+];
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+export const countryName = (code: string) => regionNames.of(code) ?? code;
+const COUNTRIES = COUNTRY_CODES.map((code) => ({ code, name: countryName(code) })).sort((a, b) =>
+  a.name.localeCompare(b.name),
+);
+
 function NewPayout({ eventId, onSent }: { eventId: string | null; onSent: () => void }) {
+  const path = useEventPath();
   const [kind, setKind] = useState<'prize' | 'speaker'>('prize');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,13 +47,13 @@ function NewPayout({ eventId, onSent }: { eventId: string | null; onSent: () => 
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<PayoutItem | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const minor = parseMoneyInput(amount);
     if (minor === null || minor <= 0) {
-      setError('Enter an amount, for example 250.00.');
+      setError('Enter an amount in US dollars, for example 250.00.');
       return;
     }
     setBusy(true);
@@ -51,12 +65,11 @@ function NewPayout({ eventId, onSent }: { eventId: string | null; onSent: () => 
         kind,
         recipientName: name.trim(),
         recipientEmail: email.trim(),
-        ...(country ? { countryCode: country.toUpperCase() } : {}),
+        ...(country ? { countryCode: country } : {}),
         amount: minor,
         category: kind === 'prize' ? 'prizes' : 'speakers',
       });
-      const item = payouts[0]!;
-      setResult(`${item.recipientName}: ${STATUS[item.status].label}${item.note ? ` (${item.note})` : ''}.`);
+      setResult(payouts[0]!);
       setName('');
       setEmail('');
       setAmount('');
@@ -92,18 +105,20 @@ function NewPayout({ eventId, onSent }: { eventId: string | null; onSent: () => 
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Field
-          id="payout-country"
-          label="Country (optional)"
-          value={country}
-          onChange={(e) => setCountry(e.target.value)}
-          maxLength={2}
-          pattern="[A-Za-z]{2}"
-          hint="Two letters, for example IN"
-        />
+        <div className="field">
+          <label htmlFor="payout-country">Country (optional)</label>
+          <select id="payout-country" value={country} onChange={(e) => setCountry(e.target.value)}>
+            <option value="">Not set</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <Field
           id="payout-amount"
-          label="Amount"
+          label="Amount (US dollars)"
           inputMode="decimal"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -116,7 +131,14 @@ function NewPayout({ eventId, onSent }: { eventId: string | null; onSent: () => 
       </form>
       {result && (
         <p role="status" className="muted">
-          {result}
+          {result.recipientName}: {STATUS[result.status].label}
+          {result.status === 'pending_approval' ? (
+            <>
+              . <Link to={path('approvals')}>Review it in Approvals</Link>
+            </>
+          ) : (
+            <>{result.note ? ` (${result.note})` : ''}.</>
+          )}
         </p>
       )}
     </section>
@@ -142,24 +164,37 @@ export function Payouts() {
           (list.data.payouts.length === 0 ? (
             <p className="muted">No payouts yet.</p>
           ) : (
-            <ul className="claim-list">
-              {list.data.payouts.map((p) => (
-                <li key={p.id} className="claim-row">
-                  <div className="claim-main">
-                    <span className="claim-what">
-                      <strong>{KIND[p.kind]}</strong> · {p.recipientName}
-                      {p.destination.countryCode ? ` (${p.destination.countryCode})` : ''}
-                    </span>
-                    <span className="claim-amount">{formatMoney(p.amount, p.currency)}</span>
-                  </div>
-                  <div className="claim-meta">
-                    <StatusBadge status={STATUS[p.status].status} label={STATUS[p.status].label} />
-                    <span className="muted">{p.destination.receiver}</span>
-                  </div>
-                  {p.note && <p className="claim-reasons muted">{p.note}</p>}
-                </li>
-              ))}
-            </ul>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Who</th>
+                    <th>Country</th>
+                    <th>Status</th>
+                    <th className="num">Amount</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.data.payouts.map((p) => (
+                    <tr key={p.id}>
+                      <td>{KIND[p.kind]}</td>
+                      <td>
+                        {p.recipientName}
+                        <span className="muted"> · {p.destination.receiver}</span>
+                      </td>
+                      <td>{p.destination.countryCode ? countryName(p.destination.countryCode) : '—'}</td>
+                      <td>
+                        <StatusBadge status={STATUS[p.status].status} label={STATUS[p.status].label} />
+                      </td>
+                      <td className="num">{formatMoney(p.amount, p.currency)}</td>
+                      <td className="muted">{p.note || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ))}
       </section>
     </>

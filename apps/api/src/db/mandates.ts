@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
-import type { ChecklistItem } from '@quartermaster/shared';
+import type { ChecklistItem } from '@leonid/shared';
 import type { Db } from './client.js';
 import { chatThreads, mandateItems, mandates } from './schema.js';
 

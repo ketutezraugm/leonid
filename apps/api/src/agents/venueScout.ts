@@ -1,6 +1,6 @@
 import { ToolLoopAgent, isStepCount, tool } from 'ai';
 import { z } from 'zod';
-import { VenueCandidate } from '@quartermaster/shared';
+import { VenueCandidate } from '@leonid/shared';
 import { auditedExecute, type AgentContext } from './context.js';
 import { createResearchTools } from './tools/research.js';
 import type { SearchClient } from '../search/client.js';

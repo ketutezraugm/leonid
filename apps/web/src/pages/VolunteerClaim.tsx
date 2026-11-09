@@ -1,12 +1,14 @@
-import type { ClaimView, VolunteerClaimsResponse } from '@quartermaster/shared';
+import type { ClaimView, VolunteerClaimsResponse } from '@leonid/shared';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { loadMyClaims, photoProblem, submitClaim } from '../claims/api';
 import { ClaimList } from '../claims/ClaimList';
 import { ApiFailure } from '../shell/api';
+import { claimStatusView } from '../ui/claimStatus';
 import { formatMoney } from '../ui/money';
 import { PageHeader } from '../ui/PageHeader';
 import { PageState } from '../ui/PageState';
+import { StatusBadge } from '../ui/StatusBadge';
 
 // F16, the volunteer's side: open your link, snap a receipt, see when you are paid back. No account: the link
 // is the volunteer's, and money only ever goes to the PayPal email the treasurer registered for them.
@@ -32,7 +34,7 @@ export function VolunteerClaim() {
   const [data, setData] = useState<VolunteerClaimsResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const [message, setMessage] = useState<{ text: string; tone: 'ok' | 'error'; claim?: ClaimView } | null>(null);
 
   const load = useCallback(() => {
     loadMyClaims(token).then(setData, (err: unknown) =>
@@ -59,7 +61,7 @@ export function VolunteerClaim() {
     try {
       const claim = await submitClaim(token, file);
       setData((d) => (d ? { ...d, claims: [claim, ...d.claims] } : d));
-      setMessage({ text: resultText(claim), tone: claim.status === 'rejected' ? 'error' : 'ok' });
+      setMessage({ text: resultText(claim), tone: claim.status === 'rejected' ? 'error' : 'ok', claim });
     } catch (err) {
       setMessage({ text: err instanceof ApiFailure ? err.message : 'The receipt could not be sent. Try again.', tone: 'error' });
     } finally {
@@ -71,7 +73,7 @@ export function VolunteerClaim() {
     return (
       <PageState
         kind="error"
-        title="Claims"
+        title="This link doesn't work"
         onRetry={() => {
           setLoadError(null);
           load();
@@ -101,11 +103,25 @@ export function VolunteerClaim() {
         <label htmlFor="receipt-photo" className="btn btn-primary claim-snap-button" aria-disabled={busy || undefined}>
           {busy ? 'Reading the receipt…' : 'Snap a receipt'}
         </label>
-        <p className="muted">The amount is read from the receipt. Claims within the daily limit are paid automatically.</p>
-        {message && (
-          <p role={message.tone === 'error' ? 'alert' : 'status'} className={message.tone === 'error' ? 'field-error' : undefined}>
+        <p className="muted">
+          The amount is read from the receipt.{' '}
+          {data.dailyLimit
+            ? `Claims up to ${formatMoney(data.dailyLimit.amount, data.dailyLimit.currency)} a day are paid automatically.`
+            : 'Claims within the daily limit are paid automatically.'}
+        </p>
+        {message?.tone === 'error' && (
+          <p role="alert" className="field-error">
             {message.text}
           </p>
+        )}
+        {message?.tone === 'ok' && message.claim && (
+          <div role="status" className="claim-result">
+            <StatusBadge
+              status={claimStatusView[message.claim.status].status}
+              label={claimStatusView[message.claim.status].label}
+            />
+            <span>{message.text}</span>
+          </div>
         )}
       </section>
       <section className="card" aria-label="Your claims">

@@ -1,4 +1,4 @@
-import type { ClaimView } from '@quartermaster/shared';
+import type { ClaimView } from '@leonid/shared';
 import type { ReactNode } from 'react';
 import { claimStatusView } from '../ui/claimStatus';
 import { formatMoney } from '../ui/money';

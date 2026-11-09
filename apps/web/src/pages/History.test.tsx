@@ -88,6 +88,14 @@ describe('History', () => {
     expect(await screen.findByText(/PayPal reference/)).toBeInTheDocument();
   });
 
+  it('offers the invoice for a paid plan only', async () => {
+    stub(200);
+    open('/history');
+    const link = await screen.findByRole('link', { name: 'Invoice' });
+    expect(link).toHaveAttribute('href', '/api/venue-booking/44444444-4444-4444-8444-444444444444/invoice');
+    expect(screen.getAllByRole('link', { name: 'Invoice' })).toHaveLength(1);
+  });
+
   it('asks to sign in when the server says 401', async () => {
     stub(401);
     open('/history');

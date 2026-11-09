@@ -1,4 +1,4 @@
-import type { ClaimStatus } from '@quartermaster/shared';
+import type { ClaimStatus } from '@leonid/shared';
 import type { Status } from './StatusBadge';
 
 // How a backend claim state reads to a volunteer, and which badge it wears. There is no volunteer "Needs info"

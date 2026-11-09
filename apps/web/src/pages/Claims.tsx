@@ -1,5 +1,5 @@
-import { ClaimsResponse, ClaimView, CreateVolunteerResponse } from '@quartermaster/shared';
-import { useState, type FormEvent } from 'react';
+import { ClaimsResponse, ClaimView, CreateVolunteerResponse } from '@leonid/shared';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ClaimList } from '../claims/ClaimList';
 import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';
 import { useEvent, withEvent } from '../shell/event';
@@ -13,7 +13,26 @@ import { PageState } from '../ui/PageState';
 // F16, the treasurer's side. Register a volunteer (their claims are only ever paid to the PayPal email given
 // here) and hand them their link; every claim then shows here with what the rules engine decided. A claim the
 // receipt reader was unsure of waits for the treasurer to confirm the amount, and that still goes through the
-// rules engine. Claims over the approval threshold are approved on the Approvals screen, like any payout.
+// rules engine.
+
+// The volunteer's link as a QR code, so it can be opened on a phone straight from the screen (and on camera).
+// The QR library loads only when a link is shown.
+function LinkQr({ url, name }: { url: string; name: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    import('qrcode')
+      .then((qr) => qr.toDataURL(url, { margin: 1, width: 320 }))
+      .then((data) => {
+        if (live) setSrc(data);
+      })
+      .catch(() => {}); // the link itself is still there to copy
+    return () => {
+      live = false;
+    };
+  }, [url]);
+  return src ? <img className="claim-qr" src={src} alt={`QR code for ${name}'s claim link`} /> : null;
+}
 
 function AddVolunteer({ eventId, onAdded }: { eventId: string | null; onAdded: () => void }) {
   const [name, setName] = useState('');
@@ -79,6 +98,7 @@ function AddVolunteer({ eventId, onAdded }: { eventId: string | null; onAdded: (
             Send this link to {link.name}. It is shown only once, and anyone who has it can claim as {link.name}.
           </span>
           <CopyId value={link.url} />
+          <LinkQr url={link.url} name={link.name} />
         </div>
       )}
     </section>

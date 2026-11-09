@@ -1,4 +1,4 @@
-import { parseBookingChoice } from '@quartermaster/shared';
+import { parseBookingChoice } from '@leonid/shared';
 import { describe, expect, it } from 'vitest';
 import { answers, defaultNeeds, kickoffText, newBrief, type Brief } from './eventBrief';
 

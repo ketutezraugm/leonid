@@ -151,7 +151,7 @@ describe('Entering the demo', () => {
     stubApi({ me: 200 });
     renderLanding();
     const cards = await screen.findAllByRole('link', { name: 'Open in the demo ›' });
-    expect(cards.map((c) => c.getAttribute('href'))).toEqual(['/approvals', '/plan', '/settings']);
+    expect(cards.map((c) => c.getAttribute('href'))).toEqual(['/agent', '/plan', '/settings']);
     expect(vi.mocked(fetch)).not.toHaveBeenCalledWith('/api/auth/demo-login', expect.anything());
   });
 });

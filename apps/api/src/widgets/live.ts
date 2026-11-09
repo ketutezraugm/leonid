@@ -8,7 +8,7 @@ import {
   RulesHealthData,
   type RulesHealthEntry,
   type WidgetFilter,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { and, desc, eq, isNotNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { loadEventSpendRecords } from '../db/budget.js';

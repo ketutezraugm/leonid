@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { SponsorReportView } from '@quartermaster/shared';
+import { SponsorReportView } from '@leonid/shared';
 import { eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { sponsorReports } from '../db/schema.js';

@@ -1,4 +1,4 @@
-const KEY = 'quartermaster.sidebarOpen';
+const KEY = 'leonid.sidebarOpen';
 
 // The person's choice to keep the sidebar open or closed, on every screen. Null until they make one, and
 // when storage throws (private windows, blocked data); each screen then uses its own default.

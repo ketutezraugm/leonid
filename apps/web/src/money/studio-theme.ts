@@ -5,7 +5,7 @@ import { studioTheme } from 'ag-studio';
 const token = (name: string) => `var(--${name})`;
 const line = (color: string) => ({ width: 1, color: token(color) });
 
-export const quartermasterStudioTheme = studioTheme.withParams({
+export const leonidStudioTheme = studioTheme.withParams({
   fontFamily: token('font-sans'),
   fontSize: 14,
   textColor: token('color-text'),

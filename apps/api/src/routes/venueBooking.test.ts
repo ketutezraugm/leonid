@@ -8,7 +8,7 @@ import {
   VenueBookingResponse,
   venueEstimate,
   venuePickText,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import type { Db } from '../db/client.js';
 import { getOrCreateThread, saveMessages } from '../db/mandates.js';
 import { seedDemoEvent } from '../db/seed.js';
@@ -278,6 +278,37 @@ describe('venue booking route', () => {
       eventId: demoEventId,
       payment: { status: 'paid', reference: 'CAP-7' },
     });
+  });
+
+  it('downloads a PDF invoice for a paid plan only', async () => {
+    const { app } = await build();
+    const id = await seedThread(thread([big], pick(big)));
+    await request(app).get(`/api/venue-booking/${id}/invoice`).set(treasurer).expect(409);
+    await db.insert(auditLog).values({
+      actor: 'treasurer',
+      action: 'spend.check',
+      input: { referenceId: referenceOf(id, big) },
+      outcome: 'paid',
+      paypalId: 'CAP-9',
+    });
+    const res = await request(app)
+      .get(`/api/venue-booking/${id}/invoice`)
+      .set(treasurer)
+      .buffer(true)
+      .parse((r, cb) => {
+        const chunks: Buffer[] = [];
+        r.on('data', (c: Buffer) => chunks.push(c));
+        r.on('end', () => cb(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    expect(res.headers['content-type']).toMatch(/application\/pdf/);
+    expect(res.headers['content-disposition']).toMatch(/attachment; filename="invoice-INV-/);
+    expect((res.body as Buffer).subarray(0, 4).toString()).toBe('%PDF');
+    await request(app).get(`/api/venue-booking/${id}/invoice`).expect(401);
+    await request(app)
+      .get('/api/venue-booking/00000000-0000-4000-8000-000000000000/invoice')
+      .set(treasurer)
+      .expect(404);
   });
 
   it('keeps the plan history for the treasurer only', async () => {

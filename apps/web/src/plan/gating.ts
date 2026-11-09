@@ -1,4 +1,4 @@
-import type { SponsorStatus } from '@quartermaster/shared';
+import type { SponsorStatus } from '@leonid/shared';
 import type { Status } from '../ui/StatusBadge';
 import type { PlanTaskConfig } from './PlanTask';
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { VenueTerms } from '@quartermaster/shared';
+import { VenueTerms } from '@leonid/shared';
 
 // One demo venue in data/venues.json. Kept apart from the catalog so the generator script can
 // validate rows without importing the file it is about to write.

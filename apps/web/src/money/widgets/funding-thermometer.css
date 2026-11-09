@@ -1,13 +1,13 @@
 /* Funding thermometer. Colours come from the design tokens; the fallbacks keep it readable until the
    chart tokens (color-data, color-hold) are merged. Meaning never rests on colour alone: every figure is
    also in text, and the held-back money is hatched. */
-.qm-thermo {
-  --qm-cleared: var(--color-data, var(--color-accent, #0070e0));
-  --qm-hold: var(--color-hold, #a8741a);
-  --qm-text: var(--color-text, #1d1d1b);
-  --qm-muted: var(--color-muted, #6b6b66);
-  --qm-border: var(--color-border, #e3e3de);
-  --qm-focus: var(--color-accent, #0070e0);
+.lx-thermo {
+  --lx-cleared: var(--color-data, var(--color-accent, #0070e0));
+  --lx-hold: var(--color-hold, #a8741a);
+  --lx-text: var(--color-text, #1d1d1b);
+  --lx-muted: var(--color-muted, #6b6b66);
+  --lx-border: var(--color-border, #e3e3de);
+  --lx-focus: var(--color-accent, #0070e0);
 
   box-sizing: border-box;
   display: flex;
@@ -16,48 +16,48 @@
   height: 100%;
   padding: 4px 2px;
   overflow: auto;
-  color: var(--qm-text);
+  color: var(--lx-text);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 14px;
 }
 
-.qm-thermo__note {
+.lx-thermo__note {
   margin: 0;
   padding: 16px;
   color: var(--color-muted, #6b6b66);
   font-family: var(--font-sans, system-ui, sans-serif);
 }
 
-.qm-thermo__summary {
+.lx-thermo__summary {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.qm-thermo__legend {
+.lx-thermo__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
   margin: 0;
   padding: 0;
   list-style: none;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
 }
 
-.qm-thermo__legend li {
+.lx-thermo__legend li {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.qm-thermo__swatch {
+.lx-thermo__swatch {
   display: inline-block;
   width: 14px;
   height: 10px;
   border-radius: 2px;
 }
 
-.qm-thermo__list {
+.lx-thermo__list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -68,7 +68,7 @@
 
 /* The bar sits on its own line, as wide as the row, so every sponsor's bar is measured against the same
    lane and the lengths can be compared. */
-.qm-thermo__row {
+.lx-thermo__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -90,25 +90,25 @@
     background-color 150ms ease;
 }
 
-.qm-thermo__row:hover {
+.lx-thermo__row:hover {
   background: var(--color-surface-sunken, #f0f0ec);
 }
 
-.qm-thermo__row:focus-visible {
-  outline: 2px solid var(--qm-focus);
+.lx-thermo__row:focus-visible {
+  outline: 2px solid var(--lx-focus);
   outline-offset: 2px;
 }
 
-.qm-thermo__row[aria-pressed='true'] {
-  border-color: var(--qm-focus);
+.lx-thermo__row[aria-pressed='true'] {
+  border-color: var(--lx-focus);
   background: var(--color-accent-soft, #e5f0fc);
 }
 
-.qm-thermo__row[data-dimmed='true'] {
+.lx-thermo__row[data-dimmed='true'] {
   opacity: 0.5;
 }
 
-.qm-thermo__name {
+.lx-thermo__name {
   grid-area: name;
   overflow: hidden;
   font-weight: 600;
@@ -116,44 +116,44 @@
   white-space: nowrap;
 }
 
-.qm-thermo__lane {
+.lx-thermo__lane {
   display: block;
   grid-area: lane;
   min-width: 0;
 }
 
-.qm-thermo__track {
+.lx-thermo__track {
   display: flex;
   height: 14px;
   min-width: 2px;
   overflow: hidden;
   border-radius: 4px;
-  background: var(--qm-border);
+  background: var(--lx-border);
 }
 
-.qm-thermo__seg {
+.lx-thermo__seg {
   display: block;
   height: 100%;
 }
 
-.qm-thermo__seg--cleared,
-.qm-thermo__swatch--cleared {
-  background: var(--qm-cleared);
+.lx-thermo__seg--cleared,
+.lx-thermo__swatch--cleared {
+  background: var(--lx-cleared);
 }
 
-.qm-thermo__seg--outstanding,
-.qm-thermo__swatch--outstanding {
-  background: var(--qm-hold);
+.lx-thermo__seg--outstanding,
+.lx-thermo__swatch--outstanding {
+  background: var(--lx-hold);
 }
 
-.qm-thermo__seg--uninvoiced,
-.qm-thermo__swatch--uninvoiced {
-  background: repeating-linear-gradient(135deg, var(--qm-hold) 0 2px, transparent 2px 5px);
-  outline: 1px solid var(--qm-hold);
+.lx-thermo__seg--uninvoiced,
+.lx-thermo__swatch--uninvoiced {
+  background: repeating-linear-gradient(135deg, var(--lx-hold) 0 2px, transparent 2px 5px);
+  outline: 1px solid var(--lx-hold);
   outline-offset: -1px;
 }
 
-.qm-thermo__figures {
+.lx-thermo__figures {
   grid-area: figures;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -161,13 +161,13 @@
   white-space: nowrap;
 }
 
-.qm-thermo__of {
-  color: var(--qm-muted);
+.lx-thermo__of {
+  color: var(--lx-muted);
   font-weight: 400;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qm-thermo__row {
+  .lx-thermo__row {
     transition: none;
   }
 }

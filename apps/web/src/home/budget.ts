@@ -1,4 +1,4 @@
-import type { BudgetBurnData, FundingThermometerData, TreasuryBalance, TreasuryResponse } from '@quartermaster/shared';
+import type { BudgetBurnData, FundingThermometerData, TreasuryBalance, TreasuryResponse } from '@leonid/shared';
 import type { BudgetFigures } from '../ui/BudgetBar';
 
 // The funding widget's totals are cumulative (a paid sponsor counts as pledged, invoiced and cleared), while the

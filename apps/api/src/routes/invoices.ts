@@ -1,4 +1,4 @@
-import { InvoiceDraft, SponsorsResponse } from '@quartermaster/shared';
+import { InvoiceDraft, SponsorsResponse } from '@leonid/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
 import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';

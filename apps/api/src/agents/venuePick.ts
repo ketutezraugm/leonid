@@ -1,5 +1,5 @@
 import type { UIMessage } from 'ai';
-import { VenueCandidate, parseVenuePick, type VenuePick } from '@quartermaster/shared';
+import { VenueCandidate, parseVenuePick, type VenuePick } from '@leonid/shared';
 
 export const VENUE_SCOUT_TOOL = 'delegate_to_venue_scout';
 

@@ -6,5 +6,5 @@ export default defineConfig({
   target: 'node22',
   clean: true,
   // Workspace packages ship TS source, so bundle them into the output.
-  noExternal: [/^@quartermaster\//],
+  noExternal: [/^@leonid\//],
 });

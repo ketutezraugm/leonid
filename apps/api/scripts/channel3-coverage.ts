@@ -1,7 +1,7 @@
 // Day-1 Channel3 coverage check (.claude/rules/channel3.md): real search calls for each demo item.
 //
-//   pnpm --filter @quartermaster/api channel3:coverage            summary per category
-//   pnpm --filter @quartermaster/api channel3:coverage --raw DIR  also save each raw response to DIR
+//   pnpm --filter @leonid/api channel3:coverage            summary per category
+//   pnpm --filter @leonid/api channel3:coverage --raw DIR  also save each raw response to DIR
 //
 // The live response puts the amount at offer.price.price (a decimal in major units), not
 // price.amount as the product guide shows. Offers carry no delivery estimate.

@@ -1,4 +1,4 @@
-import type { CompiledRules, Rule } from '@quartermaster/shared';
+import type { CompiledRules, Rule } from '@leonid/shared';
 import type { CheckResult, Spend } from '../payments/ports.js';
 
 // The rules engine (F9). Pure on purpose: no I/O, no clock, no randomness, no LLM. Everything it knows arrives as an

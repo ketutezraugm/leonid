@@ -1,4 +1,4 @@
-import type { CreatePayoutRequest, PayoutItem, PayoutItemStatus, WidgetFilter } from '@quartermaster/shared';
+import type { CreatePayoutRequest, PayoutItem, PayoutItemStatus, WidgetFilter } from '@leonid/shared';
 import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { maskEmail } from '../claims/service.js';
 import { writeAudit } from '../db/audit.js';

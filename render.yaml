@@ -2,12 +2,12 @@
 # Secrets marked sync: false are entered in the Render dashboard on first deploy.
 services:
   - type: web
-    name: quartermaster
+    name: leonid
     runtime: node
     plan: starter
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
     # Runs after the build and before the new version takes traffic; a failed migration stops the deploy.
-    preDeployCommand: pnpm --filter @quartermaster/api db:migrate
+    preDeployCommand: pnpm --filter @leonid/api db:migrate
     startCommand: pnpm start
     healthCheckPath: /api/health
     envVars:

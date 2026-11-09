@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import type { AskUserInput } from '@quartermaster/shared';
+import type { AskUserInput } from '@leonid/shared';
 
 const OTHER_MAX_LENGTH = 300;
 

@@ -4,7 +4,7 @@ import {
   SetMaxSpendRequest,
   type EventsResponse,
   type EventSummary,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';

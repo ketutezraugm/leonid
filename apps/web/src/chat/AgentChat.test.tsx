@@ -87,7 +87,7 @@ describe('AgentChat', () => {
       ([url, init]) => url === '/api/chat' && init?.method === 'POST',
     );
     const sent = JSON.parse(String(post?.[1]?.body));
-    expect(sent.threadId).toBe(localStorage.getItem('quartermaster.threadId'));
+    expect(sent.threadId).toBe(localStorage.getItem('leonid.threadId'));
     expect(sent.message).toMatchObject({
       role: 'user',
       parts: [{ type: 'text', text: 'How much is unlocked?' }],
@@ -101,9 +101,9 @@ describe('AgentChat', () => {
     });
     const threadId = crypto.randomUUID();
     const eventId = crypto.randomUUID();
-    localStorage.setItem('quartermaster.threadId', threadId);
+    localStorage.setItem('leonid.threadId', threadId);
     sessionStorage.setItem(
-      'quartermaster.kickoff',
+      'leonid.kickoff',
       JSON.stringify({
         threadId,
         eventId,
@@ -129,7 +129,7 @@ describe('AgentChat', () => {
       eventId,
       message: { parts: [{ type: 'text', text: 'Plan our new event.' }] },
     });
-    expect(sessionStorage.getItem('quartermaster.kickoff')).toBeNull();
+    expect(sessionStorage.getItem('leonid.kickoff')).toBeNull();
   });
 
   it('links a new chat to the event it is opened in', async () => {
@@ -452,8 +452,8 @@ describe('AgentChat', () => {
   it('lists earlier chats and loads the one you pick', async () => {
     const a = crypto.randomUUID();
     const b = crypto.randomUUID();
-    localStorage.setItem('quartermaster.threadId', a);
-    localStorage.setItem('quartermaster.threadIds', JSON.stringify([a, b]));
+    localStorage.setItem('leonid.threadId', a);
+    localStorage.setItem('leonid.threadIds', JSON.stringify([a, b]));
     stubFetch({
       threads: [summary(a, 'Plan swag'), summary(b, 'Budget check')],
       thread: (id) =>
@@ -478,12 +478,12 @@ describe('AgentChat', () => {
     fireEvent.click(within(nav).getByRole('button', { name: /^Budget check/ }));
 
     expect(await screen.findByText('Budget answer.')).toBeInTheDocument();
-    expect(localStorage.getItem('quartermaster.threadId')).toBe(b);
+    expect(localStorage.getItem('leonid.threadId')).toBe(b);
   });
 
   it('starts a fresh thread on New chat once the current one has messages', async () => {
     const a = crypto.randomUUID();
-    localStorage.setItem('quartermaster.threadId', a);
+    localStorage.setItem('leonid.threadId', a);
     stubFetch({ threads: [summary(a, 'Plan swag')] });
     render(<AgentChat />);
     const nav = await screen.findByRole('navigation', { name: 'Chats' });
@@ -492,14 +492,14 @@ describe('AgentChat', () => {
     fireEvent.click(within(nav).getByRole('button', { name: 'New chat' }));
     await screen.findByLabelText('Message');
 
-    expect(localStorage.getItem('quartermaster.threadId')).not.toBe(a);
+    expect(localStorage.getItem('leonid.threadId')).not.toBe(a);
   });
 
   it('reuses an empty current chat instead of creating another', async () => {
     stubFetch({});
     render(<AgentChat />);
     await screen.findByLabelText('Message');
-    const before = localStorage.getItem('quartermaster.threadId');
+    const before = localStorage.getItem('leonid.threadId');
     const nav = screen.getByRole('navigation', { name: 'Chats' });
     await waitFor(() =>
       expect(within(nav).getByRole('button', { name: 'New chat' })).toBeEnabled(),
@@ -507,14 +507,14 @@ describe('AgentChat', () => {
 
     fireEvent.click(within(nav).getByRole('button', { name: 'New chat' }));
 
-    expect(localStorage.getItem('quartermaster.threadId')).toBe(before);
+    expect(localStorage.getItem('leonid.threadId')).toBe(before);
   });
 
   it('archives the active chat, falls back to another and offers undo', async () => {
     const a = crypto.randomUUID();
     const b = crypto.randomUUID();
-    localStorage.setItem('quartermaster.threadId', a);
-    localStorage.setItem('quartermaster.threadIds', JSON.stringify([a, b]));
+    localStorage.setItem('leonid.threadId', a);
+    localStorage.setItem('leonid.threadIds', JSON.stringify([a, b]));
     const fetchMock = stubFetch({ threads: [summary(a, 'Plan swag'), summary(b, 'Budget check')] });
     render(<AgentChat />);
     const nav = await screen.findByRole('navigation', { name: 'Chats' });
@@ -522,7 +522,7 @@ describe('AgentChat', () => {
 
     fireEvent.click(within(nav).getByRole('button', { name: 'Archive Plan swag' }));
 
-    await waitFor(() => expect(localStorage.getItem('quartermaster.threadId')).toBe(b));
+    await waitFor(() => expect(localStorage.getItem('leonid.threadId')).toBe(b));
     const patch = fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH');
     expect(patch?.[0]).toBe(`/api/chat/${a}`);
     expect(JSON.parse(String(patch?.[1]?.body))).toEqual({ archived: true });
@@ -555,8 +555,8 @@ describe('AgentChat', () => {
     const other = crypto.randomUUID();
     const mine = crypto.randomUUID();
     const eventId = crypto.randomUUID();
-    localStorage.setItem('quartermaster.threadId', other);
-    localStorage.setItem('quartermaster.threadIds', JSON.stringify([other, mine]));
+    localStorage.setItem('leonid.threadId', other);
+    localStorage.setItem('leonid.threadIds', JSON.stringify([other, mine]));
     stubFetch({
       threads: [
         { ...summary(other, 'Old plans'), event: { id: crypto.randomUUID(), name: 'OpenHack' } },
@@ -565,14 +565,14 @@ describe('AgentChat', () => {
     });
     render(<AgentChat inEvent={{ id: eventId, name: 'Spring Meetup' }} />);
 
-    await waitFor(() => expect(localStorage.getItem('quartermaster.threadId')).toBe(mine));
+    await waitFor(() => expect(localStorage.getItem('leonid.threadId')).toBe(mine));
   });
 
   it('deletes the active chat after confirming and drops it from this browser', async () => {
     const a = crypto.randomUUID();
     const b = crypto.randomUUID();
-    localStorage.setItem('quartermaster.threadId', a);
-    localStorage.setItem('quartermaster.threadIds', JSON.stringify([a, b]));
+    localStorage.setItem('leonid.threadId', a);
+    localStorage.setItem('leonid.threadIds', JSON.stringify([a, b]));
     const fetchMock = stubFetch({ threads: [summary(a, 'Plan swag'), summary(b, 'Budget check')] });
     render(<AgentChat />);
     const nav = await screen.findByRole('navigation', { name: 'Chats' });
@@ -582,15 +582,15 @@ describe('AgentChat', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
     fireEvent.click(within(nav).getByRole('button', { name: 'Confirm delete Plan swag' }));
 
-    await waitFor(() => expect(localStorage.getItem('quartermaster.threadId')).toBe(b));
+    await waitFor(() => expect(localStorage.getItem('leonid.threadId')).toBe(b));
     const del = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE');
     expect(del?.[0]).toBe(`/api/chat/${a}`);
-    expect(JSON.parse(localStorage.getItem('quartermaster.threadIds') ?? '[]')).toEqual([b]);
+    expect(JSON.parse(localStorage.getItem('leonid.threadIds') ?? '[]')).toEqual([b]);
   });
 
   it('keeps the chat when delete is cancelled', async () => {
     const a = crypto.randomUUID();
-    localStorage.setItem('quartermaster.threadId', a);
+    localStorage.setItem('leonid.threadId', a);
     const fetchMock = stubFetch({ threads: [summary(a, 'Plan swag')] });
     render(<AgentChat />);
     const nav = await screen.findByRole('navigation', { name: 'Chats' });

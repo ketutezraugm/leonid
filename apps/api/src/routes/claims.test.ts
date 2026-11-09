@@ -1,4 +1,4 @@
-import { ClaimsResponse, ClaimView, CreateVolunteerResponse, VolunteerClaimsResponse } from '@quartermaster/shared';
+import { ClaimsResponse, ClaimView, CreateVolunteerResponse, VolunteerClaimsResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -250,5 +250,27 @@ describe('claims per treasurer', () => {
 
     expect((await request(app).get(`/api/claims?eventId=${mine.id}`).set(as('alice'))).status).toBe(200);
     expect((await request(app).get(`/api/claims/${claim.id}/receipt`).set(as('alice'))).status).toBe(200);
+  });
+});
+
+describe('receipt claims: cheap checks first', () => {
+  it('refuses a bad claim link before reading a large photo', async () => {
+    const app = appWith();
+    // Over the app's usual 100 kB JSON limit, so only the photo parser would read it; small enough that the upload
+    // finishes before the early 401 closes the connection.
+    const big = { mimeType: 'image/png', imageBase64: 'A'.repeat(150_000) };
+
+    const res = await submit(app, 'not-a-token', big);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('tells the volunteer the daily limit from the rules in force', async () => {
+    const app = appWith();
+    const { claimToken } = await volunteer(app);
+
+    const mine = VolunteerClaimsResponse.parse((await request(app).get('/api/claims/mine').set('x-claim-token', claimToken)).body);
+
+    expect(mine.dailyLimit).toEqual({ amount: 5_000, currency: 'USD' });
   });
 });

@@ -1,5 +1,5 @@
 import type { DependencyModelConfig } from '@bryntum/gantt';
-import type { PlanResponse, PlanTaskRow } from '@quartermaster/shared';
+import type { PlanResponse, PlanTaskRow } from '@leonid/shared';
 import type { Status } from '../ui/StatusBadge';
 import type { SourceTask } from './gating';
 

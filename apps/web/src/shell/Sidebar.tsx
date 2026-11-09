@@ -3,7 +3,6 @@ import { BRAND } from '../brand';
 import { BrandMark } from '../ui/BrandMark';
 import { Icon, type IconName } from '../ui/icons';
 import { AccountMenu } from './AccountMenu';
-import { useShellData } from './data';
 import { countdown, eventPath, formatEventDate, useCurrentEvent, useEvent, useEvents } from './event';
 
 // The screens of one event, in the order of the event's life. Paths are relative to /events/:eventId/.
@@ -11,12 +10,10 @@ const nav: { screen: string; label: string; icon: IconName }[] = [
   { screen: 'agent', label: 'Agent', icon: 'agent' },
   { screen: 'plan', label: 'Plan', icon: 'plan' },
   { screen: 'money', label: 'Money', icon: 'money' },
-  { screen: 'approvals', label: 'Approvals', icon: 'approvals' },
   { screen: 'claims', label: 'Claims', icon: 'claims' },
 ];
 
 export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  const { waiting } = useShellData();
   const current = useCurrentEvent();
   const { pathname } = useLocation();
   const { events } = useEvents();
@@ -67,11 +64,6 @@ export function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => voi
               >
                 <Icon name={item.icon} />
                 <span className="shell-label">{item.label}</span>
-                {item.screen === 'approvals' && waiting > 0 && (
-                  <span className="nav-count" aria-label={`${waiting} waiting`}>
-                    {waiting}
-                  </span>
-                )}
               </NavLink>
             ))}
           </nav>

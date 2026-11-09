@@ -4,7 +4,7 @@ import {
   venueEstimate,
   type BookingPayment,
   type VenueBookingSummary,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { venuePickOf } from '../agents/venuePick.js';
 import type { Db } from '../db/client.js';
 import { getEvent } from '../db/events.js';
@@ -89,6 +89,24 @@ export async function bookingPayment(db: Db, referenceId: string): Promise<Booki
     .where(and(sql`${auditLog.input}->>'referenceId' = ${referenceId}`, eq(auditLog.outcome, 'paid')))
     .limit(1);
   return charge ? { status: 'paid', reference: charge.paypalId ?? referenceId } : { status: 'unpaid' };
+}
+
+// When a paid booking was paid: the audit row of the charge or capture, else the approval the rules made for it.
+export async function bookingPaidAt(db: Db, referenceId: string): Promise<Date | null> {
+  const [charge] = await db
+    .select({ at: auditLog.createdAt })
+    .from(auditLog)
+    .where(and(sql`${auditLog.input}->>'referenceId' = ${referenceId}`, eq(auditLog.outcome, 'paid')))
+    .orderBy(desc(auditLog.createdAt))
+    .limit(1);
+  if (charge) return charge.at;
+  const [approval] = await db
+    .select({ at: approvals.createdAt })
+    .from(approvals)
+    .where(and(sql`${approvals.spend}->>'referenceId' = ${referenceId}`, eq(approvals.status, 'paid')))
+    .orderBy(desc(approvals.createdAt))
+    .limit(1);
+  return approval?.at ?? null;
 }
 
 const usd = (minor: number) => `USD ${(minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;

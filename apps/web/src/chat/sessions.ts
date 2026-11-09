@@ -1,7 +1,7 @@
-import { CHAT_LOOKUP_MAX_IDS } from '@quartermaster/shared';
+import { CHAT_LOOKUP_MAX_IDS } from '@leonid/shared';
 
-const ACTIVE_KEY = 'quartermaster.threadId';
-const IDS_KEY = 'quartermaster.threadIds';
+const ACTIVE_KEY = 'leonid.threadId';
+const IDS_KEY = 'leonid.threadIds';
 
 // Per-viewer conveniences only: every access is wrapped because storage can throw (private
 // windows, blocked data). Without it sessions just do not survive a reload.
@@ -50,7 +50,7 @@ export function saveIds(ids: string[]) {
 
 // The agent's first message from event setup: setup saves it with a fresh chat id, and that chat
 // sends it once it opens. Session storage, so a stale one never outlives the tab.
-const KICKOFF_KEY = 'quartermaster.kickoff';
+const KICKOFF_KEY = 'leonid.kickoff';
 
 export interface Kickoff {
   threadId: string;

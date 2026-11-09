@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { BudgetBurnResponse } from '@quartermaster/shared';
+import { BudgetBurnResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq, sql } from 'drizzle-orm';

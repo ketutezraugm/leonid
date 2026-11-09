@@ -1,4 +1,4 @@
-import { PayoutsLedgerData, type WidgetFilter } from '@quartermaster/shared';
+import { PayoutsLedgerData, type WidgetFilter } from '@leonid/shared';
 import type { Db } from '../db/client.js';
 import { getEvent } from '../db/events.js';
 import { listPayoutItems } from '../payouts/service.js';

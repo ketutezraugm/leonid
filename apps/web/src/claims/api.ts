@@ -4,7 +4,7 @@ import {
   RECEIPT_MAX_BYTES,
   ReceiptMimeType,
   VolunteerClaimsResponse,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { ApiFailure } from '../shell/api';
 
 // The volunteer's side of F16. The claim token comes from their link and is sent as a header, never in the

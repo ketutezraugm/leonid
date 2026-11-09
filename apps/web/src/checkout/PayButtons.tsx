@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CheckoutConfig, CreateCheckoutOrderRequest } from '@quartermaster/shared';
+import type { CheckoutConfig, CreateCheckoutOrderRequest } from '@leonid/shared';
 import { loadTreasurySdk } from '../lib/paypalSdk';
 import { captureCheckoutOrder, createCheckoutOrder } from './api';
 

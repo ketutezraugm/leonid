@@ -1,10 +1,12 @@
-import { FundingThermometerResponse, RulesHealthResponse } from '@quartermaster/shared';
+import { CommandCenterResponse, FundingThermometerResponse, RulesHealthResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SESSION_COOKIE, sign } from '../auth/session.js';
 import { writeAudit } from '../db/audit.js';
 import type { Db } from '../db/client.js';
+import { createEvent } from '../db/events.js';
 import { clearedIncome, recordLedgerEntry } from '../db/ledger.js';
 import { events, sponsors } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
@@ -411,6 +413,65 @@ describe('widget routes', () => {
       block: 1,
     });
     expect(unknown.status).toBe(404);
+  });
+
+  describe('the command center: all five widgets in one answer', () => {
+    it("answers 404 for someone else's event, like the single widget routes (#105)", async () => {
+      const SECRET = 's'.repeat(40);
+      const as = (sub: string) => ({ Cookie: `${SESSION_COOKIE}=${sign('session', { sub, via: 'demo' }, SECRET, 3600)}` });
+      const alices = await createEvent(
+        db,
+        { name: 'Alice meetup', date: '2027-05-20', people: 40, budget: 100_000, currency: 'USD' },
+        'demo:alice',
+      );
+      const app = appWith({ SESSION_SECRET: SECRET, APP_BASE_URL: 'http://app.test' });
+      const url = `/api/widgets/command-center?eventId=${alices.id}`;
+
+      expect((await request(app).get(url).set(as('bob'))).status).toBe(404);
+      const own = await request(app).get(url).set(as('alice'));
+      expect(own.status).toBe(200);
+      expect(CommandCenterResponse.parse(own.body).funding.data.sponsors).toEqual([]);
+    });
+
+    it('gives each widget exactly what its own endpoint gives, with the same source', async () => {
+      await setStatus(id.harbor, 'paid');
+      await income(id.harbor, pledge.harbor);
+      await spendCheck('allow', { amountMinor: 1, currency: 'USD', category: 'swag' });
+
+      const app = appWith();
+      const one = await request(app).get(`/api/widgets/command-center?eventId=${eventId}`).set(TOKEN);
+      const each = async (path: string) =>
+        (await request(app).get(`/api/widgets/${path}?eventId=${eventId}`).set(TOKEN)).body;
+
+      expect(one.status).toBe(200);
+      const parsed = CommandCenterResponse.parse(one.body);
+      expect(parsed).toEqual({
+        funding: await each('funding'),
+        budget: await each('budget-burn'),
+        payouts: await each('payouts'),
+        rules: await each('rules-health'),
+        delivery: await each('delivery-risk'),
+      });
+      expect(parsed.funding.source).toBe('live');
+      expect(parsed.payouts.source).toBe('live'); // F17: claims, prizes and speaker fees
+    });
+
+    it('uses the seeded demo event when no event id is given', async () => {
+      const res = await request(appWith()).get('/api/widgets/command-center').set(TOKEN);
+
+      expect(res.status).toBe(200);
+      expect(CommandCenterResponse.parse(res.body).funding.data.sponsors).toHaveLength(3);
+    });
+
+    it('answers 400 to a bad event id, 404 to an unknown one, and is treasurer-only', async () => {
+      const app = appWith();
+      expect((await request(app).get('/api/widgets/command-center?eventId=nope').set(TOKEN)).status).toBe(400);
+      expect(
+        (await request(app).get('/api/widgets/command-center?eventId=00000000-0000-4000-8000-000000000000').set(TOKEN))
+          .status,
+      ).toBe(404);
+      expect((await request(app).get('/api/widgets/command-center')).status).toBe(401);
+    });
   });
 
   it('answers 500 without leaking the error when the database fails', async () => {

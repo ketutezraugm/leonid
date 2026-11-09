@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CurrencyCode, type TreasuryBalance, type TreasuryResponse } from '@quartermaster/shared';
+import { CurrencyCode, type TreasuryBalance, type TreasuryResponse } from '@leonid/shared';
 import type { PayPalClient } from './client.js';
 import { fromPayPalSignedMoney, PayPalMoney } from './money.js';
 

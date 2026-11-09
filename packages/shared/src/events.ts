@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { CurrencyCode, IsoDate, MinorUnits } from './common.js';
 
-// Quartermaster runs several events (decided Oct 31). GET /api/events lists the events, soonest first;
+// Leonid runs several events (decided Oct 31). GET /api/events lists the events, soonest first;
 // POST /api/events creates one (the setup flow, step 1) and answers 201 with its EventSummary. Both are
 // treasurer only. Every event-scoped endpoint takes ?eventId=<id>; when it is
 // missing, a read uses the seeded demo event, so a client that does not send it yet keeps working. Nothing that

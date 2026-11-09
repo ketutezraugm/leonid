@@ -1,14 +1,14 @@
 /* Rules health. Colours come from the design tokens (the status colours for allowed, sent to approval and
    blocked); the fallbacks only keep it readable on a branch that predates them. Meaning never rests on colour
    alone: every decision is written out, and the dot is decoration. */
-.qm-rules {
-  --qm-done: var(--color-status-done, #2e7d32);
-  --qm-risk: var(--color-status-risk, #b26a00);
-  --qm-blocked: var(--color-status-blocked, #c4242a);
-  --qm-text: var(--color-text, #15163a);
-  --qm-muted: var(--color-muted, #56625b);
-  --qm-border: var(--color-border, #e1e6e2);
-  --qm-focus: var(--color-accent, #2b2670);
+.lx-rules {
+  --lx-done: var(--color-status-done, #2e7d32);
+  --lx-risk: var(--color-status-risk, #b26a00);
+  --lx-blocked: var(--color-status-blocked, #c4242a);
+  --lx-text: var(--color-text, #15163a);
+  --lx-muted: var(--color-muted, #56625b);
+  --lx-border: var(--color-border, #e1e6e2);
+  --lx-focus: var(--color-accent, #2b2670);
 
   box-sizing: border-box;
   display: flex;
@@ -17,19 +17,19 @@
   height: 100%;
   padding: 4px 2px;
   overflow: auto;
-  color: var(--qm-text);
+  color: var(--lx-text);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 14px;
 }
 
-.qm-rules__note {
+.lx-rules__note {
   margin: 0;
   padding: 16px;
   color: var(--color-muted, #56625b);
   font-family: var(--font-sans, system-ui, sans-serif);
 }
 
-.qm-rules__counts {
+.lx-rules__counts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -38,68 +38,68 @@
   list-style: none;
 }
 
-.qm-rules__count {
+.lx-rules__count {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  border: 1px solid var(--qm-border);
+  border: 1px solid var(--lx-border);
   border-radius: 6px;
 }
 
-.qm-rules__number {
+.lx-rules__number {
   font-size: 22px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   line-height: 1.1;
 }
 
-.qm-rules__label {
+.lx-rules__label {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
 }
 
-.qm-rules__dot {
+.lx-rules__dot {
   display: inline-block;
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--qm-muted);
+  background: var(--lx-muted);
 }
 
-.qm-rules [data-tone='done'] .qm-rules__dot,
-.qm-rules__dot[data-tone='done'] {
-  background: var(--qm-done);
+.lx-rules [data-tone='done'] .lx-rules__dot,
+.lx-rules__dot[data-tone='done'] {
+  background: var(--lx-done);
 }
 
-.qm-rules [data-tone='risk'] .qm-rules__dot,
-.qm-rules__dot[data-tone='risk'] {
-  background: var(--qm-risk);
+.lx-rules [data-tone='risk'] .lx-rules__dot,
+.lx-rules__dot[data-tone='risk'] {
+  background: var(--lx-risk);
 }
 
-.qm-rules [data-tone='blocked'] .qm-rules__dot,
-.qm-rules__dot[data-tone='blocked'] {
-  background: var(--qm-blocked);
+.lx-rules [data-tone='blocked'] .lx-rules__dot,
+.lx-rules__dot[data-tone='blocked'] {
+  background: var(--lx-blocked);
 }
 
-.qm-rules__scope {
+.lx-rules__scope {
   margin: 0;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
 }
 
-.qm-rules__warn {
+.lx-rules__warn {
   margin: 0;
-  color: var(--qm-blocked);
+  color: var(--lx-blocked);
   font-size: 12px;
   font-weight: 700;
 }
 
-.qm-rules__list {
+.lx-rules__list {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -110,7 +110,7 @@
 
 /* A check is two lines: what was decided and about what, then why. Rows with a category are buttons that
    filter the other widgets by it; rows without one are plain text. */
-.qm-rules__row {
+.lx-rules__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -129,32 +129,32 @@
   box-sizing: border-box;
 }
 
-button.qm-rules__row {
+button.lx-rules__row {
   cursor: pointer;
   transition:
     opacity 150ms ease,
     background-color 150ms ease;
 }
 
-button.qm-rules__row:hover {
+button.lx-rules__row:hover {
   background: var(--color-surface-sunken, #e8ede9);
 }
 
-button.qm-rules__row:focus-visible {
-  outline: 2px solid var(--qm-focus);
+button.lx-rules__row:focus-visible {
+  outline: 2px solid var(--lx-focus);
   outline-offset: 2px;
 }
 
-.qm-rules__row[aria-pressed='true'] {
-  border-color: var(--qm-focus);
+.lx-rules__row[aria-pressed='true'] {
+  border-color: var(--lx-focus);
   background: var(--color-accent-soft, #e1e9e3);
 }
 
-.qm-rules__row[data-dimmed='true'] {
+.lx-rules__row[data-dimmed='true'] {
   opacity: 0.5;
 }
 
-.qm-rules__head {
+.lx-rules__head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -163,39 +163,39 @@ button.qm-rules__row:focus-visible {
   min-width: 0;
 }
 
-.qm-rules__decision {
+.lx-rules__decision {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-weight: 700;
 }
 
-.qm-rules__amount {
+.lx-rules__amount {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 
-.qm-rules__category {
-  color: var(--qm-muted);
+.lx-rules__category {
+  color: var(--lx-muted);
   text-transform: capitalize;
 }
 
-.qm-rules__date {
+.lx-rules__date {
   grid-area: date;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.qm-rules__why {
+.lx-rules__why {
   grid-area: why;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  button.qm-rules__row {
+  button.lx-rules__row {
     transition: none;
   }
 }

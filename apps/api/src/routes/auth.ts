@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import type { SessionInfo } from '@quartermaster/shared';
+import type { SessionInfo } from '@leonid/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { isAllowed, authorizeUrl, loginWithCode, type PayPalProfile } from '../auth/paypalLogin.js';
 import {

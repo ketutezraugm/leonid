@@ -1,4 +1,4 @@
-import { ReceiptExtraction } from '@quartermaster/shared';
+import { ReceiptExtraction } from '@leonid/shared';
 import { generateText, type LanguageModel } from 'ai';
 
 // Reads a receipt photo into the fixed ReceiptExtraction schema (agents.md: merchant, date, total, currency,

@@ -6,7 +6,7 @@ import {
   type BookingPayment,
   VenueBookingResponse,
   type VenueBookingSummary,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { formatMoney } from '../ui/money';
 import { loadPayPalSdk } from '../lib/paypalSdk';
 import { rememberReturnPath } from '../shell/returnPath';
@@ -253,6 +253,14 @@ export function VenueBookingPanel({
           This is over your max spend, so the spending rules will block it. Raise the max spend from
           the chat header first.
         </p>
+      )}
+
+      {paid && (
+        <div className="booking-actions">
+          <a className="booking-pay" href={`/api/venue-booking/${threadId}/invoice`} download>
+            Download invoice (PDF)
+          </a>
+        </div>
       )}
 
       {canPay && (

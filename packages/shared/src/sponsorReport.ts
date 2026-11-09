@@ -46,3 +46,7 @@ export const SponsorReportView = z.object({
   generatedAt: IsoDateTime,
 });
 export type SponsorReportView = z.infer<typeof SponsorReportView>;
+
+// GET /api/reports/link/:sponsorId (treasurer): the share token for a published report. 404 until it is published.
+export const SponsorReportLink = z.object({ shareToken: z.string().min(1), generatedAt: IsoDateTime });
+export type SponsorReportLink = z.infer<typeof SponsorReportLink>;

@@ -10,7 +10,7 @@
       "status": "PAID",
       "detail": {
         "currency_code": "USD",
-        "note": "Quartermaster day-1 sandbox test. Not a real invoice.",
+        "note": "Leonid day-1 sandbox test. Not a real invoice.",
         "category_code": "SHIPPABLE",
         "invoice_number": "0001",
         "invoice_date": "2026-10-27",
@@ -34,7 +34,7 @@
         "archived": false
       },
       "invoicer": {
-        "business_name": "Quartermaster Day-1 Test"
+        "business_name": "Leonid Day-1 Test"
       },
       "primary_recipients": [
         {

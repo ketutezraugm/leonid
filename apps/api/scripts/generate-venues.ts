@@ -1,8 +1,8 @@
 // Builds data/venues.json, the seeded demo venue catalog that src/search/venueCatalog.ts serves to
 // the venue scout. Runs offline, never on the request path. Same seed, same file:
 //
-//   pnpm --filter @quartermaster/api venues:generate
-//   VENUES_SEED=7 pnpm --filter @quartermaster/api venues:generate    # a different dataset
+//   pnpm --filter @leonid/api venues:generate
+//   VENUES_SEED=7 pnpm --filter @leonid/api venues:generate    # a different dataset
 //
 // Every venue is invented: names are built from area names and generic words, with no hotel or
 // venue brands (AGENTS.md: no third-party brands in seed data) and no phone numbers.
@@ -11,7 +11,7 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import type { VenueAddOn } from '@quartermaster/shared';
+import type { VenueAddOn } from '@leonid/shared';
 import { VenueListing } from '../src/search/venueListing.js';
 
 const DEFAULT_SEED = 20261029;

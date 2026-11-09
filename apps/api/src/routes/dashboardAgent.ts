@@ -1,4 +1,4 @@
-import { DashboardAgentTurnRequest, DashboardAgentTurnResponse, type DashboardAgentItem } from '@quartermaster/shared';
+import { DashboardAgentTurnRequest, DashboardAgentTurnResponse, type DashboardAgentItem } from '@leonid/shared';
 import { generateText, jsonSchema, tool, type LanguageModel, type ModelMessage, type ToolSet } from 'ai';
 import express, { Router } from 'express';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
