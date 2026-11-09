@@ -76,6 +76,10 @@ Delivery risk is the fourth custom widget: the ordered items against their deadl
 
 The Stage 2 write-up, with how the cross-filtering works and what is still sample: [`docs/p3/stage-2.md`](docs/p3/stage-2.md). Setup notes and the day-1 PayPal checks: [`docs/p3/stage-0.md`](docs/p3/stage-0.md). The licence key is read from `VITE_AG_STUDIO_LICENSE` and is not committed.
 
+**Dashboard agent (F21).** "Ask the dashboard agent" above the widgets opens Studio's AI Assistant, run by our own agent harness built on AG Studio's agent framework ([`apps/web/src/money/dashboardAgent.ts`](apps/web/src/money/dashboardAgent.ts)). Our agent, the Leonid analyst, answers the treasurer. It reads the dashboard (schema, report, page) and queries its data, then hands building to AG's own five agents with `delegate_to`: the lead agent adds and configures a new chart, and the widget and page agents do the details. Every agent's model turn goes to our API ([`apps/api/src/routes/dashboardAgent.ts`](apps/api/src/routes/dashboardAgent.ts)), which holds the model key, is treasurer-only and rate-limited, and audits each turn. The API runs no tool itself; Studio runs its dashboard tools in the browser, and there are no money tools to call. Asked "Where are we overspending?" on the seeded event (checked on Nov 9 against the real model, about 80 seconds), it added a "Spend vs Cap by Category" chart, left the existing widgets as they were, and answered from the data: swag $140 of its $1,000 cap; prizes $1,680 with no cap set. A widget the agent adds lasts until the page is reloaded.
+
+![The dashboard agent answering "Where are we overspending?"](docs/p3/screenshots/dashboard-agent.png)
+
 ### Receipt claims and payouts (P3)
 
 Volunteers, speakers and winners are paid from the Treasury app with PayPal Payouts, and every payment passes the same rules engine as a purchase.

@@ -1,9 +1,12 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AgStudioAiModule } from 'ag-studio';
 import { AgStudio, AgStudioProvider } from 'ag-studio-react';
 import './command-center.css';
 import { useEvent } from '../shell/event';
+import { Button } from '../ui/Button';
 import { commandCenterReport } from './initial-report';
 import { describeSources, type SourceNote } from './sources';
+import { dashboardAgentHarness } from './dashboardAgent';
 import { buildStudioData, type CommandCenterData } from './studio-data';
 import { quartermasterStudioTheme } from './studio-theme';
 import { useCommandCenterData } from './use-command-center-data';
@@ -14,6 +17,11 @@ import {
   fundingThermometerDefinition,
   rulesHealthDefinition,
 } from './widgets/definitions';
+
+const AI_MODULES = [AgStudioAiModule];
+// The AI Assistant panel exists only in Studio's edit mode, so asking the agent switches to edit mode with just the
+// assistant (left) and the filters (right); closing it returns to the read-only view.
+const AGENT_PANELS = { edit: { left: ['ai' as const], right: ['filters' as const] } };
 
 // Studio's default widgets stay available; the command center's own are added to them.
 const withCustomWidgets = <T extends { widgets: readonly unknown[] }>(defaults: T) => ({
@@ -30,15 +38,23 @@ const withCustomWidgets = <T extends { widgets: readonly unknown[] }>(defaults: 
 // Studio gets its data once, when it starts, so it is mounted only after the numbers have arrived.
 function Studio({ source, note }: { source: CommandCenterData; note: SourceNote }) {
   const data = useMemo(() => buildStudioData(source), [source]);
+  // F21: the dashboard agent's panel, opened on request.
+  const [agentOpen, setAgentOpen] = useState(false);
   // Studio reports changes to the filters, not what they start as, and each visit to this page starts again
   // from the default report: say so, or the first selection would be taken for the starting point.
   useEffect(() => startFrom(commandCenterReport), []);
   return (
     <>
-      <p className="qm-source" data-tone={note.tone} role="status">
-        {note.text}
-      </p>
-      <AgStudioProvider licenseKey={import.meta.env.VITE_AG_STUDIO_LICENSE || undefined}>
+      <div className="qm-source-row">
+        <p className="qm-source" data-tone={note.tone} role="status">
+          {note.text}
+        </p>
+        <Button variant={agentOpen ? 'secondary' : 'primary'} onClick={() => setAgentOpen((open) => !open)} aria-pressed={agentOpen}>
+          {agentOpen ? 'Close the dashboard agent' : 'Ask the dashboard agent'}
+        </Button>
+      </div>
+      {/* AgStudioAiModule turns on Studio's AI Assistant panel; dashboardAgentHarness is our agent (F21). */}
+      <AgStudioProvider modules={AI_MODULES} licenseKey={import.meta.env.VITE_AG_STUDIO_LICENSE || undefined}>
         <AgStudio
           style={{ height: '75vh', width: '100%' }}
           theme={quartermasterStudioTheme}
@@ -46,7 +62,9 @@ function Studio({ source, note }: { source: CommandCenterData; note: SourceNote 
           data={data}
           widgets={withCustomWidgets}
           initialState={commandCenterReport}
-          mode="view"
+          mode={agentOpen ? 'edit' : 'view'}
+          ai={dashboardAgentHarness}
+          panels={agentOpen ? AGENT_PANELS : undefined}
           // Studio does not tell a custom widget that another widget's selection changed the filters, so the
           // widgets that list rows are told here (see widgets/filters-changed.ts).
           onStateUpdated={(event) => reportState(event.state)}

@@ -74,3 +74,13 @@ The transaction pooler (port 6543) never answers a query that waits behind anoth
 ## What is next for P3
 
 The sandbox run above, then F21 (the dashboard agent; if it is cut, show the four widgets cross-filtering). The sponsor report (F22) and reminders (F5) were built by P2.
+
+## F21 dashboard agent (added Nov 9)
+
+Branch `p3/f21-dashboard-agent`. "Ask the dashboard agent" above the widgets switches Studio to edit mode with only the AI Assistant (left) and the filters (right), because Studio offers the AI panel in edit mode only. Closing it returns to the read-only view.
+
+- **Our agent in front of AG's.** The Leonid analyst (`apps/web/src/money/dashboardAgent.ts`) can view the schema, the report and the page, run queries, rename the conversation and `delegate_to` AG's five built-in agents (`lead`, `data`, `page`, `planning`, `widget`). AG's own agents keep their own tools. The analyst asks the lead agent to add a new chart and to leave every existing widget alone, because the widget agent alone can only reconfigure an existing widget. On the first run it overwrote budget burn.
+- **The model key stays on the server.** One adapter serves every agent and posts each turn to `POST /api/dashboard-agent/turn` (treasurer-only, 60 turns per 10 minutes per client, each turn audited as `dashboard_agent.turn`). The route declares the browser's tools to the model but runs none; Studio runs them against the dashboard. No spend, payout or PayPal tool exists in the browser to list.
+- **Checked on the real model on Nov 9.** "Where are we overspending?" added "Spend vs Cap by Category", kept the four widgets, and answered "swag $140 of $1,000; prizes $1,680, no cap set" in about 80 seconds. The first run said "$1.40 of $10.00", because the instructions wrongly said the dashboard data is in cents; it is in dollars (`studio-data.ts` converts once). Fixed.
+- **Tests:** `routes/dashboardAgent.test.ts` (5, with a scripted model) and `money/dashboardAgent.test.ts` (3, with fetch stubbed).
+- **Known limits:** a widget the agent adds is gone after a reload (Studio's state is not saved). With the panel open the widgets are narrower, so budget burn truncates a label. The AG Studio watermark shows until there is a licence key.

@@ -7,6 +7,7 @@ import { approvalsRouter } from './routes/approvals.js';
 import { authRouter } from './routes/auth.js';
 import { checkoutRouter } from './routes/checkout.js';
 import { claimsRouter } from './routes/claims.js';
+import { dashboardAgentRouter } from './routes/dashboardAgent.js';
 import { chatRouter } from './routes/chat.js';
 import { demoRouter } from './routes/demo.js';
 import { eventsRouter } from './routes/events.js';
@@ -33,6 +34,8 @@ export function createApp() {
   app.use('/api/webhooks/paypal', webhookRouter());
   // Before express.json() too: a receipt photo is larger than its 100 kB limit, so the router parses its own bodies.
   app.use('/api/claims', claimsRouter());
+  // Before express.json() too: a dashboard conversation with query results can pass its 100 kB limit.
+  app.use('/api/dashboard-agent', dashboardAgentRouter());
   app.use(express.json());
 
   app.get('/api/health', (_req, res) => {

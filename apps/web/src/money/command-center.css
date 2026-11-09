@@ -10,3 +10,12 @@
   color: var(--color-status-blocked, #c4242a);
   font-weight: 700;
 }
+
+/* The source line and the dashboard agent's button share one row; the button drops below on a phone. */
+.qm-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
