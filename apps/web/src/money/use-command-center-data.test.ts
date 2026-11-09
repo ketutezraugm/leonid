@@ -193,7 +193,7 @@ describe('loadCommandCenter: one request per event at a time', () => {
     const fetchMock = serve();
     await loadCommandCenter(EVENT_A);
 
-    act(() => vi.setSystemTime(Date.now() + 16_000));
+    act(() => vi.setSystemTime(Date.now() + 3_000));
     await loadCommandCenter(EVENT_A);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);

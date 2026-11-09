@@ -73,9 +73,10 @@ async function fetchCommandCenter(eventId?: string | null): Promise<Loaded> {
 
 // One request per event at a time. The Money page starts it (prefetchCommandCenter) while AG Studio's large
 // bundle is still downloading, and the command center then picks up that same request instead of asking
-// again; a second mount (React's StrictMode, a quick tab switch) does too. A settled answer is reused for a
-// short while only, so coming back to the page later shows fresh numbers. A failure is never reused.
-const REUSE_MS = 15_000;
+// again; a second mount (React's StrictMode, a quick tab switch) does too. A settled answer is reused only for
+// that double-mount window, so an approval or a webhook shows on the next visit and a signed-out session never
+// sees an earlier answer for long. A failure is never reused.
+const REUSE_MS = 2_000;
 const requests = new Map<string, { promise: Promise<Loaded>; at: number }>();
 
 export function loadCommandCenter(eventId?: string | null): Promise<Loaded> {
