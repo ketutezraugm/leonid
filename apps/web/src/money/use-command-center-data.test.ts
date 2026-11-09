@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { CommandCenterResponse } from '@quartermaster/shared';
+import { CommandCenterResponse } from '@leonid/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiFailure } from '../shell/api';
 import { sampleCommandCenterData as sample } from './sample-data';

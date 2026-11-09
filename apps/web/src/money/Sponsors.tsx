@@ -5,7 +5,7 @@ import {
   SponsorReportLink,
   SponsorsResponse,
   type SponsorSummary,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { useEffect, useState, type FormEvent } from 'react';
 import { ApiFailure, errorMessage, getJson, sendJson, useFetch } from '../shell/api';
 import { useEvent, withEvent } from '../shell/event';

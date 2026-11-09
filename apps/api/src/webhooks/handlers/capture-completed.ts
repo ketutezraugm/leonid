@@ -27,10 +27,12 @@ const CaptureResource = z.looseObject({
 export const CAPTURE_INCOME_SOURCES = ['ticket', 'donation'] as const;
 export type CaptureIncomeSource = (typeof CAPTURE_INCOME_SOURCES)[number];
 
-const TAG = /^qm:([^:]+):(ticket|donation)(?::([^:]+))?$/;
+// Tags written before the Nov 9 rename start with `qm:`; a checkout paid after the deploy still carries one.
+// ponytail: legacy `qm:` accepted for reading only; drop once no pre-rename checkout can still be paid.
+const TAG = /^(?:leonid|qm):([^:]+):(ticket|donation)(?::([^:]+))?$/;
 
 export function buildCaptureTag(eventId: string, source: CaptureIncomeSource, sponsorId?: string) {
-  return `qm:${eventId}:${source}${sponsorId ? `:${sponsorId}` : ''}`;
+  return `leonid:${eventId}:${source}${sponsorId ? `:${sponsorId}` : ''}`;
 }
 
 export function parseCaptureTag(customId: string | undefined) {
@@ -90,7 +92,7 @@ export function createCaptureCompletedHandler(getDb: () => Db): WebhookHandler {
 
     const tag = parseCaptureTag(capture.custom_id);
     if (!tag) {
-      await unmatched('capture has no valid Quartermaster custom_id tag');
+      await unmatched('capture has no valid Leonid custom_id tag');
       return;
     }
     const [target] = await db.select({ id: events.id }).from(events).where(eq(events.id, tag.eventId));

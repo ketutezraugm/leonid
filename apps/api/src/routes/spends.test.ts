@@ -1,4 +1,4 @@
-import { SpendsResponse } from '@quartermaster/shared';
+import { SpendsResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { ApprovalItem } from '@quartermaster/shared';
+import type { ApprovalItem } from '@leonid/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../ui/Toast';
 import { ApprovalDetail } from './ApprovalDetail';

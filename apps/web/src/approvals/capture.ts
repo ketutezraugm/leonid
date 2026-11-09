@@ -1,4 +1,4 @@
-import type { ApprovalItem } from '@quartermaster/shared';
+import type { ApprovalItem } from '@leonid/shared';
 import { ApiFailure, sendJson } from '../shell/api';
 
 export type CaptureResult =

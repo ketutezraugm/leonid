@@ -1,4 +1,4 @@
-import { EventsResponse, EventSummary, PlanResponse } from '@quartermaster/shared';
+import { EventsResponse, EventSummary, PlanResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';

@@ -1,4 +1,4 @@
-import { PayoutsResponse, type PayoutItem } from '@quartermaster/shared';
+import { PayoutsResponse, type PayoutItem } from '@leonid/shared';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';

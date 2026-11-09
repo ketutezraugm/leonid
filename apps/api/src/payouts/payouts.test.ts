@@ -1,4 +1,4 @@
-import { PayoutsLedgerResponse, PayoutsResponse } from '@quartermaster/shared';
+import { PayoutsLedgerResponse, PayoutsResponse } from '@leonid/shared';
 import { eq } from 'drizzle-orm';
 import express from 'express';
 import request from 'supertest';

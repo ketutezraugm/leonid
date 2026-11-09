@@ -1,4 +1,4 @@
-import { EventSummary, SetMaxSpendRequest } from '@quartermaster/shared';
+import { EventSummary, SetMaxSpendRequest } from '@leonid/shared';
 import { useState, type FormEvent } from 'react';
 import { ApiFailure, errorMessage, sendJson } from '../shell/api';
 import { useEvents, type EventInfo } from '../shell/event';

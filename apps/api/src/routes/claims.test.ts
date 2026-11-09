@@ -1,4 +1,4 @@
-import { ClaimsResponse, ClaimView, CreateVolunteerResponse, VolunteerClaimsResponse } from '@quartermaster/shared';
+import { ClaimsResponse, ClaimView, CreateVolunteerResponse, VolunteerClaimsResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

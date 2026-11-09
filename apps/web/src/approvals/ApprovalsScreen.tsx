@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ApprovalsResponse } from '@quartermaster/shared';
+import { ApprovalsResponse } from '@leonid/shared';
 import { timeAgo } from '../chat/sessions';
 import { errorMessage, useFetch } from '../shell/api';
 import { useShellData } from '../shell/data';

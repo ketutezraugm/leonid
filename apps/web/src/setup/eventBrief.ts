@@ -1,4 +1,4 @@
-import { BOOKING_ITEMS, bookingChoiceText, type BookingItemId } from '@quartermaster/shared';
+import { BOOKING_ITEMS, bookingChoiceText, type BookingItemId } from '@leonid/shared';
 import { formatMoney } from '../ui/money';
 
 // The event setup interview (screen 2): the organizer picks what kind of event it is, answers eight

@@ -1,4 +1,4 @@
-import { CompiledRules } from '@quartermaster/shared';
+import { CompiledRules } from '@leonid/shared';
 
 // The demo's rules, in force until the rules compiler (F8) and the rules table land. Then the confirmed version replaces
 // this constant. The first three are what the treasurer types in the demo script. The PRD gives no figures for the

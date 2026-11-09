@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ApprovalsResponse, TreasuryResponse, WalletStatus } from '@quartermaster/shared';
+import { ApprovalsResponse, TreasuryResponse, WalletStatus } from '@leonid/shared';
 import { useFetch, type Fetched } from './api';
 import { useEvent, withEvent } from './event';
 

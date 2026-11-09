@@ -1,4 +1,4 @@
-import { TreasuryResponse } from '@quartermaster/shared';
+import { TreasuryResponse } from '@leonid/shared';
 import { errorMessage, useFetch } from '../shell/api';
 import { formatMoney } from '../ui/money';
 import { StatusBadge } from '../ui/StatusBadge';

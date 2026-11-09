@@ -1,4 +1,4 @@
-import { PlanResponse, SponsorsResponse } from '@quartermaster/shared';
+import { PlanResponse, SponsorsResponse } from '@leonid/shared';
 import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { toPlanSource } from '../plan/fromApi';
 import type { PlanSponsor } from '../plan/gating';

@@ -1,4 +1,4 @@
-import { SponsorsResponse } from '@quartermaster/shared';
+import { SponsorsResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq, sql } from 'drizzle-orm';

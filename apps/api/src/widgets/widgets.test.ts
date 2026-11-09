@@ -1,4 +1,4 @@
-import { CommandCenterResponse, FundingThermometerResponse, RulesHealthResponse } from '@quartermaster/shared';
+import { CommandCenterResponse, FundingThermometerResponse, RulesHealthResponse } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq, sql } from 'drizzle-orm';

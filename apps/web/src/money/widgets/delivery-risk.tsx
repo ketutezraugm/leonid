@@ -123,18 +123,18 @@ export function DeliveryRisk({ dataMapping, widgetApi }: AgWidgetParams<Delivery
 
   if (!mapped || !keys) {
     return (
-      <p className="qm-delivery__note">Choose the item, its name and its delivery risk to show.</p>
+      <p className="lx-delivery__note">Choose the item, its name and its delivery risk to show.</p>
     );
   }
   const current = loaded && loaded.for === requestKey ? loaded.outcome : null;
-  if (!current) return <p className="qm-delivery__note">Loading deliveries…</p>;
+  if (!current) return <p className="lx-delivery__note">Loading deliveries…</p>;
   if (current === 'error')
-    return <p className="qm-delivery__note">The deliveries could not be loaded.</p>;
+    return <p className="lx-delivery__note">The deliveries could not be loaded.</p>;
 
   const { items, skipped } = toItems(current.rows, keys);
   if (items.length === 0 && skipped === 0) {
     return (
-      <p className="qm-delivery__note">
+      <p className="lx-delivery__note">
         No deliveries to show. Either nothing has been ordered yet, or nothing ordered matches what
         is selected in another widget.
       </p>
@@ -155,29 +155,29 @@ export function DeliveryRisk({ dataMapping, widgetApi }: AgWidgetParams<Delivery
   };
 
   return (
-    <div className="qm-delivery" role="group" aria-label="Delivery risk">
-      <ul className="qm-delivery__counts" aria-label="Deliveries by risk">
+    <div className="lx-delivery" role="group" aria-label="Delivery risk">
+      <ul className="lx-delivery__counts" aria-label="Deliveries by risk">
         {tiles.map(({ risk, count }) => (
-          <li key={risk} className="qm-delivery__count" data-tone={riskView[risk].tone}>
-            <span className="qm-delivery__number">{count}</span>
-            <span className="qm-delivery__label">
-              <span className="qm-delivery__dot" aria-hidden="true" />
+          <li key={risk} className="lx-delivery__count" data-tone={riskView[risk].tone}>
+            <span className="lx-delivery__number">{count}</span>
+            <span className="lx-delivery__label">
+              <span className="lx-delivery__dot" aria-hidden="true" />
               {riskView[risk].label}
             </span>
           </li>
         ))}
       </ul>
       {skipped > 0 && (
-        <p className="qm-delivery__warn" role="status">
+        <p className="lx-delivery__warn" role="status">
           {skipped === 1
             ? '1 item has a risk this widget does not recognise, so it is not counted'
             : `${skipped} items have a risk this widget does not recognise, so they are not counted`}
         </p>
       )}
-      <p className="qm-delivery__scope">
+      <p className="lx-delivery__scope">
         {items.length === 1 ? '1 delivery' : `${items.length} deliveries`}, most urgent first
       </p>
-      <ul className="qm-delivery__list">
+      <ul className="lx-delivery__list">
         {items.map((item, i) => {
           const view = riskView[item.risk];
           const category = item.category;
@@ -186,20 +186,20 @@ export function DeliveryRisk({ dataMapping, widgetApi }: AgWidgetParams<Delivery
           const dates = datesLine(item);
           const body = (
             <>
-              <span className="qm-delivery__head">
-                <span className="qm-delivery__risk">
-                  <span className="qm-delivery__dot" data-tone={view.tone} aria-hidden="true" />
+              <span className="lx-delivery__head">
+                <span className="lx-delivery__risk">
+                  <span className="lx-delivery__dot" data-tone={view.tone} aria-hidden="true" />
                   {view.label}
                 </span>
-                <span className="qm-delivery__name">{item.name}</span>
-                {category && <span className="qm-delivery__category">{category}</span>}
+                <span className="lx-delivery__name">{item.name}</span>
+                {category && <span className="lx-delivery__category">{category}</span>}
               </span>
               {howItStands && (
-                <span className="qm-delivery__timing" data-tone={view.tone}>
+                <span className="lx-delivery__timing" data-tone={view.tone}>
                   {howItStands}
                 </span>
               )}
-              {dates && <span className="qm-delivery__dates">{dates}</span>}
+              {dates && <span className="lx-delivery__dates">{dates}</span>}
             </>
           );
           return (
@@ -207,7 +207,7 @@ export function DeliveryRisk({ dataMapping, widgetApi }: AgWidgetParams<Delivery
               {category ? (
                 <button
                   type="button"
-                  className="qm-delivery__row"
+                  className="lx-delivery__row"
                   aria-pressed={isSelected}
                   aria-label={describeItem(item)}
                   data-dimmed={selected.length > 0 && !isSelected}
@@ -216,7 +216,7 @@ export function DeliveryRisk({ dataMapping, widgetApi }: AgWidgetParams<Delivery
                   {body}
                 </button>
               ) : (
-                <div className="qm-delivery__row" role="group" aria-label={describeItem(item)}>
+                <div className="lx-delivery__row" role="group" aria-label={describeItem(item)}>
                   {body}
                 </div>
               )}

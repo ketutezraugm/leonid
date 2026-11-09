@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { WalletRevokeResponse, type WalletState } from '@quartermaster/shared';
+import { WalletRevokeResponse, type WalletState } from '@leonid/shared';
 import { TreasuryStatus } from '../setup/TreasuryStatus';
 import { ApiFailure, errorMessage, sendJson } from '../shell/api';
 import { useShellData } from '../shell/data';

@@ -4,7 +4,7 @@ import {
   venueEstimate,
   type BookingPayment,
   type VenueBookingSummary,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { venuePickOf } from '../agents/venuePick.js';
 import type { Db } from '../db/client.js';
 import { getEvent } from '../db/events.js';

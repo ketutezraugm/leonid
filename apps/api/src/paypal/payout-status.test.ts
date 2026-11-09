@@ -1,4 +1,4 @@
-import { PayoutItemStatus } from '@quartermaster/shared';
+import { PayoutItemStatus } from '@leonid/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createPayPalClient } from './client.js';
 import { getPayoutBatch, payoutItemStatusOf } from './payout-status.js';

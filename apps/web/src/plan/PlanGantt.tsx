@@ -14,7 +14,7 @@ import { PlanTask } from './PlanTask';
 // (by key) when a sponsor's status changes, so the sponsor labels are recomputed from scratch.
 function PlanGantt({ plan, sponsors }: { plan: PlanSource; sponsors: PlanSponsor[] }) {
   return (
-    <div className="qm-gantt">
+    <div className="lx-gantt">
       <BryntumGantt
         project={{
           taskModelClass: PlanTask,
@@ -48,7 +48,7 @@ function PlanGantt({ plan, sponsors }: { plan: PlanSource; sponsors: PlanSponsor
               const task = record as PlanTask;
               return {
                 tag: 'span',
-                className: 'qm-funding',
+                className: 'lx-funding',
                 text: fundingText(task.fundedBy, task.fundedByPaid),
               };
             },
@@ -60,7 +60,7 @@ function PlanGantt({ plan, sponsors }: { plan: PlanSource; sponsors: PlanSponsor
         taskRenderer={({ taskRecord, renderData }) => {
           const { wrapperCls } = renderData;
           if (typeof wrapperCls !== 'string') {
-            wrapperCls.add(`qm-status-${(taskRecord as PlanTask).status}`);
+            wrapperCls.add(`lx-status-${(taskRecord as PlanTask).status}`);
           }
           return '';
         }}

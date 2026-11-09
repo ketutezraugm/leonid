@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { ReceiptExtraction, type ClaimView, type ClaimVolunteer } from '@quartermaster/shared';
+import { ReceiptExtraction, type ClaimView, type ClaimVolunteer } from '@leonid/shared';
 import type { LanguageModel } from 'ai';
 import { and, desc, eq } from 'drizzle-orm';
 import type { Db } from '../db/client.js';

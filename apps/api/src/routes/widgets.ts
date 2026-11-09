@@ -6,7 +6,7 @@ import {
   PayoutsLedgerResponse,
   RulesHealthResponse,
   WidgetFilter,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { Router, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
 import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.js';

@@ -24,7 +24,7 @@
 - Log in with PayPal: the APIMatic plugin does not cover Identity. Not yet tried against a real login.
 
 ## Gate 2 rehearsal with the real rules (2026-11-02, staging at 8e55b7e)
-Run with `pnpm --filter @quartermaster/api gate2:check`, then `-- --finish <approvalId>`, against staging with the seeded event.
+Run with `pnpm --filter @leonid/api gate2:check`, then `-- --finish <approvalId>`, against staging with the seeded event.
 - $140 swag from the approved vendor: allowed ("within the rules and the unlocked budget"), auto-paid, capture 22G915942B0287409.
 - $420 prize cart: needs approval ("over the 200.00 USD approval threshold"), charged nothing, PayPal order PAYER_ACTION_REQUIRED. After the treasurer approved at PayPal the order read APPROVED; capture 74724507DE504441U; the approval is paid.
 - Kill switch: revoke 200; a spend afterwards refused with 409 no_wallet; `GET /v3/vault/payment-tokens/{id}` answers 404 TOKEN_NOT_FOUND.

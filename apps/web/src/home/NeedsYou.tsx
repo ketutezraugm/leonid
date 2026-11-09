@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { ApprovalItem } from '@quartermaster/shared';
+import type { ApprovalItem } from '@leonid/shared';
 import type { FetchState } from '../shell/api';
 import { useEventPath } from '../shell/event';
 import { Button } from '../ui/Button';

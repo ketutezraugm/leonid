@@ -7,7 +7,7 @@ import {
   ReviewClaimRequest,
   SubmitClaimRequest,
   VolunteerClaimsResponse,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import type { LanguageModel } from 'ai';
 import { eq } from 'drizzle-orm';
 import express, { Router, type Request, type RequestHandler, type Response } from 'express';

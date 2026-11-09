@@ -1,7 +1,7 @@
 import type { LanguageModel } from 'ai';
 import { writeAudit } from '../db/audit.js';
 import type { Db } from '../db/client.js';
-import type { BookingChoice, VenuePick } from '@quartermaster/shared';
+import type { BookingChoice, VenuePick } from '@leonid/shared';
 import type { SearchClient } from '../search/client.js';
 
 // Everything a tool may touch, scoped to one thread and its event by the route. Tools get this by

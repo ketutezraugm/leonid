@@ -1,4 +1,4 @@
-import { SPEND_RECENT_MAX, type SpendsResponse } from '@quartermaster/shared';
+import { SPEND_RECENT_MAX, type SpendsResponse } from '@leonid/shared';
 import { Router } from 'express';
 import { z } from 'zod';
 import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.js';

@@ -1,7 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CheckoutCaptureResponse, CheckoutConfig, CheckoutOrderResponse } from '@quartermaster/shared';
+import { CheckoutCaptureResponse, CheckoutConfig, CheckoutOrderResponse } from '@leonid/shared';
 import { events } from '../db/schema.js';
 import { seedDemoEvent } from '../db/seed.js';
 import { createTestDb } from '../db/testing.js';
@@ -38,7 +38,7 @@ function build(b: Behaviour = {}, limiterMax = 100, captureMax = 100) {
       return (b.create ?? (() => json(201, { id: 'ORD-NEW', status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: 'https://www.sandbox.paypal.com/x' }] })))();
     }
     if (key === 'GET /v2/checkout/orders/ORD-1') {
-      const o = b.order ?? { status: 'APPROVED', customId: `qm:${eventId}:ticket` };
+      const o = b.order ?? { status: 'APPROVED', customId: `leonid:${eventId}:ticket` };
       return json(200, { id: 'ORD-1', status: o.status, purchase_units: [{ reference_id: o.referenceId ?? 'ticket-abc', custom_id: o.customId, amount: { currency_code: 'USD', value: o.value ?? '25.00' } }], links: [] });
     }
     if (key === 'POST /v2/checkout/orders/ORD-1/capture') {
@@ -80,7 +80,7 @@ describe('POST /api/checkout/:eventId/orders', () => {
     const res = await request(app).post(`/api/checkout/${eventId}/orders`).send({ kind: 'ticket' }).expect(201);
     expect(CheckoutOrderResponse.parse(res.body)).toEqual({ orderId: 'ORD-NEW' });
     const unit = calls.find((c) => c.key === 'POST /v2/checkout/orders')!.body!.purchase_units[0]!;
-    expect(unit).toMatchObject({ custom_id: `qm:${eventId}:ticket`, amount: { currency_code: 'USD', value: '25.00' } });
+    expect(unit).toMatchObject({ custom_id: `leonid:${eventId}:ticket`, amount: { currency_code: 'USD', value: '25.00' } });
   });
 
   it('ignores an amount sent with a ticket, so the price cannot be chosen by the buyer', async () => {
@@ -93,7 +93,7 @@ describe('POST /api/checkout/:eventId/orders', () => {
     const { app, calls } = build();
     await request(app).post(`/api/checkout/${eventId}/orders`).send({ kind: 'donation', amountMinor: 7_550 }).expect(201);
     expect(calls.find((c) => c.key === 'POST /v2/checkout/orders')!.body!.purchase_units[0]!).toMatchObject({
-      custom_id: `qm:${eventId}:donation`,
+      custom_id: `leonid:${eventId}:donation`,
       amount: { value: '75.50' },
     });
     for (const bad of [{ kind: 'donation', amountMinor: 99 }, { kind: 'donation', amountMinor: 50_001 }, { kind: 'donation', amountMinor: 10.5 }, { kind: 'donation' }, { kind: 'refund' }, {}]) {
@@ -144,7 +144,7 @@ describe('POST /api/checkout/:eventId/orders/:orderId/capture', () => {
   });
 
   it('does not touch an order that belongs to another event or has no event tag, and says only that it is not found', async () => {
-    for (const customId of [`qm:${crypto.randomUUID()}:ticket`, undefined, 'something-else']) {
+    for (const customId of [`leonid:${crypto.randomUUID()}:ticket`, undefined, 'something-else']) {
       const { app, calls } = build({ order: { status: 'APPROVED', customId } });
       await request(app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(404);
       expect(paypalPosts(calls, '/capture')).toHaveLength(0);
@@ -152,11 +152,11 @@ describe('POST /api/checkout/:eventId/orders/:orderId/capture', () => {
   });
 
   it('does not capture an order that carries the tag but is not what this route would create', async () => {
-    const mine = `qm:${eventId}:ticket`;
+    const mine = `leonid:${eventId}:ticket`;
     const cases = [
       { status: 'APPROVED', customId: mine, value: '1.00' }, // not the ticket price
       { status: 'APPROVED', customId: mine, referenceId: 'cart-1' }, // not our reference
-      { status: 'APPROVED', customId: `qm:${eventId}:donation`, value: '0.50', referenceId: 'donation-x' }, // under the donation minimum
+      { status: 'APPROVED', customId: `leonid:${eventId}:donation`, value: '0.50', referenceId: 'donation-x' }, // under the donation minimum
       { status: 'APPROVED', customId: `${mine}:${crypto.randomUUID()}` }, // a sponsor payment, not a checkout
     ];
     for (const order of cases) {
@@ -165,7 +165,7 @@ describe('POST /api/checkout/:eventId/orders/:orderId/capture', () => {
       expect(paypalPosts(calls, '/capture')).toHaveLength(0);
     }
     // a donation in range does pass
-    const ok = build({ order: { status: 'APPROVED', customId: `qm:${eventId}:donation`, value: '75.50', referenceId: 'donation-x' } });
+    const ok = build({ order: { status: 'APPROVED', customId: `leonid:${eventId}:donation`, value: '75.50', referenceId: 'donation-x' } });
     await request(ok.app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(200);
   });
 
@@ -177,13 +177,13 @@ describe('POST /api/checkout/:eventId/orders/:orderId/capture', () => {
   });
 
   it('does not capture an order the buyer has not approved', async () => {
-    const { app, calls } = build({ order: { status: 'CREATED', customId: `qm:${eventId}:ticket` } });
+    const { app, calls } = build({ order: { status: 'CREATED', customId: `leonid:${eventId}:ticket` } });
     await request(app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(409);
     expect(paypalPosts(calls, '/capture')).toHaveLength(0);
   });
 
   it('answers paid without a second capture when the order is already completed (a double click)', async () => {
-    const { app, calls } = build({ order: { status: 'COMPLETED', customId: `qm:${eventId}:ticket` } });
+    const { app, calls } = build({ order: { status: 'COMPLETED', customId: `leonid:${eventId}:ticket` } });
     const res = await request(app).post(`/api/checkout/${eventId}/orders/ORD-1/capture`).expect(200);
     expect(res.body).toEqual({ status: 'paid' });
     expect(paypalPosts(calls, '/capture')).toHaveLength(0);

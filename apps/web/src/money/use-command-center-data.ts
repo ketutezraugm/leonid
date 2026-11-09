@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CommandCenterResponse, type WidgetSource } from '@quartermaster/shared';
+import { CommandCenterResponse, type WidgetSource } from '@leonid/shared';
 import { ApiFailure, getJson } from '../shell/api';
 import { sampleCommandCenterData } from './sample-data';
 import type { CommandCenterData } from './studio-data';

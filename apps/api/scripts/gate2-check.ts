@@ -1,9 +1,9 @@
 // Gate 2 rehearsal against a deployed server (default: staging), through its own HTTP API.
 //
-//   pnpm --filter @quartermaster/api gate2:check                         $140 auto-pays, $420 opens an approval
-//   pnpm --filter @quartermaster/api gate2:check -- --finish <approvalId> capture it, then the kill switch
-//   pnpm --filter @quartermaster/api gate2:check -- --finish <id> --keep-wallet    capture only, no kill switch
-//   pnpm --filter @quartermaster/api gate2:check -- --connect             a fresh link to connect the agent wallet
+//   pnpm --filter @leonid/api gate2:check                         $140 auto-pays, $420 opens an approval
+//   pnpm --filter @leonid/api gate2:check -- --finish <approvalId> capture it, then the kill switch
+//   pnpm --filter @leonid/api gate2:check -- --finish <id> --keep-wallet    capture only, no kill switch
+//   pnpm --filter @leonid/api gate2:check -- --connect             a fresh link to connect the agent wallet
 //
 // Between the two runs the treasurer approves the $420 order in the PayPal page this script prints.
 // Needs STAGING_TREASURER_TOKEN in .env, and DEMO_SPEND=true on the server (POST /api/demo/spend).
@@ -98,7 +98,7 @@ async function beats() {
     check((await auditOutcome(asked)) === 'needs_approval', 'audit: $420 recorded as needs_approval');
   }
   if (opened) {
-    console.log(`\nNow approve the $420 order. Open in a private window and log in as the sandbox PERSONAL payer:\n  https://www.sandbox.paypal.com/checkoutnow?token=${String(held.json.paypalOrderId)}\n(The page may keep reloading after you approve; that is cosmetic.) Then run:\n  pnpm --filter @quartermaster/api gate2:check -- --finish ${String(held.json.approvalId)}`);
+    console.log(`\nNow approve the $420 order. Open in a private window and log in as the sandbox PERSONAL payer:\n  https://www.sandbox.paypal.com/checkoutnow?token=${String(held.json.paypalOrderId)}\n(The page may keep reloading after you approve; that is cosmetic.) Then run:\n  pnpm --filter @leonid/api gate2:check -- --finish ${String(held.json.approvalId)}`);
   }
 }
 

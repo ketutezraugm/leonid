@@ -6,7 +6,7 @@ import {
   type BookingPayment,
   VenueBookingResponse,
   type VenueBookingSummary,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { formatMoney } from '../ui/money';
 import { loadPayPalSdk } from '../lib/paypalSdk';
 import { rememberReturnPath } from '../shell/returnPath';

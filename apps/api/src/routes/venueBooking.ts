@@ -5,7 +5,7 @@ import type {
   VenueBookingHistoryResponse,
   VenueBookingPayResponse,
   VenueBookingResponse,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { DbNotConfiguredError, getDb, type Db } from '../db/client.js';
 import { getVisibleThread, listOwnerEventThreads } from '../db/mandates.js';

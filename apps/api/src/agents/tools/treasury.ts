@@ -1,4 +1,4 @@
-import { InvoiceDraft } from '@quartermaster/shared';
+import { InvoiceDraft } from '@leonid/shared';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { getEvent, listSponsors } from '../../db/events.js';

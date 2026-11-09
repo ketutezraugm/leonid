@@ -1,7 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
-import { TreasuryResponse } from '@quartermaster/shared';
+import { TreasuryResponse } from '@leonid/shared';
 import { createPayPalClient } from '../paypal/client.js';
 import { fromPayPalSignedMoney } from '../paypal/money.js';
 import { treasuryRouter } from './treasury.js';

@@ -1,4 +1,4 @@
-import type { SponsorReportView } from '@quartermaster/shared';
+import type { SponsorReportView } from '@leonid/shared';
 import { generateText, type LanguageModel } from 'ai';
 
 // The short summary at the top of a sponsor report. The report's figures are computed by code (build.ts); a model only phrases

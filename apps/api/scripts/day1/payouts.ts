@@ -1,7 +1,7 @@
 // Day-1 test (PRD §14, P3): send one Payouts batch to a PayPal recipient and confirm the batch succeeds
 // and PayPal generates PAYMENT.PAYOUTSBATCH.SUCCESS.
 //
-//   pnpm --filter @quartermaster/api day1:payouts
+//   pnpm --filter @leonid/api day1:payouts
 //   flags: --batch-id <stable id>  --amount-cents 100  --wait-minutes 3
 //
 // NOT production code: it creates a sandbox payout directly. Production payouts are created only by
@@ -66,7 +66,7 @@ export function buildPayoutBody(
   return {
     sender_batch_header: {
       sender_batch_id: opts.senderBatchId,
-      email_subject: 'Quartermaster day-1 test payout',
+      email_subject: 'Leonid day-1 test payout',
       email_message: 'Sandbox test payout.',
     },
     items: [
@@ -74,7 +74,7 @@ export function buildPayoutBody(
         recipient_type: 'EMAIL',
         receiver: opts.paypalEmail,
         amount: { currency: 'USD', value: toPayPalValue(opts.amountCents, 'USD') },
-        note: 'Quartermaster day-1 test (PayPal)',
+        note: 'Leonid day-1 test (PayPal)',
         sender_item_id: `${opts.senderBatchId}-paypal`.slice(0, 63),
         recipient_wallet: 'PAYPAL',
       },

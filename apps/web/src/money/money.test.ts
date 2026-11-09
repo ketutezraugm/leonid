@@ -4,7 +4,7 @@ import {
   FundingThermometerData,
   PayoutsLedgerData,
   RulesHealthData,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { describe, expect, it } from 'vitest';
 import { commandCenterReport } from './initial-report';
 import { sampleCommandCenterData as sample } from './sample-data';

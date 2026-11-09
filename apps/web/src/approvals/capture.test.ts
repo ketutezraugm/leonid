@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ApprovalItem } from '@quartermaster/shared';
+import type { ApprovalItem } from '@leonid/shared';
 import { approvalTitle, captureApproval, refusalMessage, waitingItems } from './capture';
 
 afterEach(() => vi.unstubAllGlobals());

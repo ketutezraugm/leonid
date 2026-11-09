@@ -1,8 +1,8 @@
 // Day-1 test (PRD §14, P3): create, send and pay an invoice between two sandbox accounts, then
 // confirm PayPal generated INVOICING.INVOICE.PAID. Fallback if it fails: Orders checkout link.
 //
-//   pnpm --filter @quartermaster/api day1:invoicing                       create + send, then wait for payment
-//   pnpm --filter @quartermaster/api day1:invoicing --invoice-id INV2-... resume watching an existing invoice
+//   pnpm --filter @leonid/api day1:invoicing                       create + send, then wait for payment
+//   pnpm --filter @leonid/api day1:invoicing --invoice-id INV2-... resume watching an existing invoice
 //   flags: --amount-cents 100  --wait-minutes 10  --no-wait
 
 import { pathToFileURL } from 'node:url';
@@ -52,10 +52,10 @@ export function buildInvoiceBody(recipientEmail: string, amountCents: number, to
     detail: {
       currency_code: 'USD',
       invoice_date: today.toISOString().slice(0, 10),
-      note: 'Quartermaster day-1 sandbox test. Not a real invoice.',
+      note: 'Leonid day-1 sandbox test. Not a real invoice.',
       payment_term: { term_type: 'DUE_ON_RECEIPT' },
     },
-    invoicer: { business_name: 'Quartermaster Day-1 Test' },
+    invoicer: { business_name: 'Leonid Day-1 Test' },
     primary_recipients: [
       {
         billing_info: {
@@ -130,7 +130,7 @@ export async function runInvoicing(
         z.object({}).passthrough(),
         {
           body: {
-            subject: 'Quartermaster day-1 test invoice',
+            subject: 'Leonid day-1 test invoice',
             note: 'Sandbox test. Please pay from your sandbox personal account.',
             send_to_invoicer: true,
             send_to_recipient: true,

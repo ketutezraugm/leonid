@@ -1,4 +1,4 @@
-import { ClaimsResponse, ClaimView, CreateVolunteerResponse } from '@quartermaster/shared';
+import { ClaimsResponse, ClaimView, CreateVolunteerResponse } from '@leonid/shared';
 import { useEffect, useState, type FormEvent } from 'react';
 import { ClaimList } from '../claims/ClaimList';
 import { ApiFailure, errorMessage, sendJson, useFetch } from '../shell/api';

@@ -1,15 +1,15 @@
 /* Delivery risk. Colours come from the design tokens (the status colours for late, at risk, on track and no
    date yet); the fallbacks only keep it readable on a branch that predates them. Meaning never rests on colour
    alone: every risk is written out, and the dot is decoration. */
-.qm-delivery {
-  --qm-blocked: var(--color-status-blocked, #c4242a);
-  --qm-risk: var(--color-status-risk, #b26a00);
-  --qm-done: var(--color-status-done, #2e7d32);
-  --qm-pending: var(--color-status-pending, #8a948e);
-  --qm-text: var(--color-text, #15163a);
-  --qm-muted: var(--color-muted, #56625b);
-  --qm-border: var(--color-border, #e1e6e2);
-  --qm-focus: var(--color-accent, #2b2670);
+.lx-delivery {
+  --lx-blocked: var(--color-status-blocked, #c4242a);
+  --lx-risk: var(--color-status-risk, #b26a00);
+  --lx-done: var(--color-status-done, #2e7d32);
+  --lx-pending: var(--color-status-pending, #8a948e);
+  --lx-text: var(--color-text, #15163a);
+  --lx-muted: var(--color-muted, #56625b);
+  --lx-border: var(--color-border, #e1e6e2);
+  --lx-focus: var(--color-accent, #2b2670);
 
   box-sizing: border-box;
   display: flex;
@@ -18,19 +18,19 @@
   height: 100%;
   padding: 4px 2px;
   overflow: auto;
-  color: var(--qm-text);
+  color: var(--lx-text);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 14px;
 }
 
-.qm-delivery__note {
+.lx-delivery__note {
   margin: 0;
   padding: 16px;
   color: var(--color-muted, #56625b);
   font-family: var(--font-sans, system-ui, sans-serif);
 }
 
-.qm-delivery__counts {
+.lx-delivery__counts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
@@ -39,68 +39,68 @@
   list-style: none;
 }
 
-.qm-delivery__count {
+.lx-delivery__count {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  border: 1px solid var(--qm-border);
+  border: 1px solid var(--lx-border);
   border-radius: 6px;
 }
 
-.qm-delivery__number {
+.lx-delivery__number {
   font-size: 22px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   line-height: 1.1;
 }
 
-.qm-delivery__label {
+.lx-delivery__label {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
 }
 
-.qm-delivery__dot {
+.lx-delivery__dot {
   display: inline-block;
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--qm-pending);
+  background: var(--lx-pending);
 }
 
-.qm-delivery [data-tone='blocked'] .qm-delivery__dot,
-.qm-delivery__dot[data-tone='blocked'] {
-  background: var(--qm-blocked);
+.lx-delivery [data-tone='blocked'] .lx-delivery__dot,
+.lx-delivery__dot[data-tone='blocked'] {
+  background: var(--lx-blocked);
 }
 
-.qm-delivery [data-tone='risk'] .qm-delivery__dot,
-.qm-delivery__dot[data-tone='risk'] {
-  background: var(--qm-risk);
+.lx-delivery [data-tone='risk'] .lx-delivery__dot,
+.lx-delivery__dot[data-tone='risk'] {
+  background: var(--lx-risk);
 }
 
-.qm-delivery [data-tone='done'] .qm-delivery__dot,
-.qm-delivery__dot[data-tone='done'] {
-  background: var(--qm-done);
+.lx-delivery [data-tone='done'] .lx-delivery__dot,
+.lx-delivery__dot[data-tone='done'] {
+  background: var(--lx-done);
 }
 
-.qm-delivery__scope {
+.lx-delivery__scope {
   margin: 0;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 12px;
 }
 
-.qm-delivery__warn {
+.lx-delivery__warn {
   margin: 0;
-  color: var(--qm-blocked);
+  color: var(--lx-blocked);
   font-size: 12px;
   font-weight: 700;
 }
 
-.qm-delivery__list {
+.lx-delivery__list {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -111,7 +111,7 @@
 
 /* An item is two lines: what it is and how it stands, then the days. Items with a category are buttons that
    filter the other widgets by it; items without one are plain text. */
-.qm-delivery__row {
+.lx-delivery__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -130,32 +130,32 @@
   box-sizing: border-box;
 }
 
-button.qm-delivery__row {
+button.lx-delivery__row {
   cursor: pointer;
   transition:
     opacity 150ms ease,
     background-color 150ms ease;
 }
 
-button.qm-delivery__row:hover {
+button.lx-delivery__row:hover {
   background: var(--color-surface-sunken, #e8ede9);
 }
 
-button.qm-delivery__row:focus-visible {
-  outline: 2px solid var(--qm-focus);
+button.lx-delivery__row:focus-visible {
+  outline: 2px solid var(--lx-focus);
   outline-offset: 2px;
 }
 
-.qm-delivery__row[aria-pressed='true'] {
-  border-color: var(--qm-focus);
+.lx-delivery__row[aria-pressed='true'] {
+  border-color: var(--lx-focus);
   background: var(--color-accent-soft, #e1e9e3);
 }
 
-.qm-delivery__row[data-dimmed='true'] {
+.lx-delivery__row[data-dimmed='true'] {
   opacity: 0.5;
 }
 
-.qm-delivery__head {
+.lx-delivery__head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -164,42 +164,42 @@ button.qm-delivery__row:focus-visible {
   min-width: 0;
 }
 
-.qm-delivery__risk {
+.lx-delivery__risk {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-weight: 700;
 }
 
-.qm-delivery__name {
+.lx-delivery__name {
   font-weight: 600;
 }
 
-.qm-delivery__category {
-  color: var(--qm-muted);
+.lx-delivery__category {
+  color: var(--lx-muted);
   text-transform: capitalize;
 }
 
-.qm-delivery__timing {
+.lx-delivery__timing {
   grid-area: timing;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.qm-delivery__timing[data-tone='blocked'] {
-  color: var(--qm-blocked);
+.lx-delivery__timing[data-tone='blocked'] {
+  color: var(--lx-blocked);
 }
 
-.qm-delivery__dates {
+.lx-delivery__dates {
   grid-area: dates;
-  color: var(--qm-muted);
+  color: var(--lx-muted);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  button.qm-delivery__row {
+  button.lx-delivery__row {
     transition: none;
   }
 }

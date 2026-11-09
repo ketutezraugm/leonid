@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from 'drizzle-orm';
-import type { CreateEventRequest, EventSummary } from '@quartermaster/shared';
+import type { CreateEventRequest, EventSummary } from '@leonid/shared';
 import { writeAudit } from './audit.js';
 import type { Db } from './client.js';
 import {

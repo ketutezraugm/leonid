@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VenueCandidate } from '@quartermaster/shared';
+import type { VenueCandidate } from '@leonid/shared';
 import { generateVenues } from '../../scripts/generate-venues.js';
 import { verifyCandidate } from '../agents/venueScout.js';
 import {

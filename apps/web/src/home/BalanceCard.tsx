@@ -1,4 +1,4 @@
-import { BudgetBurnResponse, FundingThermometerResponse, TreasuryResponse } from '@quartermaster/shared';
+import { BudgetBurnResponse, FundingThermometerResponse, TreasuryResponse } from '@leonid/shared';
 import { errorMessage, useFetch } from '../shell/api';
 import { useEvent, withEvent } from '../shell/event';
 import { BudgetBar } from '../ui/BudgetBar';

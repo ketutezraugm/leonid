@@ -1,4 +1,4 @@
-import { CheckoutCaptureResponse, CheckoutOrderResponse, type CreateCheckoutOrderRequest } from '@quartermaster/shared';
+import { CheckoutCaptureResponse, CheckoutOrderResponse, type CreateCheckoutOrderRequest } from '@leonid/shared';
 import { sendJson } from '../shell/api';
 
 // The public checkout endpoints (packages/shared/src/checkout.ts); the config is read in pages/Checkout.tsx. No login; the server sets every price.

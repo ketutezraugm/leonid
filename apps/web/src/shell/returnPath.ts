@@ -1,4 +1,4 @@
-const KEY = 'quartermaster.returnPath';
+const KEY = 'leonid.returnPath';
 
 // PayPal always redirects back to "/", so a flow that left from a deeper page notes where to resume.
 // Storage can throw (private windows, blocked data); the person then just lands on Event home.

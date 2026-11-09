@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import type { ChecklistItem } from '@quartermaster/shared';
+import type { ChecklistItem } from '@leonid/shared';
 
 const marks: Record<ChecklistItem['status'], { symbol: string; label: string }> = {
   pending: { symbol: '○', label: 'To do' },

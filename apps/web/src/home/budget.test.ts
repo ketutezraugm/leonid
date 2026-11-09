@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BudgetBurnData, FundingThermometerData, TreasuryResponse } from '@quartermaster/shared';
+import type { BudgetBurnData, FundingThermometerData, TreasuryResponse } from '@leonid/shared';
 import { eventBudgetFigures, paypalBalance } from './budget';
 
 const AS_OF = '2027-01-26T12:00:00.000Z';

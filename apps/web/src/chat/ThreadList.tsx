@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent } from 'react';
-import type { ChatThreadSummary } from '@quartermaster/shared';
+import type { ChatThreadSummary } from '@leonid/shared';
 import { timeAgo } from './sessions';
 
 export function ThreadList({

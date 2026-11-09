@@ -1,5 +1,5 @@
 {
-  "name": "@quartermaster/web",
+  "name": "@leonid/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -26,7 +26,7 @@
     "@ai-sdk/react": "4.0.158",
     "@bryntum/gantt": "npm:@bryntum/gantt-trial@7.3.7",
     "@bryntum/gantt-react": "7.3.7",
-    "@quartermaster/shared": "workspace:*",
+    "@leonid/shared": "workspace:*",
     "ag-grid-community": "36.2.0",
     "ag-grid-react": "36.2.0",
     "ag-studio": "3.0.0",

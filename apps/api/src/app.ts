@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
-import type { HealthResponse } from '@quartermaster/shared';
+import type { HealthResponse } from '@leonid/shared';
 import { approvalsRouter } from './routes/approvals.js';
 import { authRouter } from './routes/auth.js';
 import { checkoutRouter } from './routes/checkout.js';

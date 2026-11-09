@@ -5,7 +5,7 @@ import {
   type DeliveryRiskItem,
   type RuleResult,
   type WidgetFilter,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import type { Db } from '../db/client.js';
 import { getEvent, listSponsors } from '../db/events.js';
 

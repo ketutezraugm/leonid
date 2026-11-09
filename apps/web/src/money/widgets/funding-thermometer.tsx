@@ -79,20 +79,20 @@ export function FundingThermometer({
 
   if (!mapped || !keys) {
     return (
-      <p className="qm-thermo__note">
+      <p className="lx-thermo__note">
         Choose a sponsor and the pledged, invoiced and cleared amounts.
       </p>
     );
   }
   const current = loaded && loaded.for === requestKey ? loaded.outcome : null;
-  if (!current) return <p className="qm-thermo__note">Loading funding…</p>;
+  if (!current) return <p className="lx-thermo__note">Loading funding…</p>;
   if (current === 'error')
-    return <p className="qm-thermo__note">The funding figures could not be loaded.</p>;
+    return <p className="lx-thermo__note">The funding figures could not be loaded.</p>;
 
   const bars = toBars(current.rows, keys);
   if (bars.length === 0) {
     return (
-      <p className="qm-thermo__note">
+      <p className="lx-thermo__note">
         No sponsors yet. Draft your sponsor invoices to start the thermometer.
       </p>
     );
@@ -107,58 +107,58 @@ export function FundingThermometer({
   };
 
   return (
-    <div className="qm-thermo" role="group" aria-label="Funding by sponsor">
-      <p className="qm-thermo__summary">
+    <div className="lx-thermo" role="group" aria-label="Funding by sponsor">
+      <p className="lx-thermo__summary">
         <strong>{formatDollars(totals.cleared)}</strong> cleared of {formatDollars(totals.pledged)}{' '}
         pledged
       </p>
-      <ul className="qm-thermo__legend" aria-label="Legend">
+      <ul className="lx-thermo__legend" aria-label="Legend">
         <li>
-          <span className="qm-thermo__swatch qm-thermo__swatch--cleared" aria-hidden="true" />
+          <span className="lx-thermo__swatch lx-thermo__swatch--cleared" aria-hidden="true" />
           Cleared, spendable
         </li>
         <li>
-          <span className="qm-thermo__swatch qm-thermo__swatch--outstanding" aria-hidden="true" />
+          <span className="lx-thermo__swatch lx-thermo__swatch--outstanding" aria-hidden="true" />
           Invoiced, not yet paid
         </li>
         <li>
-          <span className="qm-thermo__swatch qm-thermo__swatch--uninvoiced" aria-hidden="true" />
+          <span className="lx-thermo__swatch lx-thermo__swatch--uninvoiced" aria-hidden="true" />
           Pledged, not yet invoiced
         </li>
       </ul>
-      <ul className="qm-thermo__list">
+      <ul className="lx-thermo__list">
         {bars.map((bar) => {
           const isSelected = selected.includes(bar.name);
           return (
             <li key={bar.name}>
               <button
                 type="button"
-                className="qm-thermo__row"
+                className="lx-thermo__row"
                 aria-pressed={isSelected}
                 aria-label={describeBar(bar)}
                 data-dimmed={selected.length > 0 && !isSelected}
                 onClick={() => toggle(bar.name)}
               >
-                <span className="qm-thermo__name">{bar.name}</span>
-                <span className="qm-thermo__lane" aria-hidden="true">
-                  <span className="qm-thermo__track" style={{ width: percent(bar.trackShare) }}>
+                <span className="lx-thermo__name">{bar.name}</span>
+                <span className="lx-thermo__lane" aria-hidden="true">
+                  <span className="lx-thermo__track" style={{ width: percent(bar.trackShare) }}>
                     <span
-                      className="qm-thermo__seg qm-thermo__seg--cleared"
+                      className="lx-thermo__seg lx-thermo__seg--cleared"
                       style={{ width: percent(bar.clearedShare) }}
                     />
                     <span
-                      className="qm-thermo__seg qm-thermo__seg--outstanding"
+                      className="lx-thermo__seg lx-thermo__seg--outstanding"
                       style={{ width: percent(bar.outstandingShare) }}
                     />
                     <span
-                      className="qm-thermo__seg qm-thermo__seg--uninvoiced"
+                      className="lx-thermo__seg lx-thermo__seg--uninvoiced"
                       style={{ width: percent(bar.uninvoicedShare) }}
                     />
                   </span>
                 </span>
-                <span className="qm-thermo__figures">
+                <span className="lx-thermo__figures">
                   {formatDollars(bar.cleared)}{' '}
-                  <span className="qm-thermo__of">of {formatDollars(bar.pledged)}</span>
+                  <span className="lx-thermo__of">of {formatDollars(bar.pledged)}</span>
                 </span>
               </button>
             </li>

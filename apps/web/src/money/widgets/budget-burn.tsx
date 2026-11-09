@@ -78,17 +78,17 @@ export function BudgetBurn({ dataMapping, widgetApi }: AgWidgetParams<BudgetBurn
   }, [mapped, requestKey, categoryField, capField, spentField, committedField, widgetApi]);
 
   if (!mapped || !keys) {
-    return <p className="qm-burn__note">Choose a category and the spent and committed amounts.</p>;
+    return <p className="lx-burn__note">Choose a category and the spent and committed amounts.</p>;
   }
   const current = loaded && loaded.for === requestKey ? loaded.outcome : null;
-  if (!current) return <p className="qm-burn__note">Loading budget…</p>;
+  if (!current) return <p className="lx-burn__note">Loading budget…</p>;
   if (current === 'error')
-    return <p className="qm-burn__note">The budget figures could not be loaded.</p>;
+    return <p className="lx-burn__note">The budget figures could not be loaded.</p>;
 
   const bars = toBars(current.rows, keys);
   if (bars.length === 0) {
     return (
-      <p className="qm-burn__note">
+      <p className="lx-burn__note">
         No budget categories yet. Add categories when you set up the event.
       </p>
     );
@@ -103,33 +103,33 @@ export function BudgetBurn({ dataMapping, widgetApi }: AgWidgetParams<BudgetBurn
   };
 
   return (
-    <div className="qm-burn" role="group" aria-label="Budget by category">
-      <p className="qm-burn__summary">
+    <div className="lx-burn" role="group" aria-label="Budget by category">
+      <p className="lx-burn__summary">
         <strong>{formatDollars(totals.used)}</strong> spent and committed
         {totals.capTotal !== null && ` of ${formatDollars(totals.capTotal)} in category caps`}
       </p>
       {totals.overCount > 0 && (
-        <p className="qm-burn__alert" role="status">
+        <p className="lx-burn__alert" role="status">
           {totals.overCount === 1
             ? '1 category is over its cap'
             : `${totals.overCount} categories are over their cap`}
         </p>
       )}
-      <ul className="qm-burn__legend" aria-label="Legend">
+      <ul className="lx-burn__legend" aria-label="Legend">
         <li>
-          <span className="qm-burn__swatch qm-burn__swatch--spent" aria-hidden="true" />
+          <span className="lx-burn__swatch lx-burn__swatch--spent" aria-hidden="true" />
           Spent, captured by PayPal
         </li>
         <li>
-          <span className="qm-burn__swatch qm-burn__swatch--committed" aria-hidden="true" />
+          <span className="lx-burn__swatch lx-burn__swatch--committed" aria-hidden="true" />
           Committed, approved not yet captured
         </li>
         <li>
-          <span className="qm-burn__swatch qm-burn__swatch--cap" aria-hidden="true" />
+          <span className="lx-burn__swatch lx-burn__swatch--cap" aria-hidden="true" />
           Cap, drawn when exceeded
         </li>
       </ul>
-      <ul className="qm-burn__list">
+      <ul className="lx-burn__list">
         {bars.map((bar) => {
           const isSelected = selected.includes(bar.category);
           const verdict = capNote(bar);
@@ -137,35 +137,35 @@ export function BudgetBurn({ dataMapping, widgetApi }: AgWidgetParams<BudgetBurn
             <li key={bar.category}>
               <button
                 type="button"
-                className="qm-burn__row"
+                className="lx-burn__row"
                 aria-pressed={isSelected}
                 aria-label={describeBar(bar)}
                 data-dimmed={selected.length > 0 && !isSelected}
                 onClick={() => toggle(bar.category)}
               >
-                <span className="qm-burn__name">{bar.category}</span>
-                <span className="qm-burn__lane" aria-hidden="true">
-                  <span className="qm-burn__track" style={{ width: percent(bar.trackShare) }}>
+                <span className="lx-burn__name">{bar.category}</span>
+                <span className="lx-burn__lane" aria-hidden="true">
+                  <span className="lx-burn__track" style={{ width: percent(bar.trackShare) }}>
                     <span
-                      className="qm-burn__seg qm-burn__seg--spent"
+                      className="lx-burn__seg lx-burn__seg--spent"
                       style={{ width: percent(bar.spentShare) }}
                     />
                     <span
-                      className="qm-burn__seg qm-burn__seg--committed"
+                      className="lx-burn__seg lx-burn__seg--committed"
                       style={{ width: percent(bar.committedShare) }}
                     />
                     {bar.over && bar.capShare !== null && (
-                      <span className="qm-burn__capmark" style={{ left: percent(bar.capShare) }} />
+                      <span className="lx-burn__capmark" style={{ left: percent(bar.capShare) }} />
                     )}
                   </span>
                 </span>
-                <span className="qm-burn__figures">
+                <span className="lx-burn__figures">
                   {formatDollars(bar.used)}
                   {bar.cap !== null && (
-                    <span className="qm-burn__of"> of {formatDollars(bar.cap)}</span>
+                    <span className="lx-burn__of"> of {formatDollars(bar.cap)}</span>
                   )}
                 </span>
-                <span className="qm-burn__verdict" data-tone={verdict.tone}>
+                <span className="lx-burn__verdict" data-tone={verdict.tone}>
                   {verdict.text}
                 </span>
               </button>

@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { AskUserInput } from '@quartermaster/shared';
+import { AskUserInput } from '@leonid/shared';
 import { auditedExecute, type AgentContext } from '../context.js';
 
 export const ASK_USER_TOOL = 'ask_user';

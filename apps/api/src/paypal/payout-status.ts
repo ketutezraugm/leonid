@@ -1,4 +1,4 @@
-import type { PayoutItemStatus } from '@quartermaster/shared';
+import type { PayoutItemStatus } from '@leonid/shared';
 import { z } from 'zod';
 import type { PayPalClient } from './client.js';
 

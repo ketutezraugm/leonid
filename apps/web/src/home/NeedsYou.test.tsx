@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import type { ApprovalItem } from '@quartermaster/shared';
+import type { ApprovalItem } from '@leonid/shared';
 import { NeedsYou } from './NeedsYou';
 
 const item = (id: string, createdAt: string): ApprovalItem => ({

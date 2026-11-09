@@ -18,6 +18,6 @@ Owner: P4 (design system), and each screen's feature owner.
   - Claims: must be mobile-friendly, because volunteers snap receipts on a phone.
   - Sponsor report: public and shareable at `/report/:sponsorId`.
 - The browser talks only to our `/api`. The PayPal JS SDK (client ID only) is the one PayPal surface allowed in the web app.
-- Request and response types come from `@quartermaster/shared`. Parse API responses with its zod schemas.
+- Request and response types come from `@leonid/shared`. Parse API responses with its zod schemas.
 - Money displays come from integer cents through one shared formatter.
 - No third-party logos or copyrighted assets, because the demo video must avoid trademarks.

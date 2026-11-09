@@ -9,7 +9,7 @@ import {
   type ChatEventRef,
   type ChatThreadListResponse,
   type ChatThreadResponse,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { createOrchestrator } from '../agents/orchestrator.js';
 import { currentTreasurer, ownerOf, requireTreasurer } from '../auth/treasurer.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';

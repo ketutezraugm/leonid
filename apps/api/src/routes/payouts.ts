@@ -1,4 +1,4 @@
-import { CreatePayoutRequest, PayoutsResponse } from '@quartermaster/shared';
+import { CreatePayoutRequest, PayoutsResponse } from '@leonid/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
 import { currentTreasurer, ownerOf, requireTreasurer, treasurerActor } from '../auth/treasurer.js';

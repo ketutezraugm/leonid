@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { CHAT_TITLE_MAX_LENGTH, type ChatThreadPatchRequest } from '@quartermaster/shared';
+import { CHAT_TITLE_MAX_LENGTH, type ChatThreadPatchRequest } from '@leonid/shared';
 import type { Db } from './client.js';
 import { ownerThread } from './mandates.js';
 import { chatThreads, events, mandateItems, mandates } from './schema.js';

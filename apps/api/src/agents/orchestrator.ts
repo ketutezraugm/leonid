@@ -7,7 +7,7 @@ import {
   type ToolSet,
 } from 'ai';
 import { z } from 'zod';
-import { parseBookingChoice } from '@quartermaster/shared';
+import { parseBookingChoice } from '@leonid/shared';
 import { auditedExecute, auditedStream, todayLine, type AgentContext } from './context.js';
 import { createPlanningAgent } from './planning.js';
 import { createTreasuryAgent } from './treasury.js';

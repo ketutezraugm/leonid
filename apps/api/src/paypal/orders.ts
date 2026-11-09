@@ -25,9 +25,9 @@ export const PayPalOrder = z.object({
 });
 export type PayPalOrder = z.infer<typeof PayPalOrder>;
 
-// Which event a spend order belongs to, in the same qm:<eventId>:<kind> style as the income tags (buildCaptureTag).
+// Which event a spend order belongs to, in the same leonid:<eventId>:<kind> style as the income tags (buildCaptureTag).
 // The Procurement app's captures are spend, which the executor records, so the capture webhook never reads this one.
-export const spendTag = (eventId: string) => `qm:${eventId}:spend`;
+export const spendTag = (eventId: string) => `leonid:${eventId}:spend`;
 
 export interface CreateOrderInput {
   // Our own record ID (ticket, donation, cart). Doubles as the idempotency key.

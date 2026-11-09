@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ApprovalItem } from '@quartermaster/shared';
-import { REJECT_REASON_MAX_LENGTH } from '@quartermaster/shared';
+import type { ApprovalItem } from '@leonid/shared';
+import { REJECT_REASON_MAX_LENGTH } from '@leonid/shared';
 import { loadPayPalSdk } from '../lib/paypalSdk';
 import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/Dialog';

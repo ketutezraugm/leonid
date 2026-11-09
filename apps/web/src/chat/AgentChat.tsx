@@ -16,7 +16,7 @@ import {
   type ChatEventRef,
   type ChatThreadSummary,
   type ChecklistItem,
-} from '@quartermaster/shared';
+} from '@leonid/shared';
 import { AskUserCard } from './AskUserCard';
 import { BookingsCard } from './BookingsCard';
 import { Checklist } from './Checklist';

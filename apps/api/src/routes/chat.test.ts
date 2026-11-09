@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ChatThreadResponse } from '@quartermaster/shared';
+import { ChatThreadResponse } from '@leonid/shared';
 import { createApp } from '../app.js';
 import { AgentNotConfiguredError, chatModel } from '../agents/model.js';
 import { scriptedModel, type ScriptStep } from '../agents/testing.js';
