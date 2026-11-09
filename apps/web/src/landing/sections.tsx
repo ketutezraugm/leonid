@@ -149,16 +149,16 @@ export function InOneView() {
         <p className="lp-sub" data-reveal style={revealAt(1)}>
           The plan, the money and what needs you, side by side.
         </p>
-        <img
-          data-reveal="drop"
-          style={revealAt(2)}
-          className="lp-shot"
-          src="/landing/event-home.png"
-          width={1440}
-          height={900}
-          alt="Event home: $1,140.00 unlocked to spend, a prize cart waiting for approval, recent spends and the plan"
-          loading="lazy"
-        />
+        <div className="lp-shot-card" data-tilt data-reveal="drop" style={revealAt(2)}>
+          <img
+            className="lp-shot"
+            src="/landing/event-home.png"
+            width={1440}
+            height={900}
+            alt="Event home: $1,140.00 unlocked to spend, a prize cart waiting for approval, recent spends and the plan"
+            loading="lazy"
+          />
+        </div>
       </div>
     </section>
   );
@@ -186,7 +186,7 @@ function Feature({ id, flip, title, text, points, children }: { id: string; flip
             ))}
           </ul>
         </div>
-        <div className="lp-piece" data-reveal="drop" style={revealAt(1)}>
+        <div className="lp-piece" data-tilt data-reveal="drop" style={revealAt(1)}>
           {children}
         </div>
       </div>
@@ -372,7 +372,7 @@ export function PaysPeople() {
             ))}
           </div>
         </div>
-        <div className="lp-phone" role="tabpanel" aria-label={PAYOUTS[open]!.title}>
+        <div className="lp-phone" data-tilt role="tabpanel" aria-label={PAYOUTS[open]!.title}>
           <div key={open} className="lp-phone-screen" style={{ '--dir': dir } as CSSProperties}>
             {PAYOUTS[open]!.phone}
           </div>
@@ -403,7 +403,7 @@ export function TryIt({ onTry, busy, signedIn }: { onTry: (to: string) => void; 
         </p>
         <ul className="lp-tries">
           {TRIES.map((t, i) => (
-            <li key={t.n} className="lp-try" data-reveal style={revealAt(i + 3)}>
+            <li key={t.n} className="lp-try" data-tilt data-reveal style={revealAt(i + 3)}>
               <span className="lp-try-n">{t.n}</span>
               <h3>{t.title}</h3>
               <p>{t.text}</p>

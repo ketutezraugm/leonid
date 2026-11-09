@@ -1,8 +1,10 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { LANDING } from '../brand';
 import { useSession } from '../shell/session';
 import { Button } from '../ui/Button';
 import { useEnterDemo } from './useEnterDemo';
+import { useTiltCards } from './useTilt';
 import {
   BuiltWith,
   Closing,
@@ -29,9 +31,11 @@ export function Landing({ problem }: { problem: string | null }) {
   const { enter, busy, error } = useEnterDemo();
   const signedIn = session.status === 'signed-in';
   const message = error ?? problem;
+  const root = useRef<HTMLDivElement>(null);
+  useTiltCards(root);
 
   return (
-    <div className="landing">
+    <div ref={root} className="landing">
       <main>
         <section className="lp-hero" aria-labelledby="lp-title">
           <Meteors set="hero" />
