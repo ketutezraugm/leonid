@@ -19,7 +19,7 @@ import { webhookRouter } from '../router.js';
 import { buildCaptureTag, createCaptureCompletedHandler } from './capture-completed.js';
 import { createCaptureReversalHandler } from './capture-reversed.js';
 import { registerLedgerHandlers } from './index.js';
-import { PAYOUT_ITEM_EVENTS } from './payout-item.js';
+import { PAYOUT_BATCH_DENIED, PAYOUT_ITEM_EVENTS } from './payout-item.js';
 import { createInvoicePaidHandler } from './invoice-paid.js';
 
 interface Money {
@@ -443,6 +443,7 @@ describe('registerLedgerHandlers', () => {
         'PAYMENT.CAPTURE.REFUNDED',
         'PAYMENT.CAPTURE.REVERSED',
         ...PAYOUT_ITEM_EVENTS,
+        PAYOUT_BATCH_DENIED,
       ].sort(),
     );
   });
