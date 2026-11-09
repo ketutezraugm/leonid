@@ -146,10 +146,6 @@
   color: var(--color-on-accent);
 }
 
-.lp-hero h1 span {
-  color: var(--color-brass-on-dark);
-}
-
 .lp-lede {
   max-width: 46ch;
   margin: var(--space-4) 0 0;
@@ -184,75 +180,235 @@
   color: var(--color-data-soft);
 }
 
-/* The hero visual: the product's own proof, cropped by the hero's bottom edge. The brand motif replaces it. */
-.lp-proof {
-  align-self: end;
-  margin: 0 0 calc(-1 * var(--space-3));
-  padding: var(--space-4);
-  display: grid;
-  gap: var(--space-3);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
-  box-shadow: var(--shadow-menu);
+/* The headline: letters lift on hover, and a meteor swash draws itself under the accent words. */
+.lp-word {
+  display: inline-block;
+  white-space: nowrap;
 }
 
-.lp-proof-head {
-  display: flex;
-  justify-content: space-between;
-  margin: 0;
+.lp-ch {
+  display: inline-block;
+  transition:
+    transform 350ms cubic-bezier(0.3, 1.6, 0.5, 1),
+    color var(--motion-base) var(--ease-standard);
+}
+
+.lp-ch:hover {
+  transform: translateY(-0.08em) rotate(-4deg);
+  color: var(--color-brass-on-dark);
+}
+
+.lp-hero h1 .lp-accent {
+  position: relative;
+  display: inline-block;
+  color: var(--color-brass-on-dark);
+}
+
+.lp-accent .lp-ch:hover {
+  color: var(--color-on-accent);
+}
+
+.lp-swash {
+  position: absolute;
+  left: -0.1em;
+  bottom: -0.2em;
+  width: calc(100% + 0.2em);
+  height: 0.34em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.lp-swash path {
+  fill: none;
+  stroke: var(--color-brass-on-dark);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: lp-draw 1.6s 0.4s cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+
+.lp-hero h1:hover .lp-swash path {
+  animation: lp-draw 1.1s cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+
+/* Leo stands where the product proof used to be; the ringed stamp fills in when you come close. */
+.lp-leo-stage {
+  position: relative;
+  align-self: center;
+  justify-self: center;
+  width: min(440px, 100%);
+}
+
+.lp-stamp {
+  position: absolute;
+  top: 2%;
+  right: 0;
+  z-index: 1;
+  padding: 0.7em 1.1em;
+  border: 1.5px solid var(--color-sky-ink);
+  border-radius: 50%;
   font-size: var(--font-size-sm);
-  color: var(--color-muted);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-sky-ink);
+  transform: rotate(-9deg);
+  transition:
+    background-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    transform 400ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  pointer-events: none;
 }
 
-.lp-proof-head strong {
-  color: var(--color-text);
+.lp-leo-stage:hover .lp-stamp {
+  background: var(--color-brass-on-dark);
+  border-color: var(--color-brass-on-dark);
+  color: var(--color-accent);
+  transform: rotate(6deg) scale(1.08);
 }
 
-.lp-proof-fig {
-  margin: 0;
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.lp-proof-cap {
-  margin: -8px 0 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-muted);
-}
-
-.lp-decisions {
-  display: grid;
+/* --- Leo, the mascot (LeoMascot.tsx). Landing only. --- */
+.leo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
   margin: 0;
   padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--color-rule);
+  border: 0;
+  background: none;
+  color: inherit;
 }
 
-.lp-decisions li {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: var(--space-3);
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--color-rule);
+button.leo {
+  cursor: pointer;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.lp-decisions li:last-child {
-  border-bottom: 0;
+button.leo:focus-visible {
+  outline: 2px dashed var(--color-brass-on-dark);
+  outline-offset: 4px;
 }
 
-.lp-decisions b {
+.leo-art {
   display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.leo-mane {
+  transform-box: view-box;
+  transform-origin: 100px 104px;
+}
+
+.leo-mane rect {
+  fill: var(--color-periwinkle);
+}
+
+.leo-happy .leo-mane {
+  animation: leo-twirl 700ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.leo-face {
+  fill: var(--color-sky-ink);
+}
+
+.leo-ink {
+  fill: var(--color-text);
+}
+
+.leo-line {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.leo-glint {
+  fill: var(--color-on-accent);
+}
+
+.leo-nose {
+  fill: var(--color-brass-on-dark);
+  stroke: var(--color-brass-on-dark);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.leo-blush {
+  fill: var(--color-brass-on-dark);
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-standard);
+}
+
+.leo-happy .leo-blush {
+  opacity: 0.45;
+}
+
+.leo-bubble {
+  position: absolute;
+  left: -14%;
+  top: -4%;
+  max-width: 72%;
+  padding: 0.7em 1em;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 16px 16px 16px 4px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+  text-align: left;
+  box-shadow: 4px 4px 0 var(--color-brass-on-dark);
+  transform-origin: 0 100%;
+  transform: scale(0) rotate(-8deg);
+  opacity: 0;
+  transition:
+    transform 450ms cubic-bezier(0.3, 1.6, 0.5, 1),
+    opacity var(--motion-base) var(--ease-standard);
+  pointer-events: none;
 }
 
-.lp-decisions small {
-  display: block;
-  font-size: var(--font-size-xs);
-  color: var(--color-muted);
+.leo-bubble[data-on='true'] {
+  transform: scale(1) rotate(-3deg);
+  opacity: 1;
+}
+
+@keyframes lp-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes leo-twirl {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-ch,
+  .lp-stamp,
+  .leo-bubble,
+  .leo-blush {
+    transition: none;
+  }
+
+  .lp-ch:hover {
+    transform: none;
+  }
+
+  .lp-swash path,
+  .lp-hero h1:hover .lp-swash path,
+  .leo-happy .leo-mane {
+    animation: none;
+  }
 }
 
 /* --- Built with --- */
@@ -729,6 +885,18 @@
   outline-color: var(--color-brass-on-dark);
 }
 
+.lp-footer-mark {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* Leo stands at the end of the footer's wordmark, still following the pointer. */
+.lp-footer-leo {
+  flex: none;
+  width: clamp(56px, 9vw, 128px);
+}
+
 .lp-wordmark {
   margin: var(--space-5) 0 0;
   font-family: var(--font-display);
@@ -757,6 +925,11 @@
   .lp-phone {
     width: min(320px, 100%);
     margin-inline: auto;
+  }
+
+  .lp-leo-stage {
+    width: min(280px, 80%);
+    margin-bottom: var(--space-5);
   }
 }
 

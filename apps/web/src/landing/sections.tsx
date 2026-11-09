@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../ui/BrandMark';
 import { BudgetBar, unlockedToSpend, type BudgetFigures } from '../ui/BudgetBar';
 import { formatMoney } from '../ui/money';
 import { StatusBadge } from '../ui/StatusBadge';
 import { BRAND, LANDING, LINKS } from '../brand';
+import { LeoMascot } from './LeoMascot';
 
 // The demo event's figures, as the demo shows them (cleared $3,000 − committed $1,860 = $1,140 unlocked).
 const DEMO_BUDGET: BudgetFigures = {
@@ -24,43 +25,49 @@ export function Wordmark() {
   );
 }
 
-// --- Hero: the one place the brand shows. Swap HeroVisual for the new mark or motif once the name is decided.
-export function HeroVisual() {
+// --- Hero: the one place the brand shows. The headline's letters lift on hover and a meteor swash draws itself
+// under the accent words; Leo, the mascot, stands where the product proof used to be.
+function Letters({ text }: { text: string }) {
+  // Each word is one unbreakable box, so the per-letter spans never split a word across lines.
+  return text.split(' ').map((word, w, words) => (
+    <Fragment key={w}>
+      <span className="lp-word">
+        {Array.from(word).map((c, i) => (
+          <span key={i} className="lp-ch">
+            {c}
+          </span>
+        ))}
+      </span>
+      {w < words.length - 1 ? ' ' : null}
+    </Fragment>
+  ));
+}
+
+export function HeroTitle({ lead, accent, end }: { lead: string; accent: string; end: string }) {
   return (
-    <figure className="lp-proof" aria-label="Example from the demo event: the rules deciding three payments">
-      <p className="lp-proof-head">
-        <strong>OpenHack 2027</strong> <span>demo event</span>
-      </p>
-      <p className="lp-proof-fig num">{formatMoney(unlockedToSpend(DEMO_BUDGET))}</p>
-      <p className="lp-proof-cap">Unlocked to spend: sponsor money that has cleared, minus what is committed.</p>
-      <BudgetBar figures={DEMO_BUDGET} />
-      <ul className="lp-decisions">
-        <li>
-          <span>
-            <b>Lanyards, 200</b>
-            <small>Under $200 per order</small>
-          </span>
-          <span className="num">{formatMoney(14_000)}</span>
-          <StatusBadge status="done" label="Allowed" />
-        </li>
-        <li>
-          <span>
-            <b>Prize cart</b>
-            <small>Over your $200 rule: waits for your yes</small>
-          </span>
-          <span className="num">{formatMoney(42_000)}</span>
-          <StatusBadge status="risk" label="Needs you" />
-        </li>
-        <li>
-          <span>
-            <b>Swag order</b>
-            <small>Waits for a sponsor’s invoice to clear</small>
-          </span>
-          <span className="num">{formatMoney(65_000)}</span>
-          <StatusBadge status="blocked" label="Blocked" />
-        </li>
-      </ul>
-    </figure>
+    <h1 id="lp-title" aria-label={`${lead} ${accent}${end}`}>
+      <span aria-hidden="true">
+        <Letters text={lead} />{' '}
+        <span className="lp-accent">
+          <Letters text={accent} />
+          <svg className="lp-swash" viewBox="0 0 255 72" preserveAspectRatio="none">
+            <path pathLength={1} d="M6 44 C40 18 150 4 222 14 C262 20 258 48 214 58 C150 72 60 70 30 60 C10 53 20 40 60 34" />
+          </svg>
+        </span>
+        <span className="lp-ch">{end}</span>
+      </span>
+    </h1>
+  );
+}
+
+export function HeroLeo() {
+  return (
+    <div className="lp-leo-stage">
+      <span className="lp-stamp" aria-hidden="true">
+        Meet Leo
+      </span>
+      <LeoMascot className="lp-leo" />
+    </div>
   );
 }
 
@@ -481,9 +488,12 @@ export function LandingFooter() {
             {LINKS.video && <a href={LINKS.video}>Demo video</a>}
           </div>
         </div>
-        <p className="lp-wordmark" aria-hidden="true">
-          {BRAND.name}
-        </p>
+        <div className="lp-footer-mark">
+          <p className="lp-wordmark" aria-hidden="true">
+            {BRAND.name}
+          </p>
+          <LeoMascot decorative className="lp-footer-leo" />
+        </div>
       </div>
     </footer>
   );

@@ -41,6 +41,8 @@
   --color-brass-text: #b42d6e; /* meteor as words: small labels and the landing page */
   --color-brass-soft: #fff1d6; /* the one surface that says "this needs you" = approval-soft */
   --color-brass-on-dark: #ff7ab6; /* the meteor on the night sky (landing hero) */
+  --color-periwinkle: #a9b0f0; /* the pair color as a graphic on dark grounds: Leo's mane. Never text on light */
+  --color-sky-ink: #ecedfb; /* text and Leo's face on the hero's dark ground */
   --color-hold: #d3d5ea; /* money that exists but cannot be spent: invoiced, pledged */
 
   /* --- Status colors ---

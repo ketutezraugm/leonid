@@ -9,7 +9,8 @@ import {
   Credibility,
   Faq,
   Features,
-  HeroVisual,
+  HeroLeo,
+  HeroTitle,
   HowItWorks,
   InOneView,
   LandingFooter,
@@ -20,8 +21,8 @@ import {
 
 // The front door for signed-out visitors (it is what /signin shows). Judges and organisers land here first, so
 // it says what the product is, gets a judge into the demo in one click, and sends them to its strongest
-// moments. The hero is the brand slot: HeroVisual, the headline's accent words and the mark are where a new
-// name and brand change the page; everything below it follows the product.
+// moments. The hero is the brand slot: Leo, the headline's accent words and the mark are where the brand shows;
+// everything below it follows the product.
 export function Landing({ problem }: { problem: string | null }) {
   const { session } = useSession();
   const { enter, busy, error } = useEnterDemo();
@@ -53,9 +54,7 @@ export function Landing({ problem }: { problem: string | null }) {
 
             <div className="lp-hero-body">
               <div>
-                <h1 id="lp-title">
-                  Your event’s money, kept <span>by your rules</span>.
-                </h1>
+                <HeroTitle lead="Your event’s money, kept" accent="by your rules" end="." />
                 <p className="lp-lede">
                   An AI agent that runs a community event’s money on PayPal: it invoices sponsors, buys what the plan
                   needs and pays people back, and it only spends what has cleared, within the rules you set.
@@ -83,7 +82,7 @@ export function Landing({ problem }: { problem: string | null }) {
                 </div>
                 <p className="lp-fine">Runs on the PayPal sandbox. No real money moves.</p>
               </div>
-              <HeroVisual />
+              <HeroLeo />
             </div>
           </div>
         </section>
