@@ -189,7 +189,7 @@
 .lp-ch {
   display: inline-block;
   transition:
-    transform 350ms cubic-bezier(0.3, 1.6, 0.5, 1),
+    transform 350ms var(--ease-out-strong),
     color var(--motion-base) var(--ease-standard);
 }
 
@@ -256,7 +256,7 @@
   transition:
     background-color var(--motion-base) var(--ease-standard),
     color var(--motion-base) var(--ease-standard),
-    transform 400ms cubic-bezier(0.3, 1.6, 0.5, 1);
+    transform 400ms var(--ease-out-strong);
   pointer-events: none;
 }
 
@@ -274,7 +274,7 @@
   translate: 0 20px;
   transition:
     opacity 500ms var(--ease-standard),
-    translate 700ms cubic-bezier(0.34, 1.2, 0.64, 1);
+    translate 700ms var(--ease-out-strong);
   transition-delay: calc(var(--i, 0) * 80ms);
 }
 
@@ -556,6 +556,8 @@ button.leo:focus-visible {
   fill: var(--color-periwinkle);
 }
 
+/* Leo's reaction to a click (this twirl and the speech bubble) is the page's one deliberately bouncy moment;
+   everything else eases out without overshoot. */
 .leo-happy .leo-mane {
   animation: leo-twirl 700ms cubic-bezier(0.3, 1.4, 0.5, 1);
 }
@@ -610,9 +612,9 @@ button.leo:focus-visible {
   font-weight: var(--font-weight-medium);
   line-height: 1.35;
   text-align: left;
-  box-shadow: 4px 4px 0 var(--color-brass-on-dark);
+  box-shadow: var(--shadow-menu);
   transform-origin: 0 100%;
-  transform: scale(0) rotate(-8deg);
+  transform: scale(0.9) rotate(-8deg);
   opacity: 0;
   transition:
     transform 450ms cubic-bezier(0.3, 1.6, 0.5, 1),
@@ -1343,6 +1345,7 @@ button.leo:focus-visible {
     display: none;
   }
 
+  .lp-hero .lp-meteor:nth-child(1),
   .lp-hero .lp-meteor:nth-child(3),
   .lp-hero .lp-meteor:nth-child(5) {
     display: none;
