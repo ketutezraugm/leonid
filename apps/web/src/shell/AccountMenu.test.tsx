@@ -33,7 +33,7 @@ function stubApi(me: unknown = { email: 'ada@example.com', via: 'paypal' }, trea
 
 function open() {
   return render(
-    <MemoryRouter initialEntries={[`/events/${hack}/approvals`]}>
+    <MemoryRouter initialEntries={[`/events/${hack}/claims`]}>
       <App />
     </MemoryRouter>,
   );
@@ -65,7 +65,7 @@ describe('AccountMenu', () => {
     expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
     expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
     expect(screen.getByRole('link', { name: /OpenHack 2027/ })).toHaveAttribute('aria-current', 'true');
-    expect(screen.getByRole('link', { name: /Spring Meetup/ })).toHaveAttribute('href', `/events/${meetup}/approvals`);
+    expect(screen.getByRole('link', { name: /Spring Meetup/ })).toHaveAttribute('href', `/events/${meetup}/claims`);
     expect(screen.getByRole('link', { name: 'All events' })).toHaveAttribute('href', '/events');
     expect(screen.getByRole('link', { name: 'New event' })).toHaveAttribute('href', '/setup');
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();

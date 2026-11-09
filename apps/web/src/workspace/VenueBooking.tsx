@@ -255,6 +255,14 @@ export function VenueBookingPanel({
         </p>
       )}
 
+      {paid && (
+        <div className="booking-actions">
+          <a className="booking-pay" href={`/api/venue-booking/${threadId}/invoice`} download>
+            Download invoice (PDF)
+          </a>
+        </div>
+      )}
+
       {canPay && (
         <div className="booking-agree">
           <label>

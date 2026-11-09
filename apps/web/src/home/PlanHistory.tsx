@@ -128,6 +128,15 @@ function PlanGroup({
                   ]}
                 </span>
               </button>
+              {plan.payment.status === 'paid' && (
+                <a
+                  className="plan-history-invoice"
+                  href={`/api/venue-booking/${plan.threadId}/invoice`}
+                  download
+                >
+                  Invoice
+                </a>
+              )}
             </li>
           );
         })}
