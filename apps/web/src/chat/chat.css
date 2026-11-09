@@ -53,13 +53,33 @@
   overflow-wrap: anywhere;
 }
 
+.chat-message {
+  animation: message-in 220ms var(--ease-out-strong);
+}
+
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-message {
+    animation: fade-in 150ms ease;
+  }
+}
+
+/* Each message rises from its own side: yours from the right, Leo's from the left. */
 .chat-message--user {
+  transform-origin: bottom right;
   align-self: flex-end;
   color: var(--color-on-accent);
   background: var(--color-accent);
 }
 
 .chat-message--assistant {
+  transform-origin: bottom left;
   align-self: flex-start;
   background: var(--color-bg);
   border: 1px solid var(--color-border);

@@ -261,13 +261,14 @@ a:hover {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-menu);
-  animation: account-menu-in var(--motion-base) var(--ease-standard);
+  transform-origin: bottom left;
+  animation: account-menu-in 180ms var(--ease-out-strong);
 }
 
 @keyframes account-menu-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(4px) scale(0.97);
   }
 }
 
@@ -364,7 +365,7 @@ a:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .account-menu {
-    animation: none;
+    animation: fade-in 150ms ease;
   }
 }
 
@@ -623,15 +624,15 @@ a:hover {
   transform: translateX(100%);
   visibility: hidden;
   transition:
-    transform 150ms var(--ease-standard),
-    visibility 0s linear 150ms;
+    transform 200ms var(--ease-drawer),
+    visibility 0s linear 200ms;
 }
 
 .drawer[data-open='true'] {
   transform: none;
   visibility: visible;
   transition:
-    transform var(--motion-base) var(--ease-standard),
+    transform 300ms var(--ease-drawer),
     visibility 0s;
 }
 
@@ -759,7 +760,9 @@ a:hover {
   color: var(--color-muted);
   white-space: nowrap;
   cursor: pointer;
-  transition: color var(--motion-fast) var(--ease-standard);
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    border-bottom-color var(--motion-base) var(--ease-out-strong);
 }
 
 .tab:hover {
@@ -780,6 +783,7 @@ a:hover {
   place-items: center;
   padding: var(--space-3);
   background: var(--color-scrim);
+  animation: fade-in 200ms ease;
 }
 
 .dialog {
@@ -790,6 +794,14 @@ a:hover {
   background: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-menu);
+  animation: dialog-in 220ms var(--ease-out-strong);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
 }
 
 .dialog-body {
@@ -824,7 +836,7 @@ a:hover {
   background: var(--color-text);
   color: var(--color-surface);
   box-shadow: var(--shadow-menu);
-  animation: toast-in var(--motion-base) var(--ease-standard);
+  animation: toast-in 250ms var(--ease-out-strong);
 }
 
 .toast-error {
@@ -834,13 +846,32 @@ a:hover {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* A new screen, or a new Money tab, settles in instead of snapping. Kept small and quick: it happens often. */
+.shell-sheet > *,
+.tab-panel > * {
+  animation: view-in 180ms var(--ease-out-strong);
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .agent-button-arc,
-  .toast {
+  .agent-button-arc {
     animation: none;
+  }
+
+  .toast,
+  .dialog,
+  .shell-sheet > *,
+  .tab-panel > * {
+    animation: fade-in 150ms ease;
   }
 }

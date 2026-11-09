@@ -301,12 +301,25 @@ a {
   cursor: pointer;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-standard);
+    transform 160ms var(--ease-out-strong);
 }
 
-/* Press feedback: a 1px settle, so a tap registers before the request returns. */
+/* Press feedback: the button gives a little, so a tap registers before the request returns. */
 .btn:active:not(:disabled, [aria-busy='true']) {
-  transform: translateY(1px);
+  transform: scale(0.97);
+}
+
+/* Shared by the motion below: under reduced motion, entrances keep their fade and drop the movement. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled, [aria-busy='true']) {
+    transform: none;
+  }
 }
 
 .btn-primary {
