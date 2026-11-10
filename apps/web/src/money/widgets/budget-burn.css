@@ -20,6 +20,8 @@
   color: var(--lx-text);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 14px;
+  /* Its own width decides the row layout below, so it holds up when the dashboard agent's panel squeezes it. */
+  container-type: inline-size;
 }
 
 .lx-burn__note {
@@ -211,6 +213,22 @@
 .lx-burn__verdict[data-tone='over'] {
   color: var(--lx-danger);
   font-weight: 700;
+}
+
+/* Narrow (the dashboard agent's panel open, a small screen): the verdict gets its own line under the bar
+   instead of being cut to "$8…", and the name keeps the room beside the figures. */
+@container (max-width: 460px) {
+  .lx-burn__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name figures'
+      'lane lane'
+      'verdict verdict';
+  }
+
+  .lx-burn__verdict {
+    white-space: normal;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
