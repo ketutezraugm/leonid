@@ -9,7 +9,7 @@ Owner: P4 (design system), and each screen's feature owner.
 
 - **Judging cares about Design:** one polished app, not a proof of concept. Plan, dashboard, approvals and reports share one design system. Use tokens from `src/styles/tokens.css` and never hard-code colors or spacing. AG Studio and Bryntum themes must also be driven from these tokens.
 - **Screens** (PRD §4):
-  - Event home: no page. `/events/:id` opens the agent; the sidebar shows the event and its countdown, and the account menu the PayPal balance.
+  - Home (`/events/:id/home`): the dashboard, listed above Agent in the sidebar. PayPal balance and the sponsor ledger, alerts (late deliveries, unpaid invoices), recent spends and a strip of the plan, all live from the API, no sample figures. `/events/:id` itself still opens the agent, and a new event lands on the agent to plan.
   - Agent (`/agent`): the chat rail and the results canvas, where venue results and the deposit live.
   - Plan (Bryntum).
   - Money (AG Studio).

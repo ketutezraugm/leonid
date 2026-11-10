@@ -1,4 +1,4 @@
-import type { DependencyModelConfig } from '@bryntum/gantt';
+import type { DependencyModelConfig } from '@bryntum/gantt-thin';
 import type { PlanResponse, PlanTaskRow } from '@leonid/shared';
 import type { Status } from '../ui/StatusBadge';
 import type { SourceTask } from './gating';

@@ -7,6 +7,7 @@ import { countdown, eventPath, formatEventDate, useCurrentEvent, useEvent, useEv
 
 // The screens of one event, in the order of the event's life. Paths are relative to /events/:eventId/.
 const nav: { screen: string; label: string; icon: IconName }[] = [
+  { screen: 'home', label: 'Home', icon: 'home' },
   { screen: 'agent', label: 'Agent', icon: 'agent' },
   { screen: 'plan', label: 'Plan', icon: 'plan' },
   { screen: 'money', label: 'Money', icon: 'money' },

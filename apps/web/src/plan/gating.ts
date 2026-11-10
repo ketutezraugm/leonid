@@ -16,7 +16,7 @@ export type SourceTask = Omit<PlanTaskConfig, 'fundedBy' | 'fundedByPaid'> & {
   invoiceOfSponsorId?: string;
 };
 
-const invoiceStatus: Record<SponsorStatus, Status> = {
+export const invoiceStatus: Record<SponsorStatus, Status> = {
   pledged: 'pending',
   invoiced: 'progress',
   paid: 'done',

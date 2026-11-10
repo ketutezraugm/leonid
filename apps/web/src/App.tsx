@@ -3,6 +3,7 @@ import { Agent } from './pages/Agent';
 import { Checkout } from './pages/Checkout';
 import { Claims } from './pages/Claims';
 import { VolunteerClaim } from './pages/VolunteerClaim';
+import { EventHome } from './pages/EventHome';
 import { Events } from './pages/Events';
 import { History } from './pages/History';
 import { Money } from './pages/Money';
@@ -45,7 +46,7 @@ function ToEventScreen({ screen }: { screen: string }) {
   return <Navigate to={`${eventPath(routeId, screen)}${search}`} replace />;
 }
 
-const SCREENS = ['agent', 'plan', 'money', 'claims'] as const;
+const SCREENS = ['home', 'agent', 'plan', 'money', 'claims'] as const;
 
 export function App() {
   return (
@@ -60,7 +61,9 @@ export function App() {
               <Route path="/history" element={<History />} />
               <Route path="/setup" element={<NewEvent />} />
               <Route path="/events/:eventId" element={<EventScope />}>
+                {/* An event opens on the agent (a new event goes straight to planning); Home is the dashboard beside it. */}
                 <Route index element={<Navigate to="agent" replace />} />
+                <Route path="home" element={<EventHome />} />
                 <Route path="agent" element={<Agent />} />
                 <Route path="plan" element={<Plan />} />
                 <Route path="money" element={<Money />} />
@@ -68,7 +71,11 @@ export function App() {
                 <Route path="*" element={<NotFound />} />
               </Route>
               {SCREENS.map((screen) => (
-                <Route key={screen} path={`/${screen}`} element={<ToEventScreen screen={screen} />} />
+                <Route
+                  key={screen}
+                  path={`/${screen}`}
+                  element={<ToEventScreen screen={screen} />}
+                />
               ))}
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />

@@ -1,4 +1,4 @@
-import { TaskModel, type TaskModelConfig } from '@bryntum/gantt';
+import { TaskModel, type TaskModelConfig } from '@bryntum/gantt-thin';
 import type { Status } from '../ui/StatusBadge';
 
 // A Gantt task carrying our shared status, which colors its bar (see PlanGantt), and the sponsor whose money

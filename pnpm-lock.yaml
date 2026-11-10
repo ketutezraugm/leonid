@@ -102,12 +102,36 @@ importers:
       '@ai-sdk/react':
         specifier: 4.0.158
         version: 4.0.158(react@19.3.1)(zod@4.6.7)
-      '@bryntum/gantt':
-        specifier: npm:@bryntum/gantt-trial@7.3.7
-        version: '@bryntum/gantt-trial@7.3.7'
-      '@bryntum/gantt-react':
+      '@bryntum/calendar-react-thin':
         specifier: 7.3.7
         version: 7.3.7
+      '@bryntum/calendar-thin':
+        specifier: npm:@bryntum/calendar-thin-trial@7.3.7
+        version: '@bryntum/calendar-thin-trial@7.3.7'
+      '@bryntum/core-react-thin':
+        specifier: 7.3.7
+        version: 7.3.7
+      '@bryntum/core-thin':
+        specifier: npm:@bryntum/core-thin-trial@7.3.7
+        version: '@bryntum/core-thin-trial@7.3.7'
+      '@bryntum/engine-thin':
+        specifier: npm:@bryntum/engine-thin-trial@7.3.7
+        version: '@bryntum/engine-thin-trial@7.3.7'
+      '@bryntum/gantt-react-thin':
+        specifier: 7.3.7
+        version: 7.3.7
+      '@bryntum/gantt-thin':
+        specifier: npm:@bryntum/gantt-thin-trial@7.3.7
+        version: '@bryntum/gantt-thin-trial@7.3.7'
+      '@bryntum/grid-thin':
+        specifier: npm:@bryntum/grid-thin-trial@7.3.7
+        version: '@bryntum/grid-thin-trial@7.3.7'
+      '@bryntum/scheduler-thin':
+        specifier: npm:@bryntum/scheduler-thin-trial@7.3.7
+        version: '@bryntum/scheduler-thin-trial@7.3.7'
+      '@bryntum/schedulerpro-thin':
+        specifier: npm:@bryntum/schedulerpro-thin-trial@7.3.7
+        version: '@bryntum/schedulerpro-thin-trial@7.3.7'
       '@leonid/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -315,15 +339,47 @@ packages:
     resolution: {integrity: sha512-0GEz8qJWokkUVYQYRukmkSHIFNoBH8QTreeHrAFbvz1XFYc3Y+puhMs8PQ5x8GNugiC2l5jvDBXKLbBIByeSBw==}
     hasBin: true
 
-  '@bryntum/gantt-react@7.3.7':
-    resolution: {integrity: sha512-nKIQ8/BVPF7BqeZDRZSWMFP+ZvjqK8p/TNA6L1e/lH+RQO18SRw6fQeGctj118LHcZQ/CA3utebXv7ORiCRwWA==}
+  '@bryntum/calendar-react-thin@7.3.7':
+    resolution: {integrity: sha512-EVbLdOUPRT+cZOhNBIpr11GvEXLmINPgrXCAZ1K2MbCfX+FyL13rwFZkKFktRKBG9qXJyKzoDKPnII7UqMkjUQ==}
     engines: {node: '>=0.10.0'}
 
-  '@bryntum/gantt-trial-lib@1.0.1':
-    resolution: {integrity: sha512-VWtowNi9FBCC6EWz8zZjrnPALCsFrYt4HPwmsgqv3qediQPfyYM/5Bq3rFuEUa1/2C/1u7YXzW2q1HZykHnp+Q==}
+  '@bryntum/calendar-thin-trial@7.3.7':
+    resolution: {integrity: sha512-m5eOvzu6EeXAxJaLuzFZD3Ern0XudfQ+Tive9rpMs/67O9TMrRiv5M75kOOFJjr+pFkeNMk+okA2VsR7lBU0cw==}
+    engines: {node: '>=0.10.0'}
 
-  '@bryntum/gantt-trial@7.3.7':
-    resolution: {integrity: sha512-OHvlsCYDGzxdDcFF6JHjPDWiCOynJr8tP1RRteJSZ6c9NT0+DOtgwVyj8MABXmIY61rKABQ+t6csik5ZT1BMqA==}
+  '@bryntum/core-react-thin@7.3.7':
+    resolution: {integrity: sha512-x0AdAgpTpJP0Y27ttfINTtgDjhCanIHkO6+8guvOHW2jifUffmaJnknIu0a+2N2sN8A/L+bYWm7NJSqtZl/LuA==}
+    engines: {node: '>=0.10.0'}
+
+  '@bryntum/core-thin-trial@7.3.7':
+    resolution: {integrity: sha512-jF+yUPQY11pYm3JYrCdbBfVqZw64ssZPbw4MNVoHA0Gj8oHtFU1BRYgOm9cCvSEujXvVESuFOY62OprNUe6vCw==}
+    engines: {node: '>=0.10.0'}
+
+  '@bryntum/core-trial-lib@1.0.1':
+    resolution: {integrity: sha512-l0xH8WITqgxLwTk5ezZExF5Vx+hZgrVeEgfjOieEMDq9X/f+/nG6R2/hm5rNfL4NqdeHwN9D2B0zOlJvQJJeKA==}
+
+  '@bryntum/engine-thin-trial@7.3.7':
+    resolution: {integrity: sha512-psxB9Sh16n356iiBHYW6Z7fV/cd6me7w9gDn7V3Sl4KA4BUTaABqU8jB8ytPW49rccQ4SPXjScJ9wNd0P3Me4A==}
+    engines: {node: '>=0.10.0'}
+
+  '@bryntum/gantt-react-thin@7.3.7':
+    resolution: {integrity: sha512-bMVL9iDYorw60lt7XdnrBhEy3jRQv/79YE8qLBrqgq2rx8PdVu6zHWRKnWRDRVl0S0X4nlsLuIrD0h7EAu977Q==}
+    engines: {node: '>=0.10.0'}
+
+  '@bryntum/gantt-thin-trial@7.3.7':
+    resolution: {integrity: sha512-3MP2tiFvO3iHHA22+B4A5dWtnG+ku1C+LFpTPmgKpyrsW3WhRtmW901+j90c8Yr2DsjRVkchDfqvUPr7fu3ZtQ==}
+    engines: {node: '>=0.10.0'}
+
+  '@bryntum/grid-thin-trial@7.3.7':
+    resolution: {integrity: sha512-gPl0+l1LdgCmPGd8t95YYTcW/PwL7iCJekOTtIr8d64ETsDDXh99ACEHoqQA/iP4VwIj8uoRoQvnn0Pftl334Q==}
+    engines: {node: '>=0.10.0'}
+
+  '@bryntum/scheduler-thin-trial@7.3.7':
+    resolution: {integrity: sha512-xO73lmkS2lJ0Jf75fkMLcWDxXW0K5G4CiOzaHja+uzkQHE9oRoqQ2/EGMFtpDHs8iGI+vyKT8cCstr9qVteyIg==}
+    engines: {node: '>=0.10.0'}
+
+  '@bryntum/schedulerpro-thin-trial@7.3.7':
+    resolution: {integrity: sha512-CQ0CsW+Yzn/o+J/YJFZqkC9RSMWb7Dv6s8Mjg9/dozCcnntXPZgivQWJ1z+2pIVZfO3vMny2GTH7DpCNSTlibw==}
     engines: {node: '>=0.10.0'}
 
   '@cacheable/memory@2.2.0':
@@ -3182,13 +3238,29 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@bryntum/gantt-react@7.3.7': {}
+  '@bryntum/calendar-react-thin@7.3.7': {}
 
-  '@bryntum/gantt-trial-lib@1.0.1': {}
+  '@bryntum/calendar-thin-trial@7.3.7': {}
 
-  '@bryntum/gantt-trial@7.3.7':
+  '@bryntum/core-react-thin@7.3.7': {}
+
+  '@bryntum/core-thin-trial@7.3.7':
     dependencies:
-      '@bryntum/gantt-trial-lib': 1.0.1
+      '@bryntum/core-trial-lib': 1.0.1
+
+  '@bryntum/core-trial-lib@1.0.1': {}
+
+  '@bryntum/engine-thin-trial@7.3.7': {}
+
+  '@bryntum/gantt-react-thin@7.3.7': {}
+
+  '@bryntum/gantt-thin-trial@7.3.7': {}
+
+  '@bryntum/grid-thin-trial@7.3.7': {}
+
+  '@bryntum/scheduler-thin-trial@7.3.7': {}
+
+  '@bryntum/schedulerpro-thin-trial@7.3.7': {}
 
   '@cacheable/memory@2.2.0':
     dependencies:
