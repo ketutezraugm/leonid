@@ -91,7 +91,7 @@ Volunteers, speakers and winners are paid from the Treasury app with PayPal Payo
 
 ### Bryntum
 
-The Plan screen is a Bryntum Gantt (trial 7.3.7, React wrapper) in [`apps/web/src/plan/`](apps/web/src/plan/): the event's tasks and purchases on one timeline, counting down to event day.
+The Plan screen and Home both show the event's plan in a Bryntum Calendar (trial 7.3.7, React wrapper, thin packages) in [`apps/web/src/home/`](apps/web/src/home/): Day and Week on an hour grid, Month as days, read-only, tasks coloured by status, event day highlighted. Sponsors show up as they did in the Gantt: a sponsor's invoice task follows that sponsor's status, and each purchase says which sponsor funds it and whether they have paid. The Bryntum Gantt is no longer on any screen (its code stays in [`apps/web/src/plan/`](apps/web/src/plan/)).
 
 - **Each sponsor invoice is a task, live from PayPal.** Its bar follows the sponsor's status from `GET /api/sponsors`: invoiced is in progress, and when PayPal reports the invoice paid (`INVOICING.INVOICE.PAID`) it turns done, without a reload (the screen re-reads sponsor status every 10 seconds while one is unpaid).
 - **Every purchase says which sponsor funds it,** and whether that sponsor has paid yet ("Harbor Cloud · not paid yet"). It is a label, not a lock: since Nov 6 the organizer's own PayPal account pays, so a purchase never waits on a sponsor.

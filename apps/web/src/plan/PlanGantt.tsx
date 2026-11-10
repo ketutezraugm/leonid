@@ -1,10 +1,16 @@
-import type { Model } from '@bryntum/gantt';
-import { BryntumGantt } from '@bryntum/gantt-react';
+import type { Model } from '@bryntum/core-thin';
+import { BryntumGantt } from '@bryntum/gantt-react-thin';
 import { memo } from 'react';
-import '@bryntum/gantt/fontawesome/css/fontawesome.css';
-import '@bryntum/gantt/fontawesome/css/solid.css';
-import '@bryntum/gantt/gantt.css';
-import '@bryntum/gantt/svalbard-light.css';
+// The thin Gantt registers only the features it imports itself; the event-day line below needs the scheduler's TimeRanges.
+import '@bryntum/scheduler-thin/lib/feature/TimeRanges.js';
+import '@bryntum/core-thin/fontawesome/css/fontawesome.css';
+import '@bryntum/core-thin/fontawesome/css/solid.css';
+import '@bryntum/core-thin/core.css';
+import '@bryntum/grid-thin/grid.css';
+import '@bryntum/scheduler-thin/scheduler.css';
+import '@bryntum/schedulerpro-thin/schedulerpro.css';
+import '@bryntum/gantt-thin/gantt.css';
+import '@bryntum/core-thin/svalbard-light.css';
 import './gantt-theme.css';
 import type { PlanSource } from './fromApi';
 import { applySponsors, fundingText, statusLabel, type PlanSponsor } from './gating';

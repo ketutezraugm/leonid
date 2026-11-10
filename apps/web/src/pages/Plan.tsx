@@ -1,6 +1,7 @@
 import { PlanResponse, SponsorsResponse } from '@leonid/shared';
-import { lazy, Suspense, useEffect, useMemo } from 'react';
-import { toPlanSource } from '../plan/fromApi';
+import { useEffect, useMemo } from 'react';
+import { PlanCalendarPanel } from '../home/PlanCalendarPanel';
+import { toPlanEvents } from '../home/planEvents';
 import type { PlanSponsor } from '../plan/gating';
 import { useFetch } from '../shell/api';
 import { useEvent, withEvent } from '../shell/event';
@@ -8,8 +9,6 @@ import { Card } from '../ui/Card';
 import { PageHeader } from '../ui/PageHeader';
 import { PageState } from '../ui/PageState';
 import { StatusBadge } from '../ui/StatusBadge';
-
-const PlanGantt = lazy(() => import('../plan/PlanGantt'));
 
 // While an invoice is unpaid, sponsor status is read again this often, so a payment shows without a reload.
 const POLL_MS = 10_000;
@@ -29,9 +28,12 @@ export function Plan() {
         : [],
     [feed],
   );
-  const source = useMemo(() => (plan.kind === 'ready' ? toPlanSource(plan.data) : null), [plan]);
+  // The same events Home's calendar gets, so the two always show the same plan.
+  const events = useMemo(
+    () => (plan.kind === 'ready' ? toPlanEvents(plan.data, new Date(), sponsors) : []),
+    [plan, sponsors],
+  );
   const unpaid = sponsors.some((sponsor) => sponsor.status !== 'paid');
-  const key = sponsors.map((sponsor) => sponsor.status).join();
 
   const { refresh } = feed;
   const polling = feed.kind === 'ready' && unpaid;
@@ -55,12 +57,12 @@ export function Plan() {
           {plan.error.message}
         </PageState>
       )}
-      {source && source.tasks.length === 0 && (
+      {plan.kind === 'ready' && events.length === 0 && (
         <PageState kind="empty" title="No plan for this event yet">
           Ask the agent to plan it, and its tasks will appear here.
         </PageState>
       )}
-      {source && source.tasks.length > 0 && (
+      {plan.kind === 'ready' && events.length > 0 && (
         <>
           <Card>
             <div className="plan-legend">
@@ -76,12 +78,7 @@ export function Plan() {
               </p>
             </div>
           </Card>
-          {/* The Gantt draws its own frame; a Card around it would double the border. */}
-          <div className="plan-gantt">
-            <Suspense fallback={<p className="muted">Loading plan…</p>}>
-              <PlanGantt key={`${event.id ?? 'demo'}:${key}`} plan={source} sponsors={sponsors} />
-            </Suspense>
-          </div>
+          <PlanCalendarPanel events={events} eventDate={plan.data.eventDate} />
         </>
       )}
     </section>
