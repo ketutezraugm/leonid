@@ -17,6 +17,7 @@
   background: none;
   cursor: pointer;
   color: inherit;
+  transition: transform 160ms var(--ease-out-strong);
 }
 
 .copy-id .id {
@@ -29,10 +30,36 @@
   color: var(--color-accent);
 }
 
+.copy-id:active {
+  transform: scale(0.97);
+}
+
 .copy-id-state {
   min-width: 48px;
   font-size: var(--font-size-xs);
   color: var(--color-status-done-text);
+}
+
+/* "Copied" lifts in, so the click visibly landed. */
+.copy-id-state:not(:empty) {
+  animation: copied-in 200ms var(--ease-out-strong);
+}
+
+@keyframes copied-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-id:active {
+    transform: none;
+  }
+
+  .copy-id-state:not(:empty) {
+    animation: fade-in 150ms ease;
+  }
 }
 
 /* --- Budget bar: committed, unlocked, then the money that cannot be spent yet --- */

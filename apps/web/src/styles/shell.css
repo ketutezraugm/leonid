@@ -261,13 +261,14 @@ a:hover {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-menu);
-  animation: account-menu-in var(--motion-base) var(--ease-standard);
+  transform-origin: bottom left;
+  animation: account-menu-in 180ms var(--ease-out-strong);
 }
 
 @keyframes account-menu-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(4px) scale(0.97);
   }
 }
 
@@ -364,7 +365,7 @@ a:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .account-menu {
-    animation: none;
+    animation: fade-in 150ms ease;
   }
 }
 
@@ -541,6 +542,43 @@ a:hover {
   background: var(--color-accent-strong);
 }
 
+/* Leo peeks up from the bottom edge of the button: the drawing fills the disc and is cut by its circle (the
+   drawing is clipped, not the button, so the Working ring outside still shows). The mane is a pale halo; eyes and
+   nose are cut in the button's own indigo. */
+.agent-button .leo-peek {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: circle(50%);
+}
+
+.leo-peek-body {
+  transition: transform 300ms var(--ease-out-strong);
+}
+
+.leo-icon-mane {
+  fill: currentColor;
+  opacity: 0.5;
+}
+
+.leo-icon-ink {
+  fill: var(--color-accent);
+}
+
+.leo-icon-nose {
+  stroke: var(--color-accent);
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+}
+
+/* On hover he rises a little more, as if to say hi. Mouse only, never under reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .agent-button:hover .leo-peek-body {
+    transform: translateY(-1.6px);
+  }
+}
+
 .agent-button:active {
   transform: scale(0.96);
 }
@@ -623,15 +661,15 @@ a:hover {
   transform: translateX(100%);
   visibility: hidden;
   transition:
-    transform 150ms var(--ease-standard),
-    visibility 0s linear 150ms;
+    transform 200ms var(--ease-drawer),
+    visibility 0s linear 200ms;
 }
 
 .drawer[data-open='true'] {
   transform: none;
   visibility: visible;
   transition:
-    transform var(--motion-base) var(--ease-standard),
+    transform 300ms var(--ease-drawer),
     visibility 0s;
 }
 
@@ -739,18 +777,26 @@ a:hover {
   }
 }
 
-/* --- Tabs --- */
+/* --- Tabs: the underline slides to the new tab, and the accent copy of the labels (clipped to the active tab)
+   slides with it, so each label changes color as the line passes. Positions come from Tabs.tsx. --- */
 .tabs {
+  position: relative;
   display: flex;
   gap: var(--space-4);
   margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
+  /* Still swipes on narrow screens, without the browser's grey scrollbar under the labels. */
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
   min-height: 40px;
-  padding: 0 2px;
+  padding: 0; /* the box is the label, so the underline is exactly as long as the text */
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
@@ -766,9 +812,62 @@ a:hover {
   color: var(--color-text);
 }
 
-.tab[aria-selected='true'] {
+/* Before the slider is placed (and without script) the selected tab still shows on its own. */
+.tabs:not([data-ready]) .tab[aria-selected='true'] {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
+}
+
+.tabs-copy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: var(--space-4);
+  pointer-events: none;
+}
+
+.tab-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  cursor: default;
+  color: var(--color-accent);
+}
+
+.tab-copy::before {
+  content: attr(data-label);
+}
+
+/* A 1px line, scaled to the active tab's width: it moves on transform only. */
+.tabs-line {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--color-accent);
+  transform-origin: left;
+}
+
+.tabs:not([data-ready]) .tabs-line,
+.tabs:not([data-ready]) .tabs-copy {
+  visibility: hidden;
+}
+
+.tabs[data-ready] .tabs-line,
+.tabs[data-ready] .tabs-copy {
+  transition:
+    transform 320ms var(--ease-in-out-strong),
+    clip-path 320ms var(--ease-in-out-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs[data-ready] .tabs-line,
+  .tabs[data-ready] .tabs-copy {
+    transition: none;
+  }
 }
 
 /* --- Dialog --- */
@@ -780,6 +879,7 @@ a:hover {
   place-items: center;
   padding: var(--space-3);
   background: var(--color-scrim);
+  animation: fade-in 200ms ease;
 }
 
 .dialog {
@@ -790,6 +890,14 @@ a:hover {
   background: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-menu);
+  animation: dialog-in 220ms var(--ease-out-strong);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
 }
 
 .dialog-body {
@@ -824,7 +932,7 @@ a:hover {
   background: var(--color-text);
   color: var(--color-surface);
   box-shadow: var(--shadow-menu);
-  animation: toast-in var(--motion-base) var(--ease-standard);
+  animation: toast-in 250ms var(--ease-out-strong);
 }
 
 .toast-error {
@@ -834,13 +942,32 @@ a:hover {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* A new screen, or a new Money tab, settles in instead of snapping. Kept small and quick: it happens often. */
+.shell-sheet > *,
+.tab-panel > * {
+  animation: view-in 180ms var(--ease-out-strong);
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .agent-button-arc,
-  .toast {
+  .agent-button-arc {
     animation: none;
+  }
+
+  .toast,
+  .dialog,
+  .shell-sheet > *,
+  .tab-panel > * {
+    animation: fade-in 150ms ease;
   }
 }
