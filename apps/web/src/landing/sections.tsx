@@ -1,10 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import { Fragment, useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../ui/BrandMark';
 import { BudgetBar, unlockedToSpend, type BudgetFigures } from '../ui/BudgetBar';
 import { formatMoney } from '../ui/money';
 import { StatusBadge } from '../ui/StatusBadge';
 import { BRAND, LANDING, LINKS } from '../brand';
+import { LeoMascot } from './LeoMascot';
+import { revealAt, useReveal } from './useReveal';
 
 // The demo event's figures, as the demo shows them (cleared $3,000 − committed $1,860 = $1,140 unlocked).
 const DEMO_BUDGET: BudgetFigures = {
@@ -15,53 +17,128 @@ const DEMO_BUDGET: BudgetFigures = {
   pledged: 250_000,
 };
 
+// The name as the landing sets it: lowercase "leonid" with the "eo" in the meteor color. The "eo" is the event
+// organizer, the person Leonid is for, and Leo, the agent and the EO's best friend, lives in the same letters.
+// Landing, hero and video only: inside the app the wordmark is one color. Decorative: callers give the real name.
+function NameWithEo() {
+  const word = BRAND.name.toLowerCase();
+  const at = word.indexOf('eo');
+  if (at < 0) return <>{word}</>;
+  return (
+    <>
+      {word.slice(0, at)}
+      <span className="lp-eo">eo</span>
+      {word.slice(at + 2)}
+    </>
+  );
+}
+
+// Screen readers hear the name, not the split letters.
 export function Wordmark() {
   return (
     <span className="lp-brand">
       <BrandMark />
-      {BRAND.name}
+      <span className="visually-hidden">{BRAND.name}</span>
+      <span aria-hidden="true">
+        <NameWithEo />
+      </span>
     </span>
   );
 }
 
-// --- Hero: the one place the brand shows. Swap HeroVisual for the new mark or motif once the name is decided.
-export function HeroVisual() {
+// --- Hero: the one place the brand shows. The headline's letters lift on hover and a meteor swash draws itself
+// under the accent words; Leo, the mascot, stands where the product proof used to be.
+function Letters({ text }: { text: string }) {
+  // Each word is one unbreakable box, so the per-letter spans never split a word across lines.
+  return text.split(' ').map((word, w, words) => (
+    <Fragment key={w}>
+      <span className="lp-word">
+        {Array.from(word).map((c, i) => (
+          <span key={i} className="lp-ch">
+            {c}
+          </span>
+        ))}
+      </span>
+      {w < words.length - 1 ? ' ' : null}
+    </Fragment>
+  ));
+}
+
+export function HeroTitle({ lead, accent, end }: { lead: string; accent: string; end: string }) {
   return (
-    <figure className="lp-proof" aria-label="Example from the demo event: the rules deciding three payments">
-      <p className="lp-proof-head">
-        <strong>OpenHack 2027</strong> <span>demo event</span>
-      </p>
-      <p className="lp-proof-fig num">{formatMoney(unlockedToSpend(DEMO_BUDGET))}</p>
-      <p className="lp-proof-cap">Unlocked to spend: sponsor money that has cleared, minus what is committed.</p>
-      <BudgetBar figures={DEMO_BUDGET} />
-      <ul className="lp-decisions">
-        <li>
-          <span>
-            <b>Lanyards, 200</b>
-            <small>Under $200 per order</small>
-          </span>
-          <span className="num">{formatMoney(14_000)}</span>
-          <StatusBadge status="done" label="Allowed" />
-        </li>
-        <li>
-          <span>
-            <b>Prize cart</b>
-            <small>Over your $200 rule: waits for your yes</small>
-          </span>
-          <span className="num">{formatMoney(42_000)}</span>
-          <StatusBadge status="risk" label="Needs you" />
-        </li>
-        <li>
-          <span>
-            <b>Swag order</b>
-            <small>Waits for a sponsor’s invoice to clear</small>
-          </span>
-          <span className="num">{formatMoney(65_000)}</span>
-          <StatusBadge status="blocked" label="Blocked" />
-        </li>
-      </ul>
-    </figure>
+    <h1 id="lp-title" aria-label={`${lead} ${accent}${end}`}>
+      <span aria-hidden="true">
+        <Letters text={lead} />{' '}
+        <span className="lp-accent">
+          <Letters text={accent} />
+          <svg className="lp-swash" viewBox="0 0 255 72" preserveAspectRatio="none">
+            <path pathLength={1} d="M6 44 C40 18 150 4 222 14 C262 20 258 48 214 58 C150 72 60 70 30 60 C10 53 20 40 60 34" />
+          </svg>
+        </span>
+        <span className="lp-ch">{end}</span>
+      </span>
+    </h1>
   );
+}
+
+export function HeroLeo() {
+  return (
+    <div className="lp-leo-stage">
+      <span className="lp-stamp" aria-hidden="true">
+        Meet Leo
+      </span>
+      <LeoMascot className="lp-leo" />
+    </div>
+  );
+}
+
+// --- Small meteors on the dark grounds (the hero and the credibility band): copies of the mark that drift a few
+// pixels along their own streak; one now and then shoots across in under a second. Placed clear of text and buttons.
+type Meteor = { top: string; left: string; size: number; drift: number; delay: number; shoot?: boolean };
+const METEORS: Record<'hero' | 'dark', Meteor[]> = {
+  hero: [
+    { top: '9%', left: '47%', size: 18, drift: 7, delay: 0 },
+    { top: '16%', left: '93%', size: 12, drift: 9, delay: -3 },
+    { top: '84%', left: '50%', size: 14, drift: 8, delay: -5 },
+    { top: '74%', left: '95%', size: 10, drift: 10, delay: -2 },
+    { top: '40%', left: '3%', size: 9, drift: 11, delay: -6 },
+    { top: '4%', left: '70%', size: 16, drift: 9, delay: 0, shoot: true },
+  ],
+  dark: [
+    { top: '12%', left: '88%', size: 14, drift: 8, delay: -1 },
+    { top: '22%', left: '95%', size: 9, drift: 10, delay: -4 },
+    { top: '8%', left: '62%', size: 14, drift: 10, delay: 2, shoot: true },
+  ],
+};
+
+export function Meteors({ set }: { set: 'hero' | 'dark' }) {
+  return (
+    <div className="lp-meteors" aria-hidden="true">
+      {METEORS[set].map((m, i) => (
+        <svg
+          key={i}
+          className={m.shoot ? 'lp-meteor lp-meteor--shoot' : 'lp-meteor'}
+          viewBox="0 0 32 32"
+          style={{ top: m.top, left: m.left, width: m.size * 2, '--drift': `${m.drift}s`, '--delay': `${m.delay}s` } as CSSProperties}
+        >
+          <path d="M26.5 5.5 10.4 19.6 12.6 21.8Z" />
+          <circle cx="10.6" cy="21.4" r="3.4" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+// A heading whose words rise out of a light blur one after another when its section scrolls in (useReveal).
+function RevealWords({ text }: { text: string }) {
+  return text.split(' ').map((word, i, words) => (
+    <Fragment key={i}>
+      <span className="lp-rw" style={{ '--w': i } as CSSProperties}>
+        {word}
+      </span>
+      {i < words.length - 1 ? ' ' : null}
+    </Fragment>
+  ));
 }
 
 // --- Built with: names only, never logos.
@@ -82,39 +159,56 @@ export function BuiltWith() {
 
 // --- In one view: a real screenshot of Event home.
 export function InOneView() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section className="lp-section lp-center" aria-labelledby="lp-view">
+    <section ref={ref} className="lp-section lp-center" aria-labelledby="lp-view">
       <div className="lp-wrap">
-        <h2 id="lp-view">Your event, planned and paid, in one view.</h2>
-        <p className="lp-sub">The plan, the money and what needs you, side by side.</p>
-        <img
-          className="lp-shot"
-          src="/landing/event-home.png"
-          width={1440}
-          height={900}
-          alt="Event home: $1,140.00 unlocked to spend, a prize cart waiting for approval, recent spends and the plan"
-          loading="lazy"
-        />
+        <h2 id="lp-view" data-reveal style={revealAt(0)}>
+          Your event, planned and paid, in one view.
+        </h2>
+        <p className="lp-sub" data-reveal style={revealAt(1)}>
+          The plan, the money and what needs you, side by side.
+        </p>
+        <div className="lp-shot-card" data-tilt data-reveal="drop" style={revealAt(2)}>
+          <img
+            className="lp-shot"
+            src="/landing/event-home.png"
+            width={1440}
+            height={900}
+            alt="Event home: $1,140.00 unlocked to spend, a prize cart waiting for approval, recent spends and the plan"
+            loading="lazy"
+          />
+        </div>
       </div>
     </section>
   );
 }
 
 // --- Four feature rows: text beside a real piece of the product, alternating sides.
+// Each row reveals as it scrolls in: the title, line and points rise one by one while the product card drops in.
 function Feature({ id, flip, title, text, points, children }: { id: string; flip?: boolean; title: string; text: string; points: string[]; children: ReactNode }) {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section className="lp-section" aria-labelledby={id}>
+    <section ref={ref} className="lp-section" aria-labelledby={id}>
       <div className={`lp-wrap lp-feature${flip ? ' lp-feature--flip' : ''}`}>
         <div>
-          <h2 id={id}>{title}</h2>
-          <p className="lp-sub">{text}</p>
+          <h2 id={id} data-reveal style={revealAt(0)}>
+            {title}
+          </h2>
+          <p className="lp-sub" data-reveal style={revealAt(1)}>
+            {text}
+          </p>
           <ul className="lp-points">
-            {points.map((p) => (
-              <li key={p}>{p}</li>
+            {points.map((p, i) => (
+              <li key={p} data-reveal style={revealAt(i + 2)}>
+                {p}
+              </li>
             ))}
           </ul>
         </div>
-        <div className="lp-piece">{children}</div>
+        <div className="lp-piece" data-tilt data-reveal="drop" style={revealAt(1)}>
+          {children}
+        </div>
       </div>
     </section>
   );
@@ -272,7 +366,9 @@ const PAYOUTS: { title: string; text: string; phone: ReactNode }[] = [
 ];
 
 export function PaysPeople() {
-  const [open, setOpen] = useState(0);
+  // dir: which way the list moved, so the phone's screen slides in from the same side.
+  const [{ open, dir }, setView] = useState({ open: 0, dir: 1 });
+  const show = (i: number) => setView((v) => (v.open === i ? v : { open: i, dir: i > v.open ? 1 : -1 }));
   return (
     <section className="lp-section" aria-labelledby="lp-pay">
       <div className="lp-wrap lp-phonefeat">
@@ -287,8 +383,8 @@ export function PaysPeople() {
                 role="tab"
                 aria-selected={open === i}
                 className="lp-fitem"
-                onClick={() => setOpen(i)}
-                onMouseEnter={() => setOpen(i)}
+                onClick={() => show(i)}
+                onMouseEnter={() => show(i)}
               >
                 <b>{item.title}</b>
                 {open === i && <span>{item.text}</span>}
@@ -296,8 +392,10 @@ export function PaysPeople() {
             ))}
           </div>
         </div>
-        <div className="lp-phone" role="tabpanel" aria-label={PAYOUTS[open]!.title}>
-          {PAYOUTS[open]!.phone}
+        <div className="lp-phone" data-tilt role="tabpanel" aria-label={PAYOUTS[open]!.title}>
+          <div key={open} className="lp-phone-screen" style={{ '--dir': dir } as CSSProperties}>
+            {PAYOUTS[open]!.phone}
+          </div>
         </div>
       </div>
     </section>
@@ -313,16 +411,19 @@ const TRIES = [
 
 // A signed-in visitor just goes there: running the demo login again would replace their own session.
 export function TryIt({ onTry, busy, signedIn }: { onTry: (to: string) => void; busy: boolean; signedIn: boolean }) {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section id="try" className="lp-section lp-tint" aria-labelledby="lp-try">
+    <section ref={ref} id="try" className="lp-section lp-tint" aria-labelledby="lp-try">
       <div className="lp-wrap">
-        <h2 id="lp-try">Try it in 3 minutes.</h2>
-        <p className="lp-sub">
+        <h2 id="lp-try">
+          <RevealWords text="Try it in 3 minutes." />
+        </h2>
+        <p className="lp-sub" data-reveal style={revealAt(2)}>
           {signedIn ? 'Each card opens that moment in the demo.' : 'Each card signs you in to the demo and opens it at that moment.'}
         </p>
         <ul className="lp-tries">
-          {TRIES.map((t) => (
-            <li key={t.n} className="lp-try">
+          {TRIES.map((t, i) => (
+            <li key={t.n} className="lp-try" data-tilt data-reveal style={revealAt(i + 3)}>
               <span className="lp-try-n">{t.n}</span>
               <h3>{t.title}</h3>
               <p>{t.text}</p>
@@ -351,13 +452,16 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section id="how" className="lp-section lp-center" aria-labelledby="lp-how">
+    <section ref={ref} id="how" className="lp-section lp-center" aria-labelledby="lp-how">
       <div className="lp-wrap">
-        <h2 id="lp-how">How it works</h2>
+        <h2 id="lp-how">
+          <RevealWords text="How it works" />
+        </h2>
         <ol className="lp-steps">
           {STEPS.map((s, i) => (
-            <li key={s.title}>
+            <li key={s.title} data-reveal style={revealAt(i + 2)}>
               <span className="lp-step-n num">{String(i + 1).padStart(2, '0')}</span>
               <div>
                 <h3>{s.title}</h3>
@@ -380,14 +484,20 @@ const PROOF = [
 ];
 
 export function Credibility() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section className="lp-dark" aria-labelledby="lp-proof">
+    <section ref={ref} className="lp-dark" aria-labelledby="lp-proof">
+      <Meteors set="dark" />
       <div className="lp-wrap">
-        <h2 id="lp-proof">Rules are code, not prompts.</h2>
-        <p className="lp-sub">An AI drafts and proposes. Fixed code decides what gets paid, and PayPal enforces the stop.</p>
+        <h2 id="lp-proof">
+          <RevealWords text="Rules are code, not prompts." />
+        </h2>
+        <p className="lp-sub" data-reveal style={revealAt(2)}>
+          An AI drafts and proposes. Fixed code decides what gets paid, and PayPal enforces the stop.
+        </p>
         <dl className="lp-proofs">
-          {PROOF.map((p) => (
-            <div key={p.k}>
+          {PROOF.map((p, i) => (
+            <div key={p.k} data-reveal style={revealAt(i + 3)}>
               <dt>{p.k}</dt>
               <dd>
                 <b>{p.title}</b>
@@ -413,16 +523,21 @@ const FAQ = [
 ];
 
 export function Faq() {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section id="faq" className="lp-section" aria-labelledby="lp-faq">
+    <section ref={ref} id="faq" className="lp-section" aria-labelledby="lp-faq">
       <div className="lp-wrap lp-faq">
         <div>
-          <h2 id="lp-faq">Questions</h2>
-          <p className="lp-sub">The things organisers and judges ask first.</p>
+          <h2 id="lp-faq">
+            <RevealWords text="Questions" />
+          </h2>
+          <p className="lp-sub" data-reveal style={revealAt(1)}>
+            The things organisers and judges ask first.
+          </p>
         </div>
         <div>
           {FAQ.map((item, i) => (
-            <details key={item.q} className="lp-q" open={i === 0}>
+            <details key={item.q} className="lp-q" open={i === 0} data-reveal style={revealAt(i + 2)}>
               <summary>{item.q}</summary>
               <p>{item.a}</p>
             </details>
@@ -460,30 +575,54 @@ export function Closing({ onEnter, busy, signedIn }: { onEnter: () => void; busy
   );
 }
 
+// The footer is an inset card: the links and the motto with one way in, then one line along the bottom: the name,
+// cropped by the card's edge, and Leo's sticker beside it.
 export function LandingFooter() {
+  const ring = `lp-ring-${useId().replace(/:/g, '')}`;
   return (
     <footer className="lp-footer">
-      <div className="lp-wrap">
-        <div className="lp-cols">
-          <div>
-            <b>{BRAND.name}</b>
-            <p>Built for the PayPal AI Hackathon. PayPal sandbox, no real money.</p>
-          </div>
-          <div>
-            <b>Product</b>
-            <a href="#how">How it works</a>
-            <a href="#try">Try the demo</a>
-            <a href="#faq">FAQ</a>
-          </div>
-          <div>
-            <b>Build</b>
-            <a href={LINKS.github}>GitHub (MIT)</a>
-            {LINKS.video && <a href={LINKS.video}>Demo video</a>}
+      <div className="lp-footer-card">
+        <div className="lp-footer-top">
+          <nav className="lp-footer-cols" aria-label="Footer">
+            <div>
+              <b>Product</b>
+              <a href="#how">How it works</a>
+              <a href="#try">Try the demo</a>
+              <a href="#faq">FAQ</a>
+            </div>
+            <div>
+              <b>Build</b>
+              <a href={LINKS.github}>GitHub (MIT)</a>
+              {LINKS.video && <a href={LINKS.video}>Demo video</a>}
+            </div>
+          </nav>
+          <div className="lp-footer-cta">
+            <p className="lp-footer-motto">Every event, on course.</p>
+            <a className="btn lp-btn-light" href="#try">
+              Try the demo
+            </a>
+            <p className="lp-footer-fine">
+              {BRAND.name} · Built for the PayPal AI Hackathon. PayPal sandbox, no real money.
+            </p>
           </div>
         </div>
-        <p className="lp-wordmark" aria-hidden="true">
-          {BRAND.name}
-        </p>
+        <div className="lp-footer-mark" aria-hidden="true">
+          <span className="lp-wordmark">
+            <NameWithEo />
+          </span>
+          <span className="lp-sticker">
+            <svg className="lp-sticker-ring" viewBox="0 0 200 200">
+              <defs>
+                <path id={ring} d="M100 100 m-82 0 a82 82 0 1 1 164 0 a82 82 0 1 1 -164 0" />
+              </defs>
+              <circle cx="100" cy="100" r="98" />
+              <text>
+                <textPath href={`#${ring}`}>EVERY EVENT · ON COURSE · EVERY EVENT · ON COURSE ·</textPath>
+              </text>
+            </svg>
+            <LeoMascot decorative className="lp-sticker-leo" />
+          </span>
+        </div>
       </div>
     </footer>
   );

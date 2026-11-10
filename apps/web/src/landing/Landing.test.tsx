@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { LANDING } from '../brand';
+import { LEO_LINES } from './LeoMascot';
 import { nav } from './useEnterDemo';
 
 const json = (body: unknown, status = 200) =>
@@ -46,6 +47,23 @@ describe('Landing page', () => {
     expect(screen.getAllByRole('button', { name: 'Enter the demo' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: 'Log in with PayPal' })).toHaveAttribute('href', '/api/auth/paypal/login');
     expect(screen.getByText('Runs on the PayPal sandbox. No real money moves.')).toBeInTheDocument();
+  });
+
+  it('names the headline for screen readers in one piece, not letter by letter', () => {
+    renderLanding();
+    expect(screen.getByRole('heading', { level: 1, name: 'Your event’s money, kept by your rules.' })).toBeInTheDocument();
+  });
+
+  it('has Leo in the hero, who answers a click in its own voice, and again in the footer', () => {
+    renderLanding();
+    const leo = screen.getByRole('button', { name: 'Say hi to Leo' });
+    fireEvent.click(leo);
+    expect(leo).toHaveTextContent(LEO_LINES[0]!);
+    fireEvent.click(leo);
+    expect(leo).toHaveTextContent(LEO_LINES[1]!);
+    // The footer's Leo is decoration: hidden from screen readers and not a second button.
+    expect(screen.getAllByRole('button', { name: 'Say hi to Leo' })).toHaveLength(1);
+    expect(document.querySelector('.lp-footer .leo[aria-hidden="true"]')).not.toBeNull();
   });
 
   it('names its sponsors in text only: no logos', () => {
