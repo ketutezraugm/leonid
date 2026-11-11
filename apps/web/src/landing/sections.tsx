@@ -142,7 +142,7 @@ function RevealWords({ text }: { text: string }) {
 }
 
 // --- Built with: names only, never logos.
-const BUILT_WITH = ['PayPal (Invoicing, Vault, Orders, Payouts)', 'Bryntum Gantt', 'AG Studio', 'Render', 'APIMatic'];
+const BUILT_WITH = ['PayPal (Invoicing, Vault, Orders, Payouts)', 'Bryntum Calendar', 'AG Studio', 'Render', 'APIMatic'];
 
 export function BuiltWith() {
   return (
@@ -253,7 +253,7 @@ export function Features() {
       <Feature
         id="lp-approve"
         title="Every spend is checked first."
-        text="Before any payment, the rules engine allows it or blocks it, and says why. The model never decides."
+        text="Before any payment, the rules engine allows it, asks you first, or blocks it, and says why. The model never decides."
         points={[
           'The rule that decided, in plain words',
           'The agent’s reasoning and the options it compared',
@@ -272,8 +272,8 @@ export function Features() {
         id="lp-plan"
         flip
         title="One plan, built from one sentence."
-        text="The agent builds a Gantt plan from your goal, and each purchase shows which sponsor funds it."
-        points={['A Gantt plan the agent builds from one sentence', 'Each purchase shows the sponsor that funds it', 'Event day stays fixed']}
+        text="The agent builds a calendar plan from your goal, and each purchase shows which sponsor funds it."
+        points={['A calendar plan the agent builds from one sentence', 'Each purchase shows the sponsor that funds it', 'Event day stays fixed']}
       >
         <p className="lp-piece-label">Plan</p>
         <div className="lp-gantt" role="img" aria-label="The sponsor invoice, the swag order and its delivery on one plan; event day is fixed">
@@ -302,7 +302,7 @@ export function Features() {
             </span>
           </div>
         </div>
-        <p className="lp-piece-label">Swag is labelled with the sponsor that funds it. Plan drawn with Bryntum Gantt.</p>
+        <p className="lp-piece-label">Swag is labelled with the sponsor that funds it. A sketch; the app shows the plan in Bryntum Calendar.</p>
       </Feature>
     </>
   );
@@ -472,7 +472,7 @@ export function HowItWorks() {
 
 // --- Credibility: the dark section.
 const PROOF = [
-  { k: 'RULES ENGINE', title: 'The model never decides a payment', text: 'Every spend passes one deterministic check: allow or block.' },
+  { k: 'RULES ENGINE', title: 'The model never decides a payment', text: 'Every spend passes one deterministic check: allow, ask you first, or block.' },
   { k: 'LIVE FROM PAYPAL', title: 'Cleared money is counted, never guessed', text: 'Income comes from PayPal’s own webhooks, per event.' },
   { k: 'PAYPAL VAULT', title: 'A kill switch PayPal enforces', text: 'Revoking the wallet deletes the payment token; the next charge fails at PayPal.' },
   { k: 'AUDIT LOG', title: 'Every decision is on the record', text: 'Input, reasoning, rule result and PayPal ID for each action.' },
