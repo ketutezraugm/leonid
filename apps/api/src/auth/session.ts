@@ -4,8 +4,8 @@ import type { Request, Response } from 'express';
 // Stateless signed cookie: base64url(JSON payload) + '.' + HMAC-SHA256. No session table and no cookie library.
 // ponytail: a session cannot be revoked before it expires (8 hours); add a sessions table if logout must be server-side.
 
-export const SESSION_COOKIE = 'qm_session';
-export const STATE_COOKIE = 'qm_oauth_state';
+export const SESSION_COOKIE = 'leonid_session';
+export const STATE_COOKIE = 'leonid_oauth_state';
 export const SESSION_TTL_S = 8 * 60 * 60;
 export const STATE_TTL_S = 10 * 60;
 
