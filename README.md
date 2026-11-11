@@ -1,27 +1,145 @@
 # Leonid
 
-An AI operations agent for community tech events that runs all of an event's money on PayPal: sponsor money in, purchases and people payouts out, under spending rules no agent can break. Built for the PayPal AI Hackathon. Full spec: [`docs/PRD.pdf`](docs/PRD.pdf).
+**Leonid** is an AI operations agent for community tech events that runs all of an event's money on
+**PayPal**. Sponsor money comes in through PayPal Invoicing, purchases and people payouts go out
+through the organizer's own PayPal wallet, and every outflow passes spending rules that no agent
+can break. The organizer sets a max spend once; after that the agent plans, sources, checks each
+spend against the rules, and pays with no further clicks. Every decision is written to an audit log,
+and a **PayPal-enforced kill switch** (deleting the vault payment token) stops the agent instantly.
 
-## Run locally
+This is a working build on the **PayPal sandbox**: no live keys, no real money. Built for the PayPal AI
+Hackathon. Full spec: [`docs/PRD.pdf`](docs/PRD.pdf).
 
-Prerequisites: Node 22 and pnpm (`corepack enable`).
+## Live demo
+
+| | |
+| --- | --- |
+| **App (hosted demo)** | https://quartermaster-staging.onrender.com (seeded event: OpenHack 2027; use **Demo login** if you have no PayPal sandbox account) |
+| **Demo video** | _TODO: add the public YouTube link before submitting_ |
+| **Health check** | https://quartermaster-staging.onrender.com/api/health |
+
+The hosted demo runs on Render's free plan and may take about a minute to wake on first request.
+
+## Hackathon qualification
+
+| Requirement | How this repo meets it |
+| --- | --- |
+| Uses PayPal APIs end to end in the sandbox | Log in with PayPal, Invoicing, Orders, Vault, Payouts, Transaction Search and webhooks. See [PayPal capabilities used](#paypal-capabilities-used) |
+| An AI agent that acts on money, not just talks about it | The agent chat runs a tool loop; spends go through the executor, which pays from the saved wallet only after the rules engine says allow. See [Agent loop](#agent-loop-p1) |
+| Public GitHub repo with setup, architecture and payment flow | [Setup](#setup) · [Architecture](#architecture) · [Payment flow](#payment-flow) |
+| Demo video under 3 minutes | _TODO: link above_; script in [`docs/demo-script.md`](docs/demo-script.md) |
+| Sponsor integrations | [AG Studio](#ag-studio) · [Bryntum](#bryntum) · [Render](#render) · [APIMatic](#apimatic) · [Channel3](#channel3) |
+
+## What it does
+
+| Area | What the organizer gets | Features |
+| --- | --- | --- |
+| **Rules are code** | A max spend plus approval threshold, daily and category caps, enforced by a deterministic `check()`; never by a prompt | F9 |
+| **Agent wallet** | Connect PayPal once; the agent pays from the vaulted wallet, supervised payments use PayPal's approve button | F13, F14 |
+| **Kill switch** | One click deletes the vault token at PayPal; there is no fallback payment path | F15 |
+| **Money in** | Sponsor invoices (Invoicing v2), public ticket and donation checkout, live status from webhooks | F4, F6 |
+| **Money out** | Volunteer receipt claims and prize or speaker payouts (Payouts v1) through the same rules | F16, F17 |
+| **One plan** | Bryntum Gantt and Calendar; each purchase names the sponsor that funds it | F11 |
+| **Command center** | AG Studio dashboard with custom widgets and a dashboard agent | F20, F21 |
+| **Sponsor report** | A report built by a Render Workflow from reconciled data | F22 |
+
+## Architecture
+
+```
+  Organizer ── Log in with PayPal ──▶ session (allowlist)
+      │
+      ▼
+┌───────────────────────────────────────────────────────┐
+│  Web (apps/web: React + Vite)                          │
+│  Agent chat · Plan · Money · Claims · Sponsor report   │
+│  Only the PayPal JS SDK runs here; no PayPal secrets   │
+└────────────────────┬──────────────────────────────────┘
+                     │ /api (zod contracts: packages/shared)
+                     ▼
+┌───────────────────────────────────────────────────────┐
+│  API (apps/api: Express 5)                             │
+│  agents ─▶ executor ─▶ rules check() ─▶ PayPal client  │
+│               │            allow | needs_approval |    │
+│               │            block   (pure, no I/O)      │
+│               └──▶ audit_log (input, reason, rule      │
+│                    result, PayPal id)                  │
+└───────┬─────────────────────────────┬─────────────────┘
+        │ Treasury app                │ Procurement app
+        │ Identity, Invoicing,        │ Vault, spend Orders
+        │ income Orders, Payouts,     │
+        │ Transaction Search          │
+        ▼                             ▼
+┌───────────────────────────────────────────────────────┐
+│  PayPal sandbox ──▶ webhooks ──▶ /api/webhooks/paypal  │
+│  (signature verified, then the ledger is updated)      │
+└───────────────────────────────────────────────────────┘
+  Postgres (Supabase) · Render web service + Render Workflows
+```
+
+**Webhooks are the source of truth.** "Paid" comes from PayPal's events, never from our own guess.
+Transaction Search lags, so it is used for reconciliation and reports only.
+
+## Payment flow
+
+1. **Set the limit** — the organizer connects a PayPal wallet (Vault v3 setup token → payment token)
+   and sets a max spend with the "Add rule" button in the agent chat.
+2. **Plan and source** — the agent writes a checklist, finds items and venues (Channel3), and drafts
+   a spend. Product pages, receipts and invoice notes are treated as data, never as instructions.
+3. **Check the rules** — every spend goes through `check(spend, rules, budget)` and returns
+   `allow`, `needs_approval` or `block`. The result and the reason go to the audit log.
+4. **Pay or stop** — `allow` charges the vaulted wallet automatically; `needs_approval` creates an
+   order the treasurer approves with PayPal's button, captured only after PayPal reports it
+   `APPROVED` for the exact amount; `block` pays nothing.
+5. **Confirm from PayPal** — the capture, payout or invoice webhook updates the ledger. Payout
+   items are matched by `sender_item_id`, so an unclaimed or returned item is never shown as paid.
+6. **Kill switch** — deleting the vault payment token at PayPal makes every later automatic spend fail.
+
+Only the executor can reach the PayPal spend call (`apps/api/src/paypal/spend.ts`); an ESLint rule
+enforces that import boundary.
+
+## Setup
+
+Prerequisites: Node 22 and pnpm (`corepack enable`). A hosted demo already exists (see
+[Live demo](#live-demo)), so local setup is only needed for development.
 
 ```sh
 pnpm install
-cp .env.example .env   # fill in sandbox credentials
+cp .env.example .env   # PayPal sandbox credentials, DATABASE_URL, OPENROUTER_API_KEY, ...
+pnpm --filter @leonid/api db:migrate && pnpm --filter @leonid/api db:seed
 pnpm dev               # web on http://localhost:5173, API on http://localhost:3001
 ```
 
-Other commands: `pnpm build`, `pnpm start` (serves the built web app from the API), `pnpm typecheck`, `pnpm lint`, `pnpm test`.
+Other commands: `pnpm build`, `pnpm start` (serves the built web app from the API), `pnpm typecheck`,
+`pnpm lint`, `pnpm test`. Env var names and what each one does are in [`.env.example`](.env.example).
+
+You need two PayPal sandbox apps (**Treasury** and **Procurement**, each with a webhook), a sandbox
+business account for the organizer and a sandbox personal account for a sponsor. Day-1 checks are in
+[`docs/p2/DAY1-RUNBOOK.md`](docs/p2/DAY1-RUNBOOK.md). Locally, PayPal's dashboard refuses an
+`http://localhost` return URL, so use the demo login on a local run and real login on staging.
+
+## What's real vs. simulated
+
+| | Status |
+| --- | --- |
+| PayPal login, invoices, orders, vault, payouts, webhooks | **Real**: PayPal sandbox, no live keys anywhere |
+| Rules engine, audit log, kill switch | **Real**: deterministic code, token deleted at PayPal |
+| Payout paths on the sandbox | Covered by tests with PayPal faked; sandbox run with `PAYMENT.PAYOUTS-ITEM.*` still to come |
+| Seeded event (OpenHack 2027: 200 people, Mar 14, 2027, $8,000, three sponsors) | **Sample data**: generic products and names, no brand assets |
+| Plan tasks | Sample data on some screens, labelled in the UI; sponsor status is live |
+| Late-delivery recovery (F18, F19) | Not built yet |
 
 ## Repo layout
 
-| Path              | What                                                   |
-| ----------------- | ------------------------------------------------------ |
-| `apps/web`        | React + Vite front end                                 |
-| `apps/api`        | Express API: agents, rules engine, PayPal webhooks     |
-| `packages/shared` | API contract types and zod schemas shared by web + API |
-| `render.yaml`     | Render Blueprint (web service; Postgres is Supabase)   |
+| Path | What |
+| --- | --- |
+| [`apps/web`](apps/web) | React + Vite front end; `src/pages/` maps to the PRD screens |
+| [`apps/api`](apps/api) | Express API: agents, rules engine, executor, PayPal clients, webhooks |
+| [`apps/workflows`](apps/workflows) | Render Workflow jobs (budget recompute, invoice reminders, sponsor report) |
+| [`packages/shared`](packages/shared) | API contract: zod schemas and types shared by web and API |
+| [`render.yaml`](render.yaml) | Render Blueprint (web service; Postgres is Supabase) |
+| [`docs/`](docs) | PRD, demo script, per-owner notes and sandbox results |
+
+---
 
 ## PayPal capabilities used
 
