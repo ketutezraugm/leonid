@@ -16,7 +16,7 @@ Hackathon. Full spec: [`docs/PRD.pdf`](docs/PRD.pdf).
 | | |
 | --- | --- |
 | **App (hosted demo)** | https://quartermaster-staging.onrender.com (seeded event: OpenHack 2027). No PayPal sandbox account is needed: press **Enter the demo** with the judge access code from the submission notes, or open the one-click link given there |
-| **Demo video** | _TODO: add the public YouTube link before submitting_ |
+| **Demo video** | [https://youtu.be/fiTMPqjL3JA](https://youtu.be/fiTMPqjL3JA) (2:55) |
 | **Health check** | https://quartermaster-staging.onrender.com/api/health |
 
 The hosted demo runs on a paid Render web service, so it does not sleep.
@@ -37,7 +37,7 @@ The hosted demo runs on a paid Render web service, so it does not sleep.
 | Uses PayPal APIs end to end in the sandbox | Log in with PayPal, Invoicing, Orders, Vault, Payouts, Transaction Search and webhooks. See [PayPal capabilities used](#paypal-capabilities-used) |
 | An AI agent that acts on money, not just talks about it | The agent plans the event and scouts venues in a tool loop. A model also reads a volunteer's receipt, and the payout is sent with no human step when the rules allow it. Every payment goes through the executor, which pays only after the rules engine says allow. See [Agent loop](#agent-loop) and [Receipt claims and payouts](#receipt-claims-and-payouts) |
 | Public GitHub repo with setup, architecture and payment flow | [Setup](#setup) · [Architecture](#architecture) · [Payment flow](#payment-flow) |
-| Demo video under 3 minutes | _TODO: link above_; script in [`docs/demo-script.md`](docs/demo-script.md) |
+| Demo video under 3 minutes | [2:55 on YouTube](https://youtu.be/fiTMPqjL3JA); script in [`docs/demo-script.md`](docs/demo-script.md) |
 | Sponsor integrations | [AG Studio](#ag-studio) · [Bryntum](#bryntum) · [Render](#render) · [APIMatic](#apimatic) |
 
 ## What it does
