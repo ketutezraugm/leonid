@@ -9,7 +9,7 @@ import { aim, approach, blink, pose } from './leoMotion';
 export const LEO_LINES = [
   "Hi, I'm Leo. I run your event's money, always inside your rules.",
   'Bought 200 lanyards for $140.00. Your $200 rule allowed it.',
-  'The $420.00 prize cart is over your $200 rule, so it waits for your yes.',
+  'The $420.00 prize cart is inside your rules, so I paid it and logged why.',
   "I can't buy from that seller: it isn't on your approved list.",
 ];
 

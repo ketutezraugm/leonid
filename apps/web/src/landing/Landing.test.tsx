@@ -84,10 +84,10 @@ describe('Landing page', () => {
     renderLanding();
     for (const name of [
       'Your event, planned and paid, in one view.',
-      'Only cleared money is spendable.',
+      'Know what’s cleared, what’s committed and what’s left.',
       'Set the rules once. It never crosses them.',
-      'A yes from you before anything big.',
-      'The plan waits for the money.',
+      'Every spend is checked first.',
+      'One plan, built from one sentence.',
       'Try it in 3 minutes.',
       'How it works',
       'Rules are code, not prompts.',

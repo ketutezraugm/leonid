@@ -63,7 +63,7 @@ export function Landing({ problem }: { problem: string | null }) {
                 <HeroTitle lead="Your event’s money, kept" accent="by your rules" end="." />
                 <p className="lp-lede">
                   An AI agent that runs a community event’s money on PayPal: it invoices sponsors, buys what the plan
-                  needs and pays people back, and it only spends what has cleared, within the rules you set.
+                  needs and pays people back, all inside the rules you set.
                 </p>
                 {message && (
                   <p className="lp-problem" role="alert">
