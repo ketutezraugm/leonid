@@ -84,7 +84,7 @@ Every user-visible place says Leonid, and the agent is Leo ("Ask Leo"). The old 
 
 ## What still carries the old name, and why
 
-- **The staging address `quartermaster-staging.onrender.com`.** Render fixes an address when a service is created and cannot change it, and PayPal has it registered (both webhooks and the Log in with PayPal return URL). The service's display name in the Render dashboard is `leonid-staging`. A new address would mean a new service and re-registering all of that; a custom domain in front of the service is the way to a clean address.
+- **The web address `quartermaster-staging.onrender.com`.** Render fixes an address when a service is created and cannot change it, and PayPal has it registered (both webhooks and the Log in with PayPal return URL). The service itself is named `leonid` in the Render dashboard, runs the `main` branch on the Starter plan, and this address is the one the judges use. A new address would mean a new service and re-registering all of that; a custom domain in front of the service is the way to a clean address.
 - **The reader of old payment tags** (`webhooks/handlers/capture-completed.ts`, `TAG`). It accepts both `leonid:` and the earlier `qm:` prefix, so a ticket or donation checkout started before the rename and paid after it is still recorded. New tags are written as `leonid:`. Remove the `qm:` alternative once no old checkout can still be paid.
 - **Binary and historical files:** `docs/PRD.pdf`, and dated log rows in the README that record what was asked at the time.
 - **Saved browser data:** the storage keys were renamed, so a browser that used the app earlier forgets its saved chats once.
