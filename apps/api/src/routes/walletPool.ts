@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
-import { refuseDemoSession, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { currentTreasurer, refuseDemoSession, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { writeAudit } from '../db/audit.js';
 import { getDb, type Db } from '../db/client.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
@@ -116,8 +116,14 @@ export function walletPoolRouter(options: WalletPoolRouterOptions = {}) {
   router.post(
     '/reset',
     guard,
-    safe(async (_req, res, { executor }, db) => {
+    safe(async (_req, res, { executor, wallet }, db) => {
       const actor = treasurerActor(res);
+      // A judge's demo session restores a wallet that was revoked. Resetting a live one would only use up the spare
+      // tokens, so a demo session is refused while the wallet is active; a real login and the ops token are not.
+      if (currentTreasurer(res).via === 'demo' && (await wallet.getActive())) {
+        res.status(409).json({ error: 'The demo wallet is already active' });
+        return;
+      }
       if ((await poolCounts(db)).standby === 0) {
         res.status(409).json({ error: 'no standby wallet in the pool; the current wallet was not touched' });
         return;
