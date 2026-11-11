@@ -58,7 +58,15 @@ describe('orchestrator', () => {
         tool: 'create_tasks',
         input: {
           tasks: [
-            { name: 'Order swag', start: '2027-01-05', end: '2027-02-15', deadline: '2027-02-20' },
+            {
+              name: 'Order swag',
+              start: '2027-01-05',
+              end: '2027-02-15',
+              deadline: '2027-02-20',
+              kind: 'payment',
+              workstream: 'swag',
+            },
+            { name: 'Final rehearsal', start: '2027-03-13', end: '2027-03-13', kind: 'milestone', workstream: 'people' },
           ],
           reason: 'Swag has a long lead time',
         },
@@ -73,7 +81,12 @@ describe('orchestrator', () => {
     ]);
 
     expect((await result).text).toBe('Swag is on the plan.');
-    expect((await listTasks(db, eventId)).map((t) => t.name)).toEqual(['Order swag']);
+    expect(
+      (await listTasks(db, eventId)).map(({ name, kind, workstream }) => ({ name, kind, workstream })),
+    ).toEqual([
+      { name: 'Order swag', kind: 'payment', workstream: 'swag' },
+      { name: 'Final rehearsal', kind: 'milestone', workstream: 'people' },
+    ]);
     expect(await getChecklist(db, threadId)).toEqual([{ title: 'Plan swag', status: 'done' }]);
     expect((await getActiveMandate(db, threadId))?.status).toBe('done');
 

@@ -12,6 +12,8 @@ const task = (n: number, name: string, start: string, end: string): PlanTaskRow 
   dependsOn: [],
   fundedBySponsorId: null,
   invoiceOfSponsorId: null,
+  kind: 'task',
+  workstream: null,
 });
 
 const plan: PlanResponse = {
@@ -57,9 +59,38 @@ describe('toPlanEvents', () => {
     });
   });
 
-  it('tags each event with its status class for the theme', () => {
-    expect(deposit?.cls).toBe('lx-status-done');
-    expect(badges?.cls).toBe('lx-status-pending');
+  it('tags each event with its status, workstream and kind classes for the theme', () => {
+    expect(deposit?.cls).toBe('lx-status-done lx-ws-none lx-kind-task');
+    expect(badges?.cls).toBe('lx-status-pending lx-ws-none lx-kind-task');
+  });
+
+  it('carries a milestone and a workstream through, with "photo_video" as a dashed class', () => {
+    const [rehearsal, shoot] = toPlanEvents(
+      {
+        eventDate: plan.eventDate,
+        tasks: [
+          {
+            ...task(5, 'Final rehearsal', '2027-03-13T00:00:00.000Z', '2027-03-13T00:00:00.000Z'),
+            kind: 'milestone',
+            workstream: 'people',
+          },
+          {
+            ...task(6, 'Book photographer', '2027-02-15T00:00:00.000Z', '2027-02-16T23:59:59.000Z'),
+            kind: 'payment',
+            workstream: 'photo_video',
+          },
+        ],
+      },
+      now,
+    );
+    expect(rehearsal).toMatchObject({
+      kind: 'milestone',
+      workstream: 'people',
+      allDay: true,
+      cls: 'lx-status-pending lx-ws-people lx-kind-milestone',
+    });
+    expect(shoot).toMatchObject({ kind: 'payment', workstream: 'photo_video' });
+    expect(shoot?.cls).toContain('lx-ws-photo-video');
   });
 });
 

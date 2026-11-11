@@ -386,6 +386,95 @@
   gap: var(--space-2);
 }
 
+/* "Colour the plan by": two buttons joined into one control; the pressed one carries the accent. */
+.plan-colorby {
+  display: inline-flex;
+}
+
+.plan-colorby .btn {
+  border-radius: 0;
+}
+
+.plan-colorby .btn:first-child {
+  border-start-start-radius: var(--radius);
+  border-end-start-radius: var(--radius);
+}
+
+.plan-colorby .btn:last-child {
+  border-start-end-radius: var(--radius);
+  border-end-end-radius: var(--radius);
+}
+
+.plan-colorby .btn[aria-pressed='true'] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* The workstream legend: a swatch per part of the event, in the calendar's colours. */
+.plan-workstreams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-xs);
+}
+
+.plan-workstreams li,
+.plan-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.plan-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-ws-none);
+}
+
+.plan-swatch-venue {
+  background: var(--color-ws-venue);
+}
+
+.plan-swatch-catering {
+  background: var(--color-ws-catering);
+}
+
+.plan-swatch-swag {
+  background: var(--color-ws-swag);
+}
+
+.plan-swatch-av {
+  background: var(--color-ws-av);
+}
+
+.plan-swatch-printing {
+  background: var(--color-ws-printing);
+}
+
+.plan-swatch-photo-video {
+  background: var(--color-ws-photo-video);
+}
+
+.plan-swatch-prizes {
+  background: var(--color-ws-prizes);
+}
+
+.plan-swatch-people {
+  background: var(--color-ws-people);
+}
+
+.plan-swatch-sponsors {
+  background: var(--color-ws-sponsors);
+}
+
+.plan-swatch-late {
+  background: var(--color-status-blocked);
+}
+
 /* --- Approvals: queue on the left, the selected item on the right --- */
 .approvals-layout {
   display: grid;

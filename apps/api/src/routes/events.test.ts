@@ -1,4 +1,4 @@
-import { EventsResponse, EventSummary, PlanResponse } from '@leonid/shared';
+import { EventsResponse, EventSummary, PlanResponse, TaskKind, Workstream } from '@leonid/shared';
 import express from 'express';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';
@@ -12,10 +12,12 @@ import {
   mandateItems,
   mandates,
   sponsors,
+  TASK_KINDS,
   tasks,
+  WORKSTREAMS,
 } from '../db/schema.js';
 import { SESSION_COOKIE, sign } from '../auth/session.js';
-import { DEMO_EVENT_NAME, seedDemoEvent, seedDemoPlan } from '../db/seed.js';
+import { DEMO_EVENT_NAME, DEMO_TASKS, seedDemoEvent, seedDemoPlan } from '../db/seed.js';
 import { createTasks } from '../db/tasks.js';
 import { createTestDb } from '../db/testing.js';
 import { eventsRouter } from './events.js';
@@ -367,9 +369,65 @@ describe('GET /api/events/:id/plan', () => {
     await seedDemoPlan(db, demo.id);
     const viaId = PlanResponse.parse((await planOf(demo.id, 'alice')).body);
     const viaAlias = PlanResponse.parse((await planOf('demo', 'alice')).body);
-    expect(viaId.tasks).toHaveLength(15);
+    expect(viaId.tasks).toHaveLength(DEMO_TASKS.length);
     expect(viaAlias).toEqual(viaId);
     expect(viaId.tasks.filter((t) => t.invoiceOfSponsorId)).toHaveLength(3);
+  });
+
+  it('seeds a real event plan: workstreams, payments and the event-week milestones', async () => {
+    const demo = await seedDemoEvent(db);
+    await seedDemoPlan(db, demo.id);
+    const rows = PlanResponse.parse((await planOf(demo.id, 'alice')).body).tasks;
+    const byName = new Map(rows.map((t) => [t.name, t]));
+
+    expect(rows.every((t) => t.workstream !== null)).toBe(true);
+    expect(rows.filter((t) => t.kind === 'milestone').map((t) => t.name)).toEqual([
+      'Final confirmations with vendors',
+      'Final rehearsal',
+      'Event day',
+    ]);
+    const rehearsal = byName.get('Final rehearsal');
+    expect(rehearsal?.start).toBe('2027-03-13T00:00:00.000Z');
+    expect(rehearsal?.end).toBe(rehearsal?.start);
+    expect(rehearsal?.dependsOn).toContain(byName.get('Load-in and AV/wifi test')?.id);
+    expect(byName.get('Event day')?.dependsOn).toContain(rehearsal?.id);
+    expect(byName.get('Load-out and thank-yous')?.dependsOn).toEqual([byName.get('Event day')?.id]);
+    expect(byName.get('Pay printer')).toMatchObject({ kind: 'payment', workstream: 'printing' });
+    expect(new Set(rows.map((t) => t.workstream))).toEqual(new Set(WORKSTREAMS));
+  });
+
+  it('tops up a plan seeded before workstreams, keeping its tasks and the ones added since', async () => {
+    const demo = await seedDemoEvent(db);
+    const old = await createTasks(db, demo.id, [
+      { name: 'Book AV', start: new Date('2027-01-13T00:00:00Z'), end: new Date('2027-01-17T23:59:59Z') },
+      {
+        name: 'Event day',
+        start: new Date('2027-03-14T00:00:00Z'),
+        end: new Date('2027-03-14T23:59:59Z'),
+        dependsOnNames: ['Book AV'],
+      },
+      { name: 'Hire a DJ', start: new Date('2027-02-01T00:00:00Z'), end: new Date('2027-02-01T23:59:59Z') },
+    ]);
+    await seedDemoPlan(db, demo.id);
+    await seedDemoPlan(db, demo.id);
+    const rows = PlanResponse.parse((await planOf(demo.id, 'alice')).body).tasks;
+    const byName = new Map(rows.map((t) => [t.name, t]));
+
+    expect(rows).toHaveLength(DEMO_TASKS.length + 1);
+    expect(byName.get('Book AV')).toMatchObject({ id: old[0]?.id, kind: 'payment', workstream: 'av' });
+    expect(byName.get('Hire a DJ')).toMatchObject({ kind: 'task', workstream: null });
+    const eventDay = byName.get('Event day');
+    expect(eventDay).toMatchObject({ id: old[1]?.id, kind: 'milestone', workstream: 'venue' });
+    expect(eventDay?.dependsOn).toEqual([
+      old[0]?.id,
+      byName.get('Final rehearsal')?.id,
+      byName.get('Speaker travel')?.id,
+    ]);
+  });
+
+  it('keeps the task kinds and workstreams in step with @leonid/shared', () => {
+    expect([...TASK_KINDS]).toEqual(TaskKind.options);
+    expect([...WORKSTREAMS]).toEqual(Workstream.options);
   });
 });
 

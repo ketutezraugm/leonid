@@ -125,6 +125,19 @@
   --gantt-grid-line: var(--color-rule);
   --gantt-today-line: var(--color-brass);
   --gantt-milestone: var(--color-text);
+
+  /* --- Plan workstreams: the calendar's "colour by workstream" fills and their legend swatches.
+   * Dark enough for white event text (4.5:1 or more on each); "late" keeps the blocked red over all of them. */
+  --color-ws-venue: var(--color-accent);
+  --color-ws-catering: #9a4a0c;
+  --color-ws-swag: #7a2e8e;
+  --color-ws-av: #0f6872;
+  --color-ws-printing: #56651a;
+  --color-ws-photo-video: #a02a5e;
+  --color-ws-prizes: #4a5590;
+  --color-ws-people: #1f6650;
+  --color-ws-sponsors: #4f5266;
+  --color-ws-none: var(--color-status-pending);
 }
 
 @media (prefers-reduced-motion: reduce) {
