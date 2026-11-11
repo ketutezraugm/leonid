@@ -46,6 +46,7 @@ export type PayoutInput = z.input<typeof PayoutInput>;
 
 export function buildPayoutBody(input: PayoutInput) {
   const p = PayoutInput.parse(input);
+  const money = toPayPalMoney(p.amountMinor, p.currency);
   return {
     sender_batch_header: {
       sender_batch_id: p.referenceId,
@@ -58,7 +59,10 @@ export function buildPayoutBody(input: PayoutInput) {
       {
         recipient_type: p.recipientType,
         receiver: p.receiver,
-        amount: toPayPalMoney(p.amountMinor, p.currency),
+        // Payouts v1 names the currency field `currency`, unlike Orders and Invoicing (`currency_code`). Sending
+        // `currency_code` makes PayPal answer 400 "items[0].amount.currency may not be null": every payout failed that way
+        // until this was fixed (checked against the sandbox on Nov 11, 2026).
+        amount: { currency: money.currency_code, value: money.value },
         note: p.note,
         sender_item_id: p.referenceId,
       },

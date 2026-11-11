@@ -26,7 +26,7 @@ describe('createPayoutSender', () => {
     expect(calls[0]!.requestId).toBe('payout-claim-1');
     expect(calls[0]!.body.sender_batch_header.sender_batch_id).toBe('claim-1');
     expect(calls[0]!.body.items).toEqual([
-      expect.objectContaining({ recipient_type: 'EMAIL', receiver: 'dana@example.com', amount: { currency_code: 'USD', value: '30.00' }, note: 'Leonid claim', sender_item_id: 'claim-1' }),
+      expect.objectContaining({ recipient_type: 'EMAIL', receiver: 'dana@example.com', amount: { currency: 'USD', value: '30.00' }, note: 'Leonid claim', sender_item_id: 'claim-1' }),
     ]);
   });
 
