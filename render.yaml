@@ -47,8 +47,6 @@ services:
         value: 'false'
       - key: TREASURER_TOKEN
         sync: false
-      - key: CHANNEL3_API_KEY
-        sync: false
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_BASE_URL

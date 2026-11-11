@@ -13,7 +13,7 @@ Owner: P1, with P3 for the treasury and dashboard agents. Runtime: Vercel AI SDK
 | -------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | Rules compiler | `propose_rules` (write-only draft)                                                    | Treasurer confirms before rules go live           |
 | Planning       | `create_tasks`, `link_task_to_invoice`, `read_event`                                  | Organizer edits the plan freely                   |
-| Procurement    | Channel3 search, `build_cart`, `request_payment` (goes to rules engine)               | Approval above threshold or outside the rules     |
+| Procurement    | `build_cart`, `request_payment` (goes to rules engine)                                | Approval above threshold or outside the rules     |
 | Treasury       | Invoicing tools, receipt extraction (vision), `request_payout` (goes to rules engine) | Treasurer approves payout batches above threshold |
 | Dashboard      | AG Studio built-in agents, Transaction Search reader                                  | None (read-only)                                  |
 

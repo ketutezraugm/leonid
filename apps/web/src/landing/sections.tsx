@@ -142,7 +142,7 @@ function RevealWords({ text }: { text: string }) {
 }
 
 // --- Built with: names only, never logos.
-const BUILT_WITH = ['PayPal (Invoicing, Vault, Orders, Payouts)', 'Bryntum Gantt', 'AG Studio', 'Channel3', 'Render', 'APIMatic'];
+const BUILT_WITH = ['PayPal (Invoicing, Vault, Orders, Payouts)', 'Bryntum Gantt', 'AG Studio', 'Render', 'APIMatic'];
 
 export function BuiltWith() {
   return (
