@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { SessionInfo } from '@leonid/shared';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { isAllowed, authorizeUrl, loginWithCode, type PayPalProfile } from '../auth/paypalLogin.js';
@@ -34,6 +34,7 @@ export function authRouter(options: AuthRouterOptions = {}) {
   const env = options.env ?? process.env;
   const router = Router();
   const demoLogin = demoLoginEnabled(env);
+  const demoCode = (env.DEMO_LOGIN_CODE ?? '').trim();
   const demoLimiter = options.demoLimiter ?? createRateLimiter({ max: 20, windowMs: 10 * 60_000 });
 
   const handle =
@@ -134,9 +135,18 @@ export function authRouter(options: AuthRouterOptions = {}) {
         res.status(404).json({ error: 'not found' });
         return;
       }
+      // Wrong guesses count against the same per-client limit as logins, so the code cannot be guessed by trying.
       if (!demoLimiter.take(req)) {
         res.status(429).json({ error: 'Too many demo logins. Wait a few minutes and try again.' });
         return;
+      }
+      if (demoCode) {
+        const given = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+        // Fixed-length digests, so the comparison time does not leak how much of the code matched.
+        if (!timingSafeEqual(sha256(given), sha256(demoCode))) {
+          res.status(401).json({ error: 'That access code is not right', codeRequired: true });
+          return;
+        }
       }
       // Each demo visitor is their own owner, so one judge never sees another's events. Entering again while still
       // signed in keeps the same id, so the events made in this visit stay visible.
@@ -150,8 +160,15 @@ export function authRouter(options: AuthRouterOptions = {}) {
   return router;
 }
 
+const sha256 = (s: string) => createHash('sha256').update(s).digest();
+
+// The hosted demo also needs an access code (DEMO_LOGIN_CODE), kept in the private submission notes and never in the
+// repo, so a stranger who finds the address cannot get a treasurer session. Shorter than this is refused at startup.
+export const MIN_DEMO_CODE_LENGTH = 8;
+
 // Demo login hands anyone a treasurer session, so production needs a second, deliberate opt-in
-// (DEMO_LOGIN_ALLOW_PRODUCTION=true, for the hosted judges' demo). Checked once, when the router is built at startup.
+// (DEMO_LOGIN_ALLOW_PRODUCTION=true, for the hosted judges' demo) and an access code. Checked once, when the router
+// is built at startup.
 export function demoLoginEnabled(env: NodeJS.ProcessEnv): boolean {
   if (env.DEMO_LOGIN !== 'true') return false;
   if (env.NODE_ENV !== 'production') return true;
@@ -159,8 +176,14 @@ export function demoLoginEnabled(env: NodeJS.ProcessEnv): boolean {
     console.error('DEMO_LOGIN=true is ignored in production: set DEMO_LOGIN_ALLOW_PRODUCTION=true as well to really enable it');
     return false;
   }
+  if ((env.DEMO_LOGIN_CODE ?? '').trim().length < MIN_DEMO_CODE_LENGTH) {
+    console.error(
+      `DEMO_LOGIN is ignored in production: set DEMO_LOGIN_CODE (at least ${MIN_DEMO_CODE_LENGTH} characters) so only people who have the code can get in`,
+    );
+    return false;
+  }
   console.warn(
-    '!!! DEMO_LOGIN is ON in production: POST /api/auth/demo-login gives ANYONE a treasurer session. Hosted demo only; turn it off afterwards. !!!',
+    '!!! DEMO_LOGIN is ON in production: POST /api/auth/demo-login gives a treasurer session to anyone with the access code. Hosted demo only; turn it off afterwards. !!!',
   );
   return true;
 }

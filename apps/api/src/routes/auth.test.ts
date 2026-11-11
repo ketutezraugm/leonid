@@ -28,6 +28,7 @@ function build(e: NodeJS.ProcessEnv = env, profile: unknown = { user_id: 'USERID
     throw new Error(`unexpected PayPal call ${path}`);
   });
   const app = express();
+  app.use(express.json());
   app.use('/api/auth', authRouter({ env: e, fetch }));
   const guard = requireTreasurer(e);
   app.get('/api/secret', guard, (_req, res) => void res.json({ actor: treasurerActor(res) }));
@@ -153,6 +154,29 @@ describe('Log in with PayPal', () => {
     expect(subOf(again)).toBe(subOf(first));
   });
 
+  it('needs the access code when DEMO_LOGIN_CODE is set: the right code gets a session, a wrong or missing one gets 401', async () => {
+    const { app } = build({ ...env, DEMO_LOGIN: 'true', DEMO_LOGIN_CODE: 'judge-access-1' });
+
+    const none = await request(app).post('/api/auth/demo-login');
+    expect(none.status).toBe(401);
+    expect(none.body).toEqual({ error: 'That access code is not right', codeRequired: true });
+    expect(cookieOf(none, 'leonid_session')).toBeUndefined();
+    expect((await request(app).post('/api/auth/demo-login').send({ code: 'JUDGE-ACCESS-1' })).status).toBe(401); // case matters
+    expect((await request(app).post('/api/auth/demo-login').send({ code: 12345678 })).status).toBe(401); // not a string
+
+    const ok = await request(app).post('/api/auth/demo-login').send({ code: '  judge-access-1  ' }); // pasted with spaces
+    expect(ok.status).toBe(200);
+    expect(cookieOf(ok, 'leonid_session')).toBeDefined();
+  });
+
+  it('stops a guesser: wrong codes use up the same per-client limit as logins', async () => {
+    const { app } = build({ ...env, DEMO_LOGIN: 'true', DEMO_LOGIN_CODE: 'judge-access-1' });
+    for (let i = 0; i < 20; i++) {
+      expect((await request(app).post('/api/auth/demo-login').send({ code: `guess-${i}` })).status).toBe(401);
+    }
+    expect((await request(app).post('/api/auth/demo-login').send({ code: 'judge-access-1' })).status).toBe(429);
+  });
+
   it('refuses demo login in production unless DEMO_LOGIN_ALLOW_PRODUCTION=true, and warns loudly when it is on', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -162,8 +186,16 @@ describe('Log in with PayPal', () => {
       expect(error).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN_ALLOW_PRODUCTION'));
       expect(warn).not.toHaveBeenCalled();
 
-      const optedIn = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true' });
-      expect((await request(optedIn.app).post('/api/auth/demo-login')).status).toBe(200);
+      // opted in but no (or a too short) access code: still off, so a stranger cannot walk in
+      const noCode = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true' });
+      expect((await request(noCode.app).post('/api/auth/demo-login')).status).toBe(404);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN_CODE'));
+      const tooShort = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true', DEMO_LOGIN_CODE: 'short' });
+      expect((await request(tooShort.app).post('/api/auth/demo-login').send({ code: 'short' })).status).toBe(404);
+      expect(warn).not.toHaveBeenCalled();
+
+      const optedIn = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true', DEMO_LOGIN_CODE: 'judge-access-1' });
+      expect((await request(optedIn.app).post('/api/auth/demo-login').send({ code: 'judge-access-1' })).status).toBe(200);
       expect(warn).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN is ON in production'));
 
       // the second opt-in alone enables nothing

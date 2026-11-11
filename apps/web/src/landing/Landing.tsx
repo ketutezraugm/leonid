@@ -28,7 +28,7 @@ import {
 // everything below it follows the product.
 export function Landing({ problem }: { problem: string | null }) {
   const { session } = useSession();
-  const { enter, busy, error } = useEnterDemo();
+  const { enter, busy, error, code, setCode } = useEnterDemo();
   const signedIn = session.status === 'signed-in';
   const message = error ?? problem;
   const root = useRef<HTMLDivElement>(null);
@@ -69,6 +69,24 @@ export function Landing({ problem }: { problem: string | null }) {
                   <p className="lp-problem" role="alert">
                     {message}
                   </p>
+                )}
+                {!signedIn && (
+                  <div className="lp-code">
+                    <label htmlFor="lp-code">Judge access code</label>
+                    <input
+                      id="lp-code"
+                      type="password"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      placeholder="From the submission notes"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void enter();
+                      }}
+                    />
+                  </div>
                 )}
                 <div className="lp-ctas">
                   {signedIn ? (

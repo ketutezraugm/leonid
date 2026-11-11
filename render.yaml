@@ -42,6 +42,9 @@ services:
       # The hosted judges' demo may turn this on, together with DEMO_LOGIN_ALLOW_PRODUCTION=true (both required in production).
       - key: DEMO_LOGIN
         value: 'false'
+      # The judge access code, at least 8 characters: required for demo login in production. Entered in the dashboard.
+      - key: DEMO_LOGIN_CODE
+        sync: false
       # Lets the treasurer trigger a sandbox spend for the Gate 2 rehearsal (POST /api/demo/spend). Off unless you turn it on.
       - key: DEMO_SPEND
         value: 'false'
