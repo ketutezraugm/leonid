@@ -3,9 +3,10 @@
 **Leonid** is an AI operations agent for community tech events that runs all of an event's money on
 **PayPal**. Sponsor money comes in through PayPal Invoicing, purchases and people payouts go out
 through the organizer's own PayPal wallet, and every outflow passes spending rules that no agent
-can break. The organizer sets a max spend once; after that the agent plans, sources, checks each
-spend against the rules, and pays with no further clicks. Every decision is written to an audit log,
-and a **PayPal-enforced kill switch** (deleting the vault payment token) stops the agent instantly.
+can break. The organizer sets a max spend once. The agent plans the event and scouts venues, and every
+payment (a venue plan the organizer agrees to, a volunteer's receipt claim, a prize) is checked against the
+rules and sent only if they allow it. Every decision is written to an audit log, and a **PayPal-enforced
+kill switch** (deleting the vault payment token) stops the agent's spending instantly.
 
 This is a working build on the **PayPal sandbox**: no live keys, no real money. Built for the PayPal AI
 Hackathon. Full spec: [`docs/PRD.pdf`](docs/PRD.pdf).
@@ -14,18 +15,27 @@ Hackathon. Full spec: [`docs/PRD.pdf`](docs/PRD.pdf).
 
 | | |
 | --- | --- |
-| **App (hosted demo)** | https://quartermaster-staging.onrender.com (seeded event: OpenHack 2027; use **Demo login** if you have no PayPal sandbox account) |
+| **App (hosted demo)** | https://quartermaster-staging.onrender.com (seeded event: OpenHack 2027). No PayPal sandbox account is needed: press **Enter the demo** with the judge access code from the submission notes, or open the one-click link given there |
 | **Demo video** | _TODO: add the public YouTube link before submitting_ |
 | **Health check** | https://quartermaster-staging.onrender.com/api/health |
 
-The hosted demo runs on Render's free plan and may take about a minute to wake on first request.
+The hosted demo runs on a paid Render web service, so it does not sleep.
+
+**Trying it (about 3 minutes).**
+
+1. Open the app link from the submission notes (it carries the access code), or paste the code into the box and press **Enter the demo**.
+2. You land on your events, with the seeded **OpenHack 2027** event. Your session is private: events you create are visible only to you, and each event keeps its own budget and caps.
+3. **Agent:** ask Leo to plan the event and scout a venue, review the plan, and pay it with PayPal (sandbox). The payment goes through the rules check and is written to the audit log.
+4. **Plan:** the Gantt and Calendar, coloured by workstream, with each purchase labelled by the sponsor that funds it.
+5. **Money:** the AG Studio command center and the dashboard agent.
+6. **Settings:** the agent's wallet and the kill switch. Revoking the wallet deletes its token at PayPal, and PayPal refuses the next charge.
 
 ## Hackathon qualification
 
 | Requirement | How this repo meets it |
 | --- | --- |
 | Uses PayPal APIs end to end in the sandbox | Log in with PayPal, Invoicing, Orders, Vault, Payouts, Transaction Search and webhooks. See [PayPal capabilities used](#paypal-capabilities-used) |
-| An AI agent that acts on money, not just talks about it | The agent chat runs a tool loop; spends go through the executor, which pays from the saved wallet only after the rules engine says allow. See [Agent loop](#agent-loop) |
+| An AI agent that acts on money, not just talks about it | The agent plans the event and scouts venues in a tool loop. A model also reads a volunteer's receipt, and the payout is sent with no human step when the rules allow it. Every payment goes through the executor, which pays only after the rules engine says allow. See [Agent loop](#agent-loop) and [Receipt claims and payouts](#receipt-claims-and-payouts) |
 | Public GitHub repo with setup, architecture and payment flow | [Setup](#setup) · [Architecture](#architecture) · [Payment flow](#payment-flow) |
 | Demo video under 3 minutes | _TODO: link above_; script in [`docs/demo-script.md`](docs/demo-script.md) |
 | Sponsor integrations | [AG Studio](#ag-studio) · [Bryntum](#bryntum) · [Render](#render) · [APIMatic](#apimatic) |
@@ -34,7 +44,7 @@ The hosted demo runs on Render's free plan and may take about a minute to wake o
 
 | Area | What the organizer gets | Features |
 | --- | --- | --- |
-| **Rules are code** | A max spend plus approval threshold, daily and category caps, enforced by a deterministic `check()`; never by a prompt | F9 |
+| **Rules are code** | A max spend plus daily and category caps and approved vendors, enforced by a deterministic `check()`; never by a prompt | F9 |
 | **Agent wallet** | Connect PayPal once; the agent pays from the vaulted wallet, supervised payments use PayPal's approve button | F13, F14 |
 | **Kill switch** | One click deletes the vault token at PayPal; there is no fallback payment path | F15 |
 | **Money in** | Sponsor invoices (Invoicing v2), public ticket and donation checkout, live status from webhooks | F4, F6 |
@@ -87,9 +97,10 @@ Transaction Search lags, so it is used for reconciliation and reports only.
    a spend. Product pages, receipts and invoice notes are treated as data, never as instructions.
 3. **Check the rules** — every spend goes through `check(spend, rules, budget)` and returns
    `allow`, `needs_approval` or `block`. The result and the reason go to the audit log.
-4. **Pay or stop** — `allow` charges the vaulted wallet automatically; `needs_approval` creates an
-   order the treasurer approves with PayPal's button, captured only after PayPal reports it
-   `APPROVED` for the exact amount; `block` pays nothing.
+4. **Pay or stop** — `allow` charges the vaulted wallet; `block` pays nothing. The engine can also
+   return `needs_approval`, which creates an order the treasurer approves with PayPal's button,
+   captured only after PayPal reports it `APPROVED` for the exact amount. The demo rules set no
+   approval threshold (decided Nov 9), so nothing waits for approval in the demo.
 5. **Confirm from PayPal** — the capture, payout or invoice webhook updates the ledger. Payout
    items are matched by `sender_item_id`, so an unclaimed or returned item is never shown as paid.
 6. **Kill switch** — deleting the vault payment token at PayPal makes every later automatic spend fail.
@@ -164,7 +175,7 @@ business account for the organizer and a sandbox personal account for a sponsor.
 
 ### AG Studio
 
-The Money screen is an AG Studio command center, themed from `apps/web/src/styles/tokens.css`. Its data sources are built from the shared widget shapes (`packages/shared/src/widgets.ts`); they are filled from the treasurer-only endpoints `GET /api/widgets/*`. The funding thermometer, budget burn and rules health are live, from the ledger, the funds-gated budget and the audit log. The payouts ledger is live too: every receipt claim, prize and speaker fee, with the status PayPal's payout item webhooks last reported. Delivery risk is labelled sample until orders and tracking exist. A line above the widgets says which is which. If the endpoints cannot be reached (not signed in, no server), the page shows its own sample as a whole and says why, because live sponsor ids would not match sample rows and the cross-filtering would break.
+The Money screen is an AG Studio command center, themed from `apps/web/src/styles/tokens.css`. Its data sources are built from the shared widget shapes (`packages/shared/src/widgets.ts`); they are filled from the treasurer-only endpoints `GET /api/widgets/*`. The funding thermometer, budget burn and rules health are live, from the ledger, the budget figures and the audit log. The payouts ledger is live too: every receipt claim, prize and speaker fee, with the status PayPal's payout item webhooks last reported. Delivery risk is labelled sample until orders and tracking exist. A line above the widgets says which is which. If the endpoints cannot be reached (not signed in, no server), the page shows its own sample as a whole and says why, because live sponsor ids would not match sample rows and the cross-filtering would break.
 
 | What                                                                          | Code                                            |
 | ----------------------------------------------------------------------------- | ----------------------------------------------- |
@@ -178,7 +189,7 @@ The Money screen is an AG Studio command center, themed from `apps/web/src/style
 
 ![Money command center, with sample data](docs/p3/screenshots/command-center.png)
 
-Budget burn is a custom widget: for each budget category it shows what was spent (captured) and committed (approved, not yet captured) against the category's cap. A category over its cap says so in words and gets a line at the cap. Clicking a category cross-filters the widgets that share its table. Its numbers are live: committed spend is counted exactly as the rules check counts it, and the caps are the rules in force, so the widget and the rules agree on what is left.
+Budget burn is a custom widget: for each budget category it shows what was spent (captured) and committed (authorised, not yet captured) against the category's cap. A category over its cap says so in words and gets a line at the cap. Clicking a category cross-filters the widgets that share its table. Its numbers are live: committed spend is counted exactly as the rules check counts it, and the caps are the rules in force, so the widget and the rules agree on what is left.
 
 ![Budget burn widget](docs/p3/screenshots/budget-burn.png)
 
@@ -202,7 +213,7 @@ The Stage 2 write-up, with how the cross-filtering works and what is still sampl
 
 Volunteers, speakers and winners are paid from the Treasury app with PayPal Payouts, and every payment passes the same rules engine as a purchase.
 
-- **Receipt claims (F16).** The treasurer registers a volunteer with their PayPal email and gets a personal claim link (`/claim/:token`; only a SHA-256 hash of the token is stored). On a phone, the volunteer snaps a receipt. A model reads it into a fixed schema (merchant, date, total, currency, line items, a confidence for each), with the photo passed as data, so text on a receipt cannot change who is paid or how much. A clear reading goes to the executor as a claim: the $50 per person per day cap, the $200 approval threshold and the funds gate apply, the check is audited, and the money goes only to the registered email. A field under 0.8 confidence, a foreign currency or no total waits for the treasurer, whose confirmed amount still goes through the rules. Code: [`apps/api/src/claims/`](apps/api/src/claims/), [`apps/api/src/routes/claims.ts`](apps/api/src/routes/claims.ts), [`apps/web/src/pages/VolunteerClaim.tsx`](apps/web/src/pages/VolunteerClaim.tsx), [`apps/web/src/pages/Claims.tsx`](apps/web/src/pages/Claims.tsx).
+- **Receipt claims (F16).** The treasurer registers a volunteer with their PayPal email and gets a personal claim link (`/claim/:token`; only a SHA-256 hash of the token is stored). On a phone, the volunteer snaps a receipt. A model reads it into a fixed schema (merchant, date, total, currency, line items, a confidence for each), with the photo passed as data, so text on a receipt cannot change who is paid or how much. A clear reading goes to the executor as a claim: the rules check it (the $50 per person per day cap and the event's maximum spend), the check is audited, a claim that breaks a rule is blocked, and the money goes only to the registered email. A field under 0.8 confidence, a foreign currency or no total waits for the treasurer, whose confirmed amount still goes through the rules. Code: [`apps/api/src/claims/`](apps/api/src/claims/), [`apps/api/src/routes/claims.ts`](apps/api/src/routes/claims.ts), [`apps/web/src/pages/VolunteerClaim.tsx`](apps/web/src/pages/VolunteerClaim.tsx), [`apps/web/src/pages/Claims.tsx`](apps/web/src/pages/Claims.tsx).
 - **Prizes and speaker fees (F17).** The Money screen's Payouts tab pays a winner or a speaker through the rules engine. There is no approval step: the rules engine checks each payment (max spend, daily and category caps) and audits it, and an allowed one is sent at once. A prize funded by a sponsor is not held for that sponsor's invoice (the sponsor gate is gone; the rules are the limit). Code: [`apps/api/src/payouts/service.ts`](apps/api/src/payouts/service.ts), [`apps/api/src/routes/payouts.ts`](apps/api/src/routes/payouts.ts), [`apps/web/src/money/Payouts.tsx`](apps/web/src/money/Payouts.tsx).
 - **What PayPal says is the truth.** "Paid" comes only from PayPal's payout item webhooks, never from our own guess. We use the item events rather than the batch event, because a successful batch can still hold an unclaimed or returned item. An unknown status or an unknown item is written to the audit log and changes nothing.
 - **Not yet shown on the sandbox.** These paths are covered by automated tests against the real executor and rules engine, with PayPal faked. A sandbox run, with the Treasury webhook subscribed to `PAYMENT.PAYOUTS-ITEM.*`, is still to come and will be added here.
@@ -213,7 +224,7 @@ The Plan screen and Home both show the event's plan in a Bryntum Calendar (trial
 
 - **Each sponsor invoice is a task, live from PayPal.** Its bar follows the sponsor's status from `GET /api/sponsors`: invoiced is in progress, and when PayPal reports the invoice paid (`INVOICING.INVOICE.PAID`) it turns done, without a reload (the screen re-reads sponsor status every 10 seconds while one is unpaid).
 - **Every purchase says which sponsor funds it,** and whether that sponsor has paid yet ("Harbor Cloud · not paid yet"). It is a label, not a lock: since Nov 6 the organizer's own PayPal account pays, so a purchase never waits on a sponsor.
-- **Red means a delivery problem.** At risk is two days or fewer to spare before a deadline; late is past it. Late-delivery recovery (F18/F19, next) is where the agent moves the dependent tasks.
+- **Red means a delivery problem.** At risk is two days or fewer to spare before a deadline; late is past it. Late-delivery recovery (F18/F19) is not built: it is where the agent would move the dependent tasks.
 - **Event day is a fixed milestone** (a must-start-on constraint), and each purchase with a deadline gets a deadline flag.
 - **A real event plan, not a list of payments.** Every task has a kind (task, payment or milestone) and a workstream (venue, catering, swag, AV and wifi, printing and signage, photo and video, prizes, speakers and volunteers, sponsors). The planning agent always adds the event-week spine: final confirmations with vendors at T-7, load-in and AV/wifi test and the final rehearsal at T-1, event day, and load-out at T+1, each linked to what it waits on. The Plan screen opens coloured by workstream, with milestones marked ◆ and payments marked $; one click switches to status colours, and late stays red in both.
 
@@ -231,11 +242,11 @@ The Plan screen and Home both show the event's plan in a Bryntum Calendar (trial
 | Theme overrides from design tokens                                                   | [`apps/web/src/plan/gantt-theme.css`](apps/web/src/plan/gantt-theme.css)   |
 | Plan page: legend, polling sponsor status, lazy-loading the Gantt                    | [`apps/web/src/pages/Plan.tsx`](apps/web/src/pages/Plan.tsx)               |
 
-Lumen Labs has paid, so its invoice task is done and "Buy prizes" shows it as paid for. Harbor Cloud and Pixel Foundry are invoiced and not paid yet:
+In this screenshot Lumen Labs has paid, so its invoice task is done and "Buy prizes" shows it as paid for. Harbor Cloud and Pixel Foundry are invoiced and not paid yet:
 
 ![Plan: each purchase names the sponsor that funds it](docs/p4/screenshots/plan-funded-by.png)
 
-_Status: the tasks are sample data, labelled on the screen; sponsor status is live. Next: live tasks from the plan endpoint and the planning agent (F11), then tracking dates (F18) and late-delivery recovery (F19), where the agent moves dependent tasks when a delivery runs late._
+_Status: each event's tasks come from its plan endpoint (the planning agent writes them, and the demo event is seeded), and sponsor status is live. Not built: tracking dates (F18) and late-delivery recovery (F19), where the agent would move dependent tasks when a delivery runs late._
 
 ## Agent loop
 
@@ -251,7 +262,7 @@ The agent chat is a tool loop, not a single completion. An orchestrator agent wr
 
 Setup: set `DATABASE_URL` (Supabase session pooler, port 5432), then `pnpm --filter @leonid/api db:migrate && pnpm --filter @leonid/api db:seed`.
 
-Safety: no agent has a money tool yet. Procurement and treasury subagents arrive with the rules engine, and every money call will pass `check()`. Every tool call writes an `audit_log` row with its input and a one-sentence reason.
+Safety: no agent tool moves money. A payment starts from an organizer action (agreeing to a venue plan, sending a prize, reviewing a claim) or from the receipt reader, and always passes `check()` in the executor. Every tool call writes an `audit_log` row with its input and a one-sentence reason.
 
 Differs from the PRD: the database is Supabase Postgres instead of Render Postgres, and the orchestrator is a sixth agent (it holds no money tools). Update the PRD to match.
 
@@ -260,15 +271,15 @@ Differs from the PRD: the database is Supabase Postgres instead of Render Postgr
 The app is one Render web service: the Express API also serves the built web app, so there is a single URL. Postgres is Supabase, not Render Postgres.
 
 - **Blueprint:** [`render.yaml`](render.yaml) declares the service (Node 22, health check `/api/health`, build with pnpm, `pnpm start`). Every secret is `sync: false`: its name is in the file and the value is entered in the Render dashboard, never committed. The same names are in [`.env.example`](.env.example).
-- **Migrations:** `pnpm --filter @leonid/api db:migrate` runs as the pre-deploy command, so a failed migration stops the deploy before the new version takes traffic.
-- **Staging:** the `leonid-staging` service (its address is still `quartermaster-staging.onrender.com`: Render does not change an address after creation and PayPal has it registered) deploys automatically from the `development` branch on Render's free plan (it sleeps after 15 minutes without traffic, so the first request can take about a minute). Every PayPal beat described below was rehearsed there against the PayPal sandbox. Production is a second service from `main`, to be added to this section when it is live.
-- **Webhooks:** each PayPal app has its own webhook, delivered to `/api/webhooks/paypal/:app` on the service URL. Every event is verified with PayPal's `verify-webhook-signature` before any handler runs (`PAYPAL_WEBHOOK_VERIFY=true`). Handlers act on `INVOICING.INVOICE.PAID` and `PAYMENT.CAPTURE.COMPLETED` (ledger income), `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED` (income reversals), and `CHECKOUT.ORDER.APPROVED` (backup capture of a treasurer-approved order); the ledger writes are idempotent on the PayPal capture or invoice id because PayPal retries deliveries.
+- **Migrations:** `render.yaml` declares `pnpm --filter @leonid/api db:migrate` as the pre-deploy command. The hosted demo service was created by hand and its database predates that bookkeeping, so its migrations are applied by hand, in one transaction after a dry run.
+- **Hosting:** the `leonid` service deploys automatically from the `main` branch on a paid Render web service, so it does not sleep. Its address is still `quartermaster-staging.onrender.com`: Render does not change an address after a service is created, and PayPal has it registered. Every PayPal beat described below was rehearsed on it against the PayPal sandbox.
+- **Webhooks:** each PayPal app has its own webhook, delivered to `/api/webhooks/paypal/:app` on the service URL. Every event is verified with PayPal's `verify-webhook-signature` before any handler runs (`PAYPAL_WEBHOOK_VERIFY=true`). Handlers act on `INVOICING.INVOICE.PAID` and `PAYMENT.CAPTURE.COMPLETED` (ledger income), `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED` (income reversals), `CHECKOUT.ORDER.APPROVED` (backup capture of a treasurer-approved order), and the payout events `PAYMENT.PAYOUTS-ITEM.*` and `PAYMENT.PAYOUTSBATCH.DENIED` (claim and prize status); the ledger writes are idempotent on the PayPal capture or invoice id because PayPal retries deliveries.
 - **One instance only:** the funds check and the spend it writes are serialized in-process, so the service must not be scaled past one instance.
 - **Render Workflows (beta):** a separate Workflow service runs the background jobs in [`apps/workflows`](apps/workflows/). `budget-recompute` lists the events and runs `recompute-event` for each one in parallel, each retried up to three times. The work itself happens in the API's `/api/jobs/*` endpoints, behind a secret of their own, so the audit log and the ledger stay in one place and a task holds no PayPal credentials. A treasurer starts it by hand with `POST /api/workflows/budget-recompute/run` ([`apps/api/src/routes/workflows.ts`](apps/api/src/routes/workflows.ts)). Proven on staging on Nov 5: one run recomputed five events in parallel and wrote five `workflow.budget_recompute` audit rows plus one `workflow.trigger` row; for the demo event it found $3,023.85 cleared, $1,400.00 committed and $1,623.85 unlocked. The recompute is a snapshot, since the unlocked budget is derived from the ledger on every read. `invoice-reminders` works the same way: it lists the sponsors whose invoice is out and unpaid, then runs `remind-sponsor` for each in parallel. For each one the API asks PayPal for the live invoice status and only then asks PayPal to email a reminder (`POST /v2/invoicing/invoices/{id}/remind`), so a sponsor who has just paid is never nagged, and a sponsor is reminded at most once per 24 hours ([`apps/api/src/invoices/remind.ts`](apps/api/src/invoices/remind.ts)). Start it with `POST /api/workflows/invoice-reminders/run`. Proven on staging on Nov 5: a sandbox invoice for the bronze sponsor ($2,500) was sent, one run reminded that sponsor, and the audit log shows `invoice.create`, `invoice.sent`, `workflow.trigger` and `invoice.reminder` for the same PayPal invoice. `sponsor-reports` builds each paying sponsor's spend report (F22): it lists the sponsors that have paid and runs `report-sponsor` for each in parallel ([`apps/api/src/reports/`](apps/api/src/reports/)). The numbers are computed by code from the ledger and the executor's records, never by a model: a spend funded by one sponsor counts in full for that sponsor, and every other spend is paid from the pooled cleared income, each source paying its proportional share (cents split by the largest-remainder method), so a sponsor is never attributed more than it paid in. A model may only phrase a short summary from those figures: its output is held to plain text with no links or addresses and no number that was not supplied, otherwise a template is used, and the page says when an AI wrote it. Payments to people appear only inside category totals, never by name. The report is published at a stable, unguessable link read by the public `/report/:shareToken` page, and the treasurer gets the link from `GET /api/reports/link/:sponsorId`. Start it with `POST /api/workflows/sponsor-reports/run`. Proven on staging on Nov 5: one run published Harbor Cloud's report ($3,000.00 received; $1,384.67 attributed across four purchases, checked by hand against the ledger: its $3,000.00 is 98.9% of the event's $3,033.21 cleared income, and 98.9% of the $1,400.00 spent is $1,384.67), the public page rendered it with each purchase's PayPal ID, and the AI summary passed the output checks. The figures come from the ledger and the executor's records, and each purchase is then checked against PayPal's own transaction records with Transaction Search ([`apps/api/src/paypal/search.ts`](apps/api/src/paypal/search.ts), [`apps/api/src/reports/crosscheck.ts`](apps/api/src/reports/crosscheck.ts)): it is "confirmed" only when PayPal lists a successful payment of exactly that amount and nothing tied to it took money back (a refund or reversal makes it "differs"), and "not in PayPal's records yet" is not an accusation, because Transaction Search can take about three hours to list a payment. The check found a real mismatch on its first live run: three approved purchases were stored under their order id while PayPal lists the capture id, so the report now shows and checks the capture id the executor recorded when the approval was captured. After that fix a rerun on staging confirmed all four of Harbor Cloud's purchases against PayPal (`paypalCheck` 4 confirmed, 0 differ, 0 not found). The other jobs in the PRD (delivery check, payout batch) are not built yet: the delivery check has no tracking data to read, and the payout batch waits on the claims code.
 - **Demo wallet pool:** the hosted demo is shared, and a reset must not need a person to log in to PayPal each time. So a few wallet tokens are approved ahead of time (`POST /api/wallet/pool/fill` makes the approval links, with `permit_multiple_payment_tokens: true`) and kept on standby in the `demo_token_pool` table. A standby token is never charged: the only way one becomes the agent's wallet is `POST /api/wallet/pool/reset`, a treasurer action, which first runs the normal kill switch (deletes the current token at PayPal) and then activates the oldest standby token in one transaction. With an empty pool, reset refuses and changes nothing. `POST /api/wallet/pool/end` deletes every standby token at PayPal when the demo is over. The normal connect flow is unchanged (one token per payer), and the standby tokens are the one place a token exists that the kill switch of the active wallet does not delete, which is why `end` exists. Proven on staging on Nov 5: three links were approved as the sandbox Personal account and became three standby tokens; reset activated the first; a second reset deleted that token at PayPal (404 on a direct read afterwards), activated the next, and the last standby token still existed at PayPal; the audit log shows `wallet.revoke` and `wallet.pool_reset`. PayPal gave each approved link its own token with its own customer id.
-- **Demo switches are off by default:** `DEMO_LOGIN` (one-click treasurer session for judges without PayPal access) and `DEMO_SPEND` (a sandbox spend button for rehearsals). In production `DEMO_LOGIN` needs a second flag, `DEMO_LOGIN_ALLOW_PRODUCTION`, and the server logs a loud warning while it is on.
+- **Demo switches:** `DEMO_LOGIN` gives judges without a PayPal account a treasurer session. In production it also needs `DEMO_LOGIN_ALLOW_PRODUCTION` and a judge access code (`DEMO_LOGIN_CODE`, at least 8 characters, kept out of the repo), and the server logs a loud warning while it is on. A demo session cannot fill or end the shared wallet pool. Demo login is on for the judging window. `DEMO_SPEND` (a sandbox spend button for rehearsals) is off.
 
-What was proven on staging with the real sandbox: a $140 swag spend paid automatically from the saved wallet; a $420 spend stopped for approval and was captured after the treasurer approved it in PayPal's popup; after the kill switch deleted the vault token, a further spend was refused and PayPal itself answered `404 TOKEN_NOT_FOUND` for the deleted token. The rules in that run are a hard-coded list ([`apps/api/src/rules/demoRules.ts`](apps/api/src/rules/demoRules.ts)); the rules compiler (F8) is not built yet.
+What was proven on the hosted demo with the real sandbox (Nov 2, when the demo rules still had a $200 approval threshold, which was removed on Nov 9): a $140 swag spend paid automatically from the saved wallet; a $420 spend stopped for approval and was captured after the treasurer approved it in PayPal's popup; after the kill switch deleted the vault token, a further spend was refused and PayPal itself answered `404 TOKEN_NOT_FOUND` for the deleted token. The rules in that run are a hard-coded list ([`apps/api/src/rules/demoRules.ts`](apps/api/src/rules/demoRules.ts)); the rules compiler (F8) is not built yet.
 
 ### APIMatic
 
