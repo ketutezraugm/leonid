@@ -57,7 +57,7 @@ describe('buildPayoutBody', () => {
         {
           recipient_type: 'EMAIL',
           receiver: 'volunteer@example.com',
-          amount: { currency_code: 'USD', value: '42.50' },
+          amount: { currency: 'USD', value: '42.50' },
           note: 'Receipt refund',
           sender_item_id: 'claim-1',
         },
@@ -147,7 +147,7 @@ describe('sendPayout', () => {
     expect((init?.headers as Record<string, string>)['PayPal-Request-Id']).toBe('payout-claim-1');
     expect(JSON.parse(String(init?.body))).toMatchObject({
       sender_batch_header: { sender_batch_id: 'claim-1' },
-      items: [{ sender_item_id: 'claim-1', amount: { currency_code: 'USD', value: '42.50' } }],
+      items: [{ sender_item_id: 'claim-1', amount: { currency: 'USD', value: '42.50' } }],
     });
   });
 
