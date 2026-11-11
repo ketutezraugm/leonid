@@ -3,6 +3,7 @@ import request from 'supertest';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.js';
+import { SESSION_COOKIE, sign } from '../auth/session.js';
 import { agentWallet, auditLog, demoTokenPool } from '../db/schema.js';
 import { createTestDb } from '../db/testing.js';
 import { createDbAudit, createDbWalletStore } from '../payments/db.js';
@@ -16,7 +17,7 @@ import { walletPoolRouter } from './walletPool.js';
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-const env = { TREASURER_TOKEN: 'letmein', APP_BASE_URL: 'https://leonid.example.com' };
+const env = { TREASURER_TOKEN: 'letmein', APP_BASE_URL: 'https://leonid.example.com', SESSION_SECRET: 's'.repeat(40) };
 const treasurer = { 'x-treasurer-token': 'letmein' };
 
 let db: Db;
@@ -170,5 +171,34 @@ describe('the wallet pool', () => {
     expect(done.body).toEqual({ deleted: 2, failed: 0 });
     expect(await poolCounts(db)).toEqual({ waiting: 0, standby: 0 });
     expect(await db.select().from(auditLog).where(eq(auditLog.action, 'wallet.pool_end'))).toHaveLength(2);
+  });
+});
+
+describe('a demo-login judge and the shared token pool', () => {
+  const judge = {
+    Cookie: `${SESSION_COOKIE}=${sign('session', { sub: 'judge', via: 'demo' }, env.SESSION_SECRET, 60)}`,
+    Origin: env.APP_BASE_URL,
+  };
+
+  it('cannot fill or end the pool, which would break the demo for the next judge', async () => {
+    const { app, calls } = build();
+
+    expect((await request(app).post('/api/wallet/pool/fill').set(judge).send({ count: 1 })).status).toBe(403);
+    expect((await request(app).post('/api/wallet/pool/end').set(judge)).status).toBe(403);
+    expect(calls).toEqual([]); // nothing reached PayPal
+  });
+
+  it('can still look at the pool and reset the demo (a judge needs that after the kill switch)', async () => {
+    const { app } = build();
+
+    expect((await request(app).get('/api/wallet/pool').set(judge)).status).toBe(200);
+    // no standby wallet: the reset answers 409 and touches nothing, which shows the lock did not stop it
+    expect((await request(app).post('/api/wallet/pool/reset').set(judge)).status).toBe(409);
+  });
+
+  it('is not locked for the ops token', async () => {
+    const { app } = build();
+
+    expect((await request(app).post('/api/wallet/pool/end').set(treasurer)).status).toBe(200);
   });
 });

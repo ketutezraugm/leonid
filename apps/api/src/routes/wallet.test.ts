@@ -173,7 +173,7 @@ describe('kill switch', () => {
       { ...env, SESSION_SECRET: SECRET },
     );
     await wallet.activate({ paymentTokenId: 'pt_1' });
-    const cookie = `qm_session=${sign('session', { sub: 'USERID123', via: 'paypal' }, SECRET, 60)}`;
+    const cookie = `leonid_session=${sign('session', { sub: 'USERID123', via: 'paypal' }, SECRET, 60)}`;
     expect((await request(app).post('/api/wallet/revoke').set('Cookie', cookie).set('Origin', 'https://evil.example')).status).toBe(403);
     expect(calls).toEqual([]); // refused before PayPal was asked anything
 

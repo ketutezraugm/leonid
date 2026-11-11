@@ -28,6 +28,7 @@ function build(e: NodeJS.ProcessEnv = env, profile: unknown = { user_id: 'USERID
     throw new Error(`unexpected PayPal call ${path}`);
   });
   const app = express();
+  app.use(express.json());
   app.use('/api/auth', authRouter({ env: e, fetch }));
   const guard = requireTreasurer(e);
   app.get('/api/secret', guard, (_req, res) => void res.json({ actor: treasurerActor(res) }));
@@ -42,7 +43,7 @@ const cookieOf = (res: request.Response, name: string) =>
 async function startLogin(app: express.Express) {
   const res = await request(app).get('/api/auth/paypal/login');
   const url = new URL(res.headers.location!);
-  return { res, url, state: url.searchParams.get('state')!, stateCookie: cookieOf(res, 'qm_oauth_state')! };
+  return { res, url, state: url.searchParams.get('state')!, stateCookie: cookieOf(res, 'leonid_oauth_state')! };
 }
 
 describe('Log in with PayPal', () => {
@@ -63,7 +64,7 @@ describe('Log in with PayPal', () => {
     expect(cb.status).toBe(302);
     expect(cb.headers.location).toBe('https://leonid.example.com/?login=ok');
     expect(calls).toEqual(['/v1/oauth2/token', '/v1/identity/openidconnect/userinfo']);
-    const session = cookieOf(cb, 'qm_session')!;
+    const session = cookieOf(cb, 'leonid_session')!;
     expect((cb.headers['set-cookie'] as unknown as string[]).join(';')).toMatch(/HttpOnly.*SameSite=Lax.*Secure/);
 
     expect((await request(app).get('/api/secret')).status).toBe(401);
@@ -77,7 +78,7 @@ describe('Log in with PayPal', () => {
     const { state, stateCookie } = await startLogin(app);
     const cb = await request(app).get(`/api/auth/paypal/callback?code=abc&state=${state}`).set('Cookie', stateCookie);
     expect(cb.headers.location).toBe('https://leonid.example.com/?login=denied');
-    expect(cookieOf(cb, 'qm_session')).toBeUndefined();
+    expect(cookieOf(cb, 'leonid_session')).toBeUndefined();
     // the log names the PayPal id to copy into the allowlist, and never the email or a token
     const line = String(warn.mock.calls.at(-1)?.[0]);
     expect(line).toContain('user_id=OTHER');
@@ -106,14 +107,14 @@ describe('Log in with PayPal', () => {
 
   it('rejects a tampered, foreign-signed or expired session cookie; the ops token works only while it is set', async () => {
     const { app } = build({ ...env, TREASURER_TOKEN: 'letmein' });
-    const good = `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, SECRET, 60)}`;
+    const good = `leonid_session=${sign('session', { sub: 'x', via: 'paypal' }, SECRET, 60)}`;
     expect((await request(app).get('/api/secret').set('Cookie', good)).status).toBe(200);
     expect((await request(app).get('/api/secret').set('Cookie', good.slice(0, -2) + 'xx')).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, 'z'.repeat(40), 60)}`)).status).toBe(401);
-    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, SECRET, -1)}`)).status).toBe(401);
+    expect((await request(app).get('/api/secret').set('Cookie', `leonid_session=${sign('session', { sub: 'x', via: 'paypal' }, 'z'.repeat(40), 60)}`)).status).toBe(401);
+    expect((await request(app).get('/api/secret').set('Cookie', `leonid_session=${sign('session', { sub: 'x', via: 'paypal' }, SECRET, -1)}`)).status).toBe(401);
     expect((await request(app).get('/api/secret').set('x-treasurer-token', 'letmein')).body).toEqual({ actor: 'treasurer:ops-token' });
     // a session without a known `via` is not a session
-    expect((await request(app).get('/api/secret').set('Cookie', `qm_session=${sign('session', { sub: 'x' }, SECRET, 60)}`)).status).toBe(401);
+    expect((await request(app).get('/api/secret').set('Cookie', `leonid_session=${sign('session', { sub: 'x' }, SECRET, 60)}`)).status).toBe(401);
     // with no TREASURER_TOKEN configured the header means nothing
     expect((await request(build().app).get('/api/secret').set('x-treasurer-token', 'letmein')).status).toBe(401);
   });
@@ -121,11 +122,11 @@ describe('Log in with PayPal', () => {
   it('does not accept the state cookie that /login hands to anyone as a session', async () => {
     const { app } = build();
     const { stateCookie } = await startLogin(app);
-    const asSession = stateCookie.replace('qm_oauth_state=', 'qm_session=');
+    const asSession = stateCookie.replace('leonid_oauth_state=', 'leonid_session=');
     expect((await request(app).get('/api/secret').set('Cookie', asSession)).status).toBe(401);
     expect((await request(app).get('/api/auth/me').set('Cookie', asSession)).status).toBe(401);
     // and a session is not accepted as a state
-    const sessionAsState = `qm_oauth_state=${sign('session', { state: 'forged' }, SECRET, 60)}`;
+    const sessionAsState = `leonid_oauth_state=${sign('session', { state: 'forged' }, SECRET, 60)}`;
     const cb = await request(app).get('/api/auth/paypal/callback?code=abc&state=forged').set('Cookie', sessionAsState);
     expect(cb.headers.location).toBe('https://leonid.example.com/?login=error');
   });
@@ -135,7 +136,7 @@ describe('Log in with PayPal', () => {
     const on = build({ ...env, DEMO_LOGIN: 'true' });
     const demo = await request(on.app).post('/api/auth/demo-login');
     expect(demo.status).toBe(200);
-    const demoSession = cookieOf(demo, 'qm_session')!;
+    const demoSession = cookieOf(demo, 'leonid_session')!;
     expect((await request(on.app).get('/api/secret').set('Cookie', demoSession)).body).toEqual({ actor: 'treasurer:demo' });
     expect((await request(on.app).get('/api/auth/me').set('Cookie', demoSession)).body).toEqual({ via: 'demo' });
     expect((await request(build({ APP_BASE_URL: env.APP_BASE_URL, SESSION_SECRET: 'short' }).app).get('/api/auth/paypal/login')).status).toBe(503);
@@ -145,12 +146,35 @@ describe('Log in with PayPal', () => {
   it('gives each demo visitor their own id, and keeps it when the same visitor enters again', async () => {
     const on = build({ ...env, DEMO_LOGIN: 'true' });
     const subOf = (cookie: string) => verify<Session>('session', cookie.split('=')[1], SECRET)?.sub;
-    const first = cookieOf(await request(on.app).post('/api/auth/demo-login'), 'qm_session')!;
-    const other = cookieOf(await request(on.app).post('/api/auth/demo-login'), 'qm_session')!;
+    const first = cookieOf(await request(on.app).post('/api/auth/demo-login'), 'leonid_session')!;
+    const other = cookieOf(await request(on.app).post('/api/auth/demo-login'), 'leonid_session')!;
     expect(subOf(first)).toMatch(/^[0-9a-f-]{36}$/);
     expect(subOf(other)).not.toBe(subOf(first));
-    const again = cookieOf(await request(on.app).post('/api/auth/demo-login').set('Cookie', first), 'qm_session')!;
+    const again = cookieOf(await request(on.app).post('/api/auth/demo-login').set('Cookie', first), 'leonid_session')!;
     expect(subOf(again)).toBe(subOf(first));
+  });
+
+  it('needs the access code when DEMO_LOGIN_CODE is set: the right code gets a session, a wrong or missing one gets 401', async () => {
+    const { app } = build({ ...env, DEMO_LOGIN: 'true', DEMO_LOGIN_CODE: 'judge-access-1' });
+
+    const none = await request(app).post('/api/auth/demo-login');
+    expect(none.status).toBe(401);
+    expect(none.body).toEqual({ error: 'That access code is not right', codeRequired: true });
+    expect(cookieOf(none, 'leonid_session')).toBeUndefined();
+    expect((await request(app).post('/api/auth/demo-login').send({ code: 'JUDGE-ACCESS-1' })).status).toBe(401); // case matters
+    expect((await request(app).post('/api/auth/demo-login').send({ code: 12345678 })).status).toBe(401); // not a string
+
+    const ok = await request(app).post('/api/auth/demo-login').send({ code: '  judge-access-1  ' }); // pasted with spaces
+    expect(ok.status).toBe(200);
+    expect(cookieOf(ok, 'leonid_session')).toBeDefined();
+  });
+
+  it('stops a guesser: wrong codes use up the same per-client limit as logins', async () => {
+    const { app } = build({ ...env, DEMO_LOGIN: 'true', DEMO_LOGIN_CODE: 'judge-access-1' });
+    for (let i = 0; i < 20; i++) {
+      expect((await request(app).post('/api/auth/demo-login').send({ code: `guess-${i}` })).status).toBe(401);
+    }
+    expect((await request(app).post('/api/auth/demo-login').send({ code: 'judge-access-1' })).status).toBe(429);
   });
 
   it('refuses demo login in production unless DEMO_LOGIN_ALLOW_PRODUCTION=true, and warns loudly when it is on', async () => {
@@ -162,8 +186,16 @@ describe('Log in with PayPal', () => {
       expect(error).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN_ALLOW_PRODUCTION'));
       expect(warn).not.toHaveBeenCalled();
 
-      const optedIn = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true' });
-      expect((await request(optedIn.app).post('/api/auth/demo-login')).status).toBe(200);
+      // opted in but no (or a too short) access code: still off, so a stranger cannot walk in
+      const noCode = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true' });
+      expect((await request(noCode.app).post('/api/auth/demo-login')).status).toBe(404);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN_CODE'));
+      const tooShort = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true', DEMO_LOGIN_CODE: 'short' });
+      expect((await request(tooShort.app).post('/api/auth/demo-login').send({ code: 'short' })).status).toBe(404);
+      expect(warn).not.toHaveBeenCalled();
+
+      const optedIn = build({ ...prod, DEMO_LOGIN_ALLOW_PRODUCTION: 'true', DEMO_LOGIN_CODE: 'judge-access-1' });
+      expect((await request(optedIn.app).post('/api/auth/demo-login').send({ code: 'judge-access-1' })).status).toBe(200);
       expect(warn).toHaveBeenCalledWith(expect.stringContaining('DEMO_LOGIN is ON in production'));
 
       // the second opt-in alone enables nothing
@@ -195,7 +227,7 @@ describe('Log in with PayPal', () => {
 
   it('treats a SESSION_SECRET shorter than 32 characters as unset', async () => {
     const short = 's'.repeat(31);
-    const cookie = `qm_session=${sign('session', { sub: 'x', via: 'paypal' }, short, 60)}`;
+    const cookie = `leonid_session=${sign('session', { sub: 'x', via: 'paypal' }, short, 60)}`;
     const app = build({ APP_BASE_URL: env.APP_BASE_URL, SESSION_SECRET: short }).app;
     expect((await request(app).get('/api/secret').set('Cookie', cookie)).status).toBe(503);
     expect((await request(app).get('/api/auth/me').set('Cookie', cookie)).status).toBe(503);
@@ -206,7 +238,7 @@ describe('Log in with PayPal', () => {
 
   it('logs out by clearing the cookie', async () => {
     const res = await request(build().app).post('/api/auth/logout');
-    expect(res.headers['set-cookie']?.[0]).toMatch(/qm_session=; Max-Age=0/);
+    expect(res.headers['set-cookie']?.[0]).toMatch(/leonid_session=; Max-Age=0/);
   });
 });
 
@@ -222,7 +254,7 @@ describe('allowlist', () => {
 });
 
 describe('CSRF on cookie sessions', () => {
-  const session = `qm_session=${sign('session', { sub: 'USERID123', via: 'paypal' }, SECRET, 60)}`;
+  const session = `leonid_session=${sign('session', { sub: 'USERID123', via: 'paypal' }, SECRET, 60)}`;
   const app = build({ ...env, TREASURER_TOKEN: 'letmein' }).app;
 
   it('accepts a state-changing cookie request from our own origin (Origin, or Referer when Origin is absent)', async () => {

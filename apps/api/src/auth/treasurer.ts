@@ -62,6 +62,16 @@ export function requireTreasurer(env: NodeJS.ProcessEnv = process.env): RequestH
   };
 }
 
+// For routes that change the shared demo for everyone (the wallet pool): a judge in a demo session can use the demo
+// but not take it apart. Put it after requireTreasurer. A real PayPal login and the ops token pass.
+export const refuseDemoSession: RequestHandler = (_req, res, next) => {
+  if (currentTreasurer(res).via === 'demo') {
+    res.status(403).json({ error: 'This is not available in a demo session' });
+    return;
+  }
+  next();
+};
+
 function setTreasurer(res: Response, treasurer: Treasurer): void {
   res.locals.treasurer = treasurer;
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
@@ -137,6 +137,53 @@ describe('Entering the demo', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Enter the demo' })[0]!);
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/events'));
     expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/auth/demo-login', expect.objectContaining({ method: 'POST' }));
+  });
+
+  it('sends the access code the judge typed', async () => {
+    const assign = vi.spyOn(nav, 'assign').mockImplementation(() => {});
+    renderLanding();
+    fireEvent.change(screen.getByLabelText('Judge access code'), { target: { value: '  judge-access-1 ' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Enter the demo' })[0]!);
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/events'));
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+      '/api/auth/demo-login',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ code: 'judge-access-1' }) }),
+    );
+  });
+
+  it('asks for the code when the server wants one, and brings the field into view', async () => {
+    stubApi({ demo: 401 });
+    const assign = vi.spyOn(nav, 'assign').mockImplementation(() => {});
+    renderLanding();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Enter the demo' })[0]!);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter the judge access code from the submission notes');
+    expect(screen.getByLabelText('Judge access code')).toHaveFocus();
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it('says so when the code is wrong, and when there have been too many tries', async () => {
+    stubApi({ demo: 401 });
+    renderLanding();
+    fireEvent.change(screen.getByLabelText('Judge access code'), { target: { value: 'nope' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Enter the demo' })[0]!);
+    expect(await screen.findByRole('alert')).toHaveTextContent('That access code is not right.');
+    cleanup();
+
+    stubApi({ demo: 429 });
+    renderLanding();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Enter the demo' })[0]!);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Too many tries.');
+  });
+
+  it('fills the field from a link that carries the code, then takes it off the address bar', async () => {
+    window.history.pushState({}, '', '/signin?code=link-code-9&keep=1');
+    try {
+      renderLanding();
+      expect(screen.getByLabelText('Judge access code')).toHaveValue('link-code-9');
+      await waitFor(() => expect(window.location.search).toBe('?keep=1'));
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
   });
 
   it('opens each try-it card at its own moment', async () => {
