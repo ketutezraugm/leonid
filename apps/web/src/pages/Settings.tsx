@@ -15,6 +15,8 @@ import { PageHeader } from '../ui/PageHeader';
 import { StatusBadge } from '../ui/StatusBadge';
 import { useToast } from '../ui/Toast';
 
+const parseOk = { parse: (value: unknown) => value };
+
 const statusBadge: Record<WalletState, { status: 'done' | 'pending' | 'blocked'; label: string }> = {
   active: { status: 'done', label: 'Active' },
   none: { status: 'pending', label: 'Not connected' },
@@ -29,8 +31,33 @@ export function Settings() {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deletionPending, setDeletionPending] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  // A judge in a demo session has no PayPal login to connect a wallet with: the hosted demo keeps spare wallets that
+  // were approved ahead of time, and restoring one switches it on for everyone.
+  const isDemo = session.status === 'signed-in' && session.via === 'demo';
 
   const { connect, connecting } = useConnectWallet();
+
+  async function restoreDemoWallet() {
+    setRestoring(true);
+    try {
+      await sendJson('/api/wallet/pool/reset', parseOk);
+      toast.success('The demo wallet is back. The agent can pay again.');
+    } catch (err) {
+      const said = err instanceof ApiFailure && err.body && typeof err.body === 'object' ? String((err.body as { error?: unknown }).error ?? '') : '';
+      // 409 "already active": someone restored it first, and the card below shows it. Anything else is worth saying.
+      if (!(err instanceof ApiFailure && err.status === 409 && said.includes('already active'))) {
+        toast.error(
+          err instanceof ApiFailure && err.status === 409
+            ? 'No spare demo wallet is left. Ask the host to add one.'
+            : "Couldn't restore the wallet. Try again.",
+        );
+      }
+    } finally {
+      wallet.reload();
+      setRestoring(false);
+    }
+  }
 
   async function revoke() {
     setBusy(true);
@@ -92,6 +119,9 @@ export function Settings() {
                 Pays from the PayPal account <strong>{wallet.data.payerEmail}</strong>.
               </p>
             )}
+            {isDemo && wallet.data.status !== 'active' && !deletionPending && (
+              <p className="muted">This demo wallet is shared by every judge. Restoring it switches on a spare one.</p>
+            )}
             {wallet.data.status === 'revoked' && deletionPending && (
               <p role="alert">
                 <strong>Agent stopped, PayPal deletion pending.</strong> The agent can’t spend. Retry to finish
@@ -104,9 +134,14 @@ export function Settings() {
                   Retry deletion
                 </Button>
               )}
-              {wallet.data.status !== 'active' && !deletionPending && (
+              {wallet.data.status !== 'active' && !deletionPending && !isDemo && (
                 <Button variant="primary" busy={connecting} busyLabel="Opening PayPal…" onClick={() => void connect()}>
                   Connect wallet
+                </Button>
+              )}
+              {wallet.data.status !== 'active' && !deletionPending && isDemo && (
+                <Button variant="primary" busy={restoring} busyLabel="Restoring…" onClick={() => void restoreDemoWallet()}>
+                  Restore demo wallet
                 </Button>
               )}
               {wallet.data.status === 'active' && (
