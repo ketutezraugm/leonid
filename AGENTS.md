@@ -8,7 +8,7 @@ Leonid is an AI operations agent for community tech events that runs all of an e
 
 | Role | Owns                                                                                                      | Rules file                                                 |
 | ---- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| P1   | Agent brain: rules compiler and engine, budget figures, Channel3 sourcing, planning agent, audit log  | `money-safety.md`, `agents.md`, `channel3.md`              |
+| P1   | Agent brain: rules compiler and engine, budget figures, planning agent, audit log                         | `money-safety.md`, `agents.md`                             |
 | P2   | PayPal buy side and infra: Log in with PayPal, treasury, vault, payments, kill switch, Render, APIMatic   | `paypal.md`, `money-safety.md`, `render.md`, `apimatic.md` |
 | P3   | PayPal money in/out and AG Studio: invoices, payouts, Transaction Search, command center, sponsor report  | `paypal.md`, `ag-studio.md`                                |
 | P4   | Plan, protection and demo: event setup, Bryntum Gantt, tracking, late-delivery recovery, UI design system | `bryntum.md`, `web-ui.md`                                  |
@@ -43,7 +43,6 @@ Run `pnpm typecheck && pnpm lint && pnpm test` before calling work done. `main` 
   - `src/agents/`: the five agents and their tool definitions.
   - `src/paypal/`: one client per PayPal app (`treasury`, `procurement`) plus typed wrappers per API.
   - `src/webhooks/`: the PayPal webhook receiver and per-event handlers.
-  - `src/channel3/`: the sourcing client.
   - `src/db/`: Drizzle schema and queries (tables in PRD §9).
   - `src/routes/`: Express routers. Thin; they call into the folders above.
 - `apps/web` is React + react-router, and Vite proxies `/api` to `:3001` in dev. `src/pages/` maps 1:1 to the PRD screens. Feature code goes in `src/plan/` (Bryntum), `src/money/` (AG Studio), and so on, keeping pages thin.

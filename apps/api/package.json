@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "paypal:smoke": "tsx --env-file-if-exists=../../.env scripts/paypal-smoke.ts",
-    "channel3:coverage": "tsx --env-file-if-exists=../../.env scripts/channel3-coverage.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=../../.env scripts/migrate.ts",
     "venues:generate": "tsx scripts/generate-venues.ts",

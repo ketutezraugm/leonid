@@ -25,10 +25,10 @@ The hosted demo runs on Render's free plan and may take about a minute to wake o
 | Requirement | How this repo meets it |
 | --- | --- |
 | Uses PayPal APIs end to end in the sandbox | Log in with PayPal, Invoicing, Orders, Vault, Payouts, Transaction Search and webhooks. See [PayPal capabilities used](#paypal-capabilities-used) |
-| An AI agent that acts on money, not just talks about it | The agent chat runs a tool loop; spends go through the executor, which pays from the saved wallet only after the rules engine says allow. See [Agent loop](#agent-loop-p1) |
+| An AI agent that acts on money, not just talks about it | The agent chat runs a tool loop; spends go through the executor, which pays from the saved wallet only after the rules engine says allow. See [Agent loop](#agent-loop) |
 | Public GitHub repo with setup, architecture and payment flow | [Setup](#setup) · [Architecture](#architecture) · [Payment flow](#payment-flow) |
 | Demo video under 3 minutes | _TODO: link above_; script in [`docs/demo-script.md`](docs/demo-script.md) |
-| Sponsor integrations | [AG Studio](#ag-studio) · [Bryntum](#bryntum) · [Render](#render) · [APIMatic](#apimatic) · [Channel3](#channel3) |
+| Sponsor integrations | [AG Studio](#ag-studio) · [Bryntum](#bryntum) · [Render](#render) · [APIMatic](#apimatic) |
 
 ## What it does
 
@@ -83,7 +83,7 @@ Transaction Search lags, so it is used for reconciliation and reports only.
 
 1. **Set the limit** — the organizer connects a PayPal wallet (Vault v3 setup token → payment token)
    and sets a max spend with the "Add rule" button in the agent chat.
-2. **Plan and source** — the agent writes a checklist, finds items and venues (Channel3), and drafts
+2. **Plan and source** — the agent writes a checklist, finds venues, and drafts
    a spend. Product pages, receipts and invoice notes are treated as data, never as instructions.
 3. **Check the rules** — every spend goes through `check(spend, rules, budget)` and returns
    `allow`, `needs_approval` or `block`. The result and the reason go to the audit log.
@@ -164,7 +164,7 @@ business account for the organizer and a sandbox personal account for a sponsor.
 
 ### AG Studio
 
-The Money screen is an AG Studio command center, themed from `apps/web/src/styles/tokens.css`. Its data sources are built from the shared widget shapes (`packages/shared/src/widgets.ts`); they are filled from the treasurer-only endpoints `GET /api/widgets/*`. The funding thermometer, budget burn and rules health are live, from the ledger, the funds-gated budget and the audit log. The payouts ledger is live too: every receipt claim, prize and speaker fee, with the status PayPal's payout item webhooks last reported. Delivery risk is labelled sample until P4's orders and tracking exist. A line above the widgets says which is which. If the endpoints cannot be reached (not signed in, no server), the page shows its own sample as a whole and says why, because live sponsor ids would not match sample rows and the cross-filtering would break.
+The Money screen is an AG Studio command center, themed from `apps/web/src/styles/tokens.css`. Its data sources are built from the shared widget shapes (`packages/shared/src/widgets.ts`); they are filled from the treasurer-only endpoints `GET /api/widgets/*`. The funding thermometer, budget burn and rules health are live, from the ledger, the funds-gated budget and the audit log. The payouts ledger is live too: every receipt claim, prize and speaker fee, with the status PayPal's payout item webhooks last reported. Delivery risk is labelled sample until orders and tracking exist. A line above the widgets says which is which. If the endpoints cannot be reached (not signed in, no server), the page shows its own sample as a whole and says why, because live sponsor ids would not match sample rows and the cross-filtering would break.
 
 | What                                                                          | Code                                            |
 | ----------------------------------------------------------------------------- | ----------------------------------------------- |
@@ -198,7 +198,7 @@ The Stage 2 write-up, with how the cross-filtering works and what is still sampl
 
 ![The dashboard agent answering "Where are we overspending?"](docs/p3/screenshots/dashboard-agent.png)
 
-### Receipt claims and payouts (P3)
+### Receipt claims and payouts
 
 Volunteers, speakers and winners are paid from the Treasury app with PayPal Payouts, and every payment passes the same rules engine as a purchase.
 
@@ -233,11 +233,7 @@ Lumen Labs has paid, so its invoice task is done and "Buy prizes" shows it as pa
 
 _Status: the tasks are sample data, labelled on the screen; sponsor status is live. Next: live tasks from the plan endpoint and the planning agent (F11), then tracking dates (F18) and late-delivery recovery (F19), where the agent moves dependent tasks when a delivery runs late._
 
-### Channel3
-
-_TODO (P1)_
-
-## Agent loop (P1)
+## Agent loop
 
 The agent chat is a tool loop, not a single completion. An orchestrator agent writes a checklist for the organizer's goal, works through it with tools, and stops when every item is done or blocked. The checklist is saved as a mandate in Postgres (Supabase), so it survives reloads.
 

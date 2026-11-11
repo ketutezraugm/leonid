@@ -69,7 +69,7 @@ describe('Landing page', () => {
   it('names its sponsors in text only: no logos', () => {
     renderLanding();
     const built = screen.getByText('Built with').closest('.lp-built') as HTMLElement;
-    for (const name of ['Bryntum Gantt', 'AG Studio', 'Channel3', 'Render', 'APIMatic']) {
+    for (const name of ['Bryntum Gantt', 'AG Studio', 'Render', 'APIMatic']) {
       expect(within(built).getByText(name)).toBeInTheDocument();
     }
     expect(built.querySelector('img, svg')).toBeNull();
