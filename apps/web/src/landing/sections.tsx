@@ -175,7 +175,7 @@ export function InOneView() {
             src="/landing/event-home.png"
             width={1440}
             height={900}
-            alt="Event home: $1,140.00 unlocked to spend, a prize cart waiting for approval, recent spends and the plan"
+            alt="Event home: $1,140.00 unlocked, recent spends and the plan"
             loading="lazy"
           />
         </div>
@@ -219,15 +219,15 @@ export function Features() {
     <>
       <Feature
         id="lp-money"
-        title="Only cleared money is spendable."
-        text="Pledges and sent invoices are counted, never spent. The budget unlocks as sponsors actually pay."
+        title="Know what’s cleared, what’s committed and what’s left."
+        text="Pledges and sent invoices never count as cash. The figure moves as sponsors actually pay."
         points={[
           'Sponsor invoices drafted by the agent, sent through PayPal',
           'Unlocked = cleared income minus what is committed',
           'Each event keeps its own budget',
         ]}
       >
-        <p className="lp-piece-label">Unlocked to spend · OpenHack 2027</p>
+        <p className="lp-piece-label">Unlocked budget · OpenHack 2027</p>
         <p className="lp-piece-fig num">{formatMoney(unlockedToSpend(DEMO_BUDGET))}</p>
         <BudgetBar figures={DEMO_BUDGET} />
       </Feature>
@@ -236,13 +236,13 @@ export function Features() {
         id="lp-rules"
         flip
         title="Set the rules once. It never crosses them."
-        text="Write a rule the way you’d say it. It becomes a fixed rule in code, and the agent can’t argue its way around it."
+        text="Set a max spend and your limits. They are fixed rules in code, and the agent can’t argue its way around them."
         points={['Spending caps, approved vendors, claim limits', 'The strictest rule wins', 'Every check is logged']}
       >
         <p className="lp-piece-label">Rules</p>
         <div className="lp-rule">
-          <span>“Nothing over $200 without my approval.”</span>
-          <code>maxPerOrder: 20000 USD → needs_approval</code>
+          <span>“Never spend more than $1,000 on swag.”</span>
+          <code>categoryCap: swag 100000 USD → block</code>
         </div>
         <div className="lp-rule">
           <span>“Volunteers can claim up to $50 a day.”</span>
@@ -252,34 +252,31 @@ export function Features() {
 
       <Feature
         id="lp-approve"
-        title="A yes from you before anything big."
-        text="Above your rules, the agent stops and asks. You see why it needs you and approve in PayPal."
+        title="Every spend is checked first."
+        text="Before any payment, the rules engine allows it or blocks it, and says why. The model never decides."
         points={[
-          'Why the rules sent it, in plain words',
+          'The rule that decided, in plain words',
           'The agent’s reasoning and the options it compared',
-          'Approve with PayPal, or decline with a reason',
+          'Every decision is logged with its PayPal ID',
         ]}
       >
         <div className="lp-appr">
-          <b>Prize cart</b>
-          <span className="lp-piece-fig lp-piece-fig--sm num">{formatMoney(42_000)}</span>
+          <b>Swag cart · Gold Prints</b>
+          <span className="lp-piece-fig lp-piece-fig--sm num">{formatMoney(14_000)}</span>
         </div>
-        <StatusBadge status="risk" label="Over your $200 rule" />
-        <p className="lp-piece-label">Six prize bundles from the cheapest seller that delivers before judging.</p>
-        <span className="lp-paypal" aria-hidden="true">
-          Approve with PayPal
-        </span>
+        <StatusBadge status="blocked" label="Not on your approved vendors" />
+        <p className="lp-piece-label">Blocked before any money moved. The check and its reason are in the audit log.</p>
       </Feature>
 
       <Feature
         id="lp-plan"
         flip
-        title="The plan waits for the money."
-        text="Purchases funded by a sponsor stay blocked on the plan until that sponsor pays. Late deliveries turn red before they become a problem."
-        points={['A Gantt plan the agent builds from one sentence', 'Sponsor invoices gate the work they fund', 'Event day stays fixed']}
+        title="One plan, built from one sentence."
+        text="The agent builds a Gantt plan from your goal, and each purchase shows which sponsor funds it."
+        points={['A Gantt plan the agent builds from one sentence', 'Each purchase shows the sponsor that funds it', 'Event day stays fixed']}
       >
         <p className="lp-piece-label">Plan</p>
-        <div className="lp-gantt" role="img" aria-label="The swag order is blocked until the sponsor invoice is paid; event day is fixed">
+        <div className="lp-gantt" role="img" aria-label="The sponsor invoice, the swag order and its delivery on one plan; event day is fixed">
           <div className="lp-grow">
             <span>Sponsor invoice</span>
             <span className="lp-track">
@@ -289,7 +286,7 @@ export function Features() {
           <div className="lp-grow">
             <span>Order swag</span>
             <span className="lp-track">
-              <i className="lp-bar-blocked" style={{ left: '36%', width: '22%' }} />
+              <i className="lp-bar-progress" style={{ left: '36%', width: '22%' }} />
             </span>
           </div>
           <div className="lp-grow">
@@ -305,7 +302,7 @@ export function Features() {
             </span>
           </div>
         </div>
-        <p className="lp-piece-label">Swag waits for the sponsor’s invoice. Plan drawn with Bryntum Gantt.</p>
+        <p className="lp-piece-label">Swag is labelled with the sponsor that funds it. Plan drawn with Bryntum Gantt.</p>
       </Feature>
     </>
   );
@@ -345,9 +342,7 @@ const PAYOUTS: { title: string; text: string; phone: ReactNode }[] = [
     phone: (
       <>
         <p className="lp-piece-label">Speaker travel</p>
-        <p className="lp-phone-line"><b>Over the limit</b></p>
-        <StatusBadge status="risk" label="Waiting on approval" />
-        <span className="lp-phone-btn">Treasurer decides</span>
+        <p className="lp-phone-line"><b>Under the limit</b> <StatusBadge status="done" label="Paid" /></p>
       </>
     ),
   },
@@ -405,7 +400,7 @@ export function PaysPeople() {
 // --- Try it in 3 minutes: three cards that open the demo at its strongest moments.
 const TRIES = [
   { n: 1, title: 'Ask the agent to plan it', text: 'Tell it what you need; it builds the plan and you review it before paying.', to: '/agent' },
-  { n: 2, title: 'Watch the plan wait for a sponsor', text: 'The swag order stays blocked until its sponsor’s invoice is paid.', to: '/plan' },
+  { n: 2, title: 'See who funds each purchase', text: 'Each purchase is labelled with its sponsor, and a paid invoice updates the plan.', to: '/plan' },
   { n: 3, title: 'Stop the agent in one click', text: 'Revoke its wallet; PayPal refuses the next payment, in every event.', to: '/settings' },
 ];
 
@@ -448,7 +443,7 @@ export function TryIt({ onTry, busy, signedIn }: { onTry: (to: string) => void; 
 const STEPS = [
   { title: 'Set up the event and your rules', text: 'Date, headcount, budget and sponsors; the rules in your own words.' },
   { title: 'Let the agent plan and buy the small things', text: 'It builds the plan, sources supplies and pays within the rules.' },
-  { title: 'Approve the big moments yourself', text: 'Anything over your rules waits for you, with its reasons.' },
+  { title: 'Keep the last word', text: 'Revoke the agent’s wallet at any time and PayPal refuses its next charge. Every decision is on the record.' },
 ];
 
 export function HowItWorks() {
@@ -477,8 +472,8 @@ export function HowItWorks() {
 
 // --- Credibility: the dark section.
 const PROOF = [
-  { k: 'RULES ENGINE', title: 'The model never decides a payment', text: 'Every spend passes one deterministic check: allow, needs approval or block.' },
-  { k: 'FUNDS-GATED', title: 'Only cleared money unlocks spending', text: 'Pledges and sent invoices never count, per event.' },
+  { k: 'RULES ENGINE', title: 'The model never decides a payment', text: 'Every spend passes one deterministic check: allow or block.' },
+  { k: 'LIVE FROM PAYPAL', title: 'Cleared money is counted, never guessed', text: 'Income comes from PayPal’s own webhooks, per event.' },
   { k: 'PAYPAL VAULT', title: 'A kill switch PayPal enforces', text: 'Revoking the wallet deletes the payment token; the next charge fails at PayPal.' },
   { k: 'AUDIT LOG', title: 'Every decision is on the record', text: 'Input, reasoning, rule result and PayPal ID for each action.' },
 ];
@@ -514,12 +509,12 @@ export function Credibility() {
 // --- FAQ: native details, so it works without script and by keyboard.
 const FAQ = [
   { q: 'Is this real money?', a: 'No. It runs on the PayPal sandbox; nothing real is charged or paid.' },
-  { q: 'Can the agent spend without me?', a: 'Only inside rules you confirmed. A spend over a rule waits for your approval in PayPal, and a spend that breaks a rule is blocked.' },
+  { q: 'Can the agent spend without me?', a: 'Only inside the rules you set. A spend that breaks a rule is blocked, and you can revoke its wallet at any time.' },
   { q: 'What happens if I revoke the wallet?', a: 'The saved PayPal payment token is deleted, so PayPal refuses the agent’s next charge. You can connect a new wallet later.' },
   ...(LANDING.showMultiEvent
-    ? [{ q: 'Can I run more than one event?', a: 'Yes. Each event keeps its own budget, plan, approvals, rules and claims, and they share one treasury and one agent wallet.' }]
+    ? [{ q: 'Can I run more than one event?', a: 'Yes. Each event keeps its own budget, plan, rules and claims, and they share one treasury and one agent wallet.' }]
     : []),
-  { q: 'Which PayPal products does it use?', a: 'Log in with PayPal, Invoicing for sponsors, Orders and the PayPal button for approvals, the Vault for the agent’s wallet, and Payouts for people.' },
+  { q: 'Which PayPal products does it use?', a: 'Log in with PayPal, Invoicing for sponsors, Orders and the PayPal button for payments, the Vault for the agent’s wallet, and Payouts for people.' },
 ];
 
 export function Faq() {
