@@ -100,7 +100,8 @@ describe('Settings: restoring the demo wallet', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Restore demo wallet' }));
 
     expect(await screen.findByText('No spare demo wallet is left. Ask the host to add one.')).toBeInTheDocument();
-    expect(screen.getByText('Revoked')).toBeInTheDocument();
+    // The card re-reads the wallet after the attempt, so wait for it instead of checking in the same instant.
+    expect(await screen.findByText('Revoked')).toBeInTheDocument();
   });
 
   it('keeps Connect wallet for a real PayPal login, and offers no restore', async () => {
