@@ -1,3 +1,4 @@
+import { TaskKind, Workstream } from '@leonid/shared';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { createTasks, linkTaskToSponsor } from '../../db/tasks.js';
@@ -18,6 +19,10 @@ const CreateTasksInput = z.object({
           .array(z.string())
           .optional()
           .describe('Names of existing or earlier-listed tasks that must finish first'),
+        kind: TaskKind.optional().describe(
+          'task: work to do; payment: money goes out (deposit, order, paying a vendor); milestone: a moment with no duration, start = end',
+        ),
+        workstream: Workstream.optional().describe('The part of the event it belongs to'),
       }),
     )
     .min(1)
@@ -29,8 +34,9 @@ const CreateTasksInput = z.object({
 export function createTasksTool(ctx: AgentContext) {
   return tool({
     description:
-      'Add tasks to the event plan with start/end dates, optional deadlines and dependencies. ' +
-      'Include lead times (for example swag needs weeks to ship). Dates must be before the event day.',
+      'Add tasks to the event plan with start/end dates, optional deadlines and dependencies, each with its kind ' +
+      '(task, payment or milestone) and workstream. Include lead times (for example swag needs weeks to ship). ' +
+      'Dates must be no later than the day after the event (load-out).',
     inputSchema: CreateTasksInput,
     execute: auditedExecute(ctx, 'planning', 'create_tasks', async ({ tasks }) => {
       const created = await createTasks(
@@ -42,6 +48,8 @@ export function createTasksTool(ctx: AgentContext) {
           end: new Date(t.end),
           deadline: t.deadline ? new Date(t.deadline) : null,
           dependsOnNames: t.dependsOnNames,
+          kind: t.kind,
+          workstream: t.workstream ?? null,
         })),
       );
       return { created: created.map((t) => t.name) };

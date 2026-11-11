@@ -209,12 +209,15 @@ Volunteers, speakers and winners are paid from the Treasury app with PayPal Payo
 
 ### Bryntum
 
-The Plan screen and Home both show the event's plan in a Bryntum Calendar (trial 7.3.7, React wrapper, thin packages) in [`apps/web/src/home/`](apps/web/src/home/): Day and Week on an hour grid, Month as days, read-only, tasks coloured by status, event day highlighted. Sponsors show up as they did in the Gantt: a sponsor's invoice task follows that sponsor's status, and each purchase says which sponsor funds it and whether they have paid. The Bryntum Gantt is no longer on any screen (its code stays in [`apps/web/src/plan/`](apps/web/src/plan/)).
+The Plan screen and Home both show the event's plan in a Bryntum Calendar (trial 7.3.7, React wrapper, thin packages) in [`apps/web/src/home/`](apps/web/src/home/): Day and Week on an hour grid, Month as days, read-only, tasks coloured by workstream or by status, event day highlighted. Sponsors show up as they did in the Gantt: a sponsor's invoice task follows that sponsor's status, and each purchase says which sponsor funds it and whether they have paid. The Bryntum Gantt is no longer on any screen (its code stays in [`apps/web/src/plan/`](apps/web/src/plan/)).
 
 - **Each sponsor invoice is a task, live from PayPal.** Its bar follows the sponsor's status from `GET /api/sponsors`: invoiced is in progress, and when PayPal reports the invoice paid (`INVOICING.INVOICE.PAID`) it turns done, without a reload (the screen re-reads sponsor status every 10 seconds while one is unpaid).
 - **Every purchase says which sponsor funds it,** and whether that sponsor has paid yet ("Harbor Cloud · not paid yet"). It is a label, not a lock: since Nov 6 the organizer's own PayPal account pays, so a purchase never waits on a sponsor.
 - **Red means a delivery problem.** At risk is two days or fewer to spare before a deadline; late is past it. Late-delivery recovery (F18/F19, next) is where the agent moves the dependent tasks.
 - **Event day is a fixed milestone** (a must-start-on constraint), and each purchase with a deadline gets a deadline flag.
+- **A real event plan, not a list of payments.** Every task has a kind (task, payment or milestone) and a workstream (venue, catering, swag, AV and wifi, printing and signage, photo and video, prizes, speakers and volunteers, sponsors). The planning agent always adds the event-week spine: final confirmations with vendors at T-7, load-in and AV/wifi test and the final rehearsal at T-1, event day, and load-out at T+1, each linked to what it waits on. The Plan screen opens coloured by workstream, with milestones marked ◆ and payments marked $; one click switches to status colours, and late stays red in both.
+
+![Plan coloured by workstream, with the event-week milestones](docs/p3/screenshots/plan-workstreams.png)
 - **One design system.** Bars use the same status colors as every badge in the app, and the Gantt theme is driven from `apps/web/src/styles/tokens.css`.
 
 | What                                                                                 | Code                                                                       |
@@ -223,7 +226,8 @@ The Plan screen and Home both show the event's plan in a Bryntum Calendar (trial
 | Sponsor labels: which sponsor funds each purchase, invoice tasks from sponsor status | [`apps/web/src/plan/gating.ts`](apps/web/src/plan/gating.ts)               |
 | Each event's own tasks from `GET /api/events/:id/plan`, turned into Gantt tasks      | [`apps/web/src/plan/fromApi.ts`](apps/web/src/plan/fromApi.ts)             |
 | Task model with our status and its funding sponsor                                   | [`apps/web/src/plan/PlanTask.ts`](apps/web/src/plan/PlanTask.ts)           |
-| Seeded OpenHack 2027 plan: 15 linked tasks, three sponsors (`pnpm db:seed`)          | [`apps/api/src/db/seed.ts`](apps/api/src/db/seed.ts)                       |
+| Seeded OpenHack 2027 plan: 22 linked tasks in nine workstreams, with the event-week milestones, three sponsors (`pnpm db:seed`; tops up an older seeded plan) | [`apps/api/src/db/seed.ts`](apps/api/src/db/seed.ts) |
+| Task kinds and workstreams: shared contract, workstream labels and colours             | [`packages/shared/src/plan.ts`](packages/shared/src/plan.ts), [`apps/web/src/plan/workstreams.ts`](apps/web/src/plan/workstreams.ts) |
 | Theme overrides from design tokens                                                   | [`apps/web/src/plan/gantt-theme.css`](apps/web/src/plan/gantt-theme.css)   |
 | Plan page: legend, polling sponsor status, lazy-loading the Gantt                    | [`apps/web/src/pages/Plan.tsx`](apps/web/src/pages/Plan.tsx)               |
 

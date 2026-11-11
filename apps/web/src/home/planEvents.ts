@@ -1,6 +1,7 @@
-import type { PlanResponse } from '@leonid/shared';
+import type { PlanResponse, TaskKind, Workstream } from '@leonid/shared';
 import { taskStatus } from '../plan/fromApi';
 import { fundingText, invoiceStatus, type PlanSponsor } from '../plan/gating';
+import { workstreamSlug } from '../plan/workstreams';
 import type { Status } from '../ui/StatusBadge';
 
 // The event's stored plan as Bryntum Calendar events. A plan is stored in UTC. Times are handed over as plain wall-clock
@@ -13,11 +14,13 @@ export interface PlanEvent {
   startDate: string;
   endDate: string;
   allDay: boolean;
-  /** Lands on the event's element; tasks are coloured by status in calendar-theme.css. */
+  /** Lands on the event's element: its status and workstream classes, which calendar-theme.css colours by. */
   cls: string;
   status: Status;
   /** "Harbor Cloud · paid" for a purchase a sponsor funds; empty otherwise. */
   funding: string;
+  kind: TaskKind;
+  workstream: Workstream | null;
 }
 
 /** "2027-03-14T09:00:00": the UTC wall clock, which Bryntum reads as local time. */
@@ -58,9 +61,11 @@ export function toPlanEvents(
       startDate: wallClock(allDay ? startOfDay(start) : start),
       endDate: wallClock(allDay ? allDayEnd : end),
       allDay,
-      cls: `lx-status-${status}`,
+      cls: `lx-status-${status} lx-ws-${workstreamSlug(task.workstream)} lx-kind-${task.kind}`,
       status,
       funding: funder ? fundingText(funder.name, funder.status === 'paid') : '',
+      kind: task.kind,
+      workstream: task.workstream,
     };
   });
 }

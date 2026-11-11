@@ -28,7 +28,7 @@ import {
 // everything below it follows the product.
 export function Landing({ problem }: { problem: string | null }) {
   const { session } = useSession();
-  const { enter, busy, error } = useEnterDemo();
+  const { enter, busy, error, code, setCode } = useEnterDemo();
   const signedIn = session.status === 'signed-in';
   const message = error ?? problem;
   const root = useRef<HTMLDivElement>(null);
@@ -63,12 +63,30 @@ export function Landing({ problem }: { problem: string | null }) {
                 <HeroTitle lead="Your event’s money, kept" accent="by your rules" end="." />
                 <p className="lp-lede">
                   An AI agent that runs a community event’s money on PayPal: it invoices sponsors, buys what the plan
-                  needs and pays people back, and it only spends what has cleared, within the rules you set.
+                  needs and pays people back, all inside the rules you set.
                 </p>
                 {message && (
                   <p className="lp-problem" role="alert">
                     {message}
                   </p>
+                )}
+                {!signedIn && (
+                  <div className="lp-code">
+                    <label htmlFor="lp-code">Judge access code</label>
+                    <input
+                      id="lp-code"
+                      type="password"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      placeholder="From the submission notes"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void enter();
+                      }}
+                    />
+                  </div>
                 )}
                 <div className="lp-ctas">
                   {signedIn ? (

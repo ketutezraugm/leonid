@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
-import { requireTreasurer, treasurerActor } from '../auth/treasurer.js';
+import { refuseDemoSession, requireTreasurer, treasurerActor } from '../auth/treasurer.js';
 import { writeAudit } from '../db/audit.js';
 import { getDb, type Db } from '../db/client.js';
 import { getPayments, type PaymentsContext } from '../payments/context.js';
@@ -67,6 +67,7 @@ export function walletPoolRouter(options: WalletPoolRouterOptions = {}) {
   router.post(
     '/fill',
     guard,
+    refuseDemoSession,
     safe(async (req, res, { client }, db, base) => {
       const body = FillBody.safeParse(req.body ?? {});
       if (!body.success) {
@@ -142,6 +143,7 @@ export function walletPoolRouter(options: WalletPoolRouterOptions = {}) {
   router.post(
     '/end',
     guard,
+    refuseDemoSession,
     safe(async (_req, res, { client }, db) => {
       const result = await endDemoPool(db, client);
       await writeAudit(db, {

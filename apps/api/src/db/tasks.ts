@@ -1,6 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm';
 import type { Db } from './client.js';
-import { sponsors, tasks } from './schema.js';
+import { sponsors, tasks, type TASK_KINDS, type WORKSTREAMS } from './schema.js';
 
 export interface NewTask {
   name: string;
@@ -9,6 +9,8 @@ export interface NewTask {
   deadline?: Date | null;
   // Names of tasks this one depends on; they must already exist or appear earlier in the batch.
   dependsOnNames?: string[];
+  kind?: (typeof TASK_KINDS)[number];
+  workstream?: (typeof WORKSTREAMS)[number] | null;
 }
 
 export function listTasks(db: Db, eventId: string) {
@@ -33,6 +35,8 @@ export async function createTasks(db: Db, eventId: string, input: NewTask[]) {
         end: task.end,
         deadline: task.deadline ?? null,
         dependsOn,
+        kind: task.kind ?? 'task',
+        workstream: task.workstream ?? null,
       })
       .returning();
     if (!row) throw new Error(`Could not create task "${task.name}"`);

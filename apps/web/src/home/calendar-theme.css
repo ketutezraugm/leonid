@@ -17,23 +17,78 @@
   font-size: var(--font-size-sm);
 }
 
-/* Task colours follow the shared status vocabulary (StatusBadge), as the Gantt's bars do. */
-.lx-calendar .b-cal-event-wrap.lx-status-done {
+/* Colour by status: tasks follow the shared status vocabulary (StatusBadge), as the Gantt's bars do. */
+.lx-calendar.lx-color-status .b-cal-event-wrap.lx-status-done {
   --b-primary: var(--color-status-done);
 }
 
-.lx-calendar .b-cal-event-wrap.lx-status-progress {
+.lx-calendar.lx-color-status .b-cal-event-wrap.lx-status-progress {
   --b-primary: var(--color-status-progress);
 }
 
-.lx-calendar .b-cal-event-wrap.lx-status-pending {
+.lx-calendar.lx-color-status .b-cal-event-wrap.lx-status-pending {
   --b-primary: var(--color-status-pending);
 }
 
-.lx-calendar .b-cal-event-wrap.lx-status-risk {
+.lx-calendar.lx-color-status .b-cal-event-wrap.lx-status-risk {
   --b-primary: var(--color-status-risk);
 }
 
-.lx-calendar .b-cal-event-wrap.lx-status-blocked {
+/* Colour by workstream: each part of the event has its own colour (tokens.css, --color-ws-*). */
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-venue {
+  --b-primary: var(--color-ws-venue);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-catering {
+  --b-primary: var(--color-ws-catering);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-swag {
+  --b-primary: var(--color-ws-swag);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-av {
+  --b-primary: var(--color-ws-av);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-printing {
+  --b-primary: var(--color-ws-printing);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-photo-video {
+  --b-primary: var(--color-ws-photo-video);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-prizes {
+  --b-primary: var(--color-ws-prizes);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-people {
+  --b-primary: var(--color-ws-people);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-sponsors {
+  --b-primary: var(--color-ws-sponsors);
+}
+
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-ws-none {
+  --b-primary: var(--color-ws-none);
+}
+
+/* Late is the one thing that must never hide behind a colour choice: it stays red in both views. As specific as the
+ * workstream rules and after them, so it wins. */
+.lx-calendar.lx-color-status .b-cal-event-wrap.lx-status-blocked,
+.lx-calendar.lx-color-workstream .b-cal-event-wrap.lx-status-blocked {
   --b-primary: var(--color-status-blocked);
+}
+
+/* A milestone's diamond and a payment's dollar sign, before the name. */
+.lx-calendar .lx-kind-icon {
+  margin-inline-end: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+/* A milestone is a moment, not a span of work: its name is bold so the event-week spine reads at a glance. */
+.lx-calendar .b-cal-event-wrap.lx-kind-milestone {
+  font-weight: var(--font-weight-semibold);
 }
