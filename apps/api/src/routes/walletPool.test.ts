@@ -196,6 +196,34 @@ describe('a demo-login judge and the shared token pool', () => {
     expect((await request(app).post('/api/wallet/pool/reset').set(judge)).status).toBe(409);
   });
 
+  it('cannot reset a wallet that is active: that would only use up the spare tokens', async () => {
+    const h = build();
+    await fillAndApprove(h, 2);
+    await h.wallet.activate({ paymentTokenId: 'pt_current', customerId: 'c', payerEmail: 'p@example.com' });
+    const callsBefore = h.calls.length;
+
+    const res = await request(h.app).post('/api/wallet/pool/reset').set(judge);
+
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ error: 'The demo wallet is already active' });
+    expect(await h.wallet.getActive()).toEqual({ paymentTokenId: 'pt_current' });
+    expect(h.calls.length).toBe(callsBefore); // nothing was deleted at PayPal
+    expect((await poolCounts(db)).standby).toBe(2);
+  });
+
+  it('can restore a wallet that was revoked, from a spare token', async () => {
+    const h = build();
+    await fillAndApprove(h, 2);
+    await h.wallet.activate({ paymentTokenId: 'pt_current', customerId: 'c', payerEmail: 'p@example.com' });
+    await h.wallet.markRevoked();
+
+    const res = await request(h.app).post('/api/wallet/pool/reset').set(judge);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: 'active', standby: 1 });
+    expect(await h.wallet.getActive()).toEqual({ paymentTokenId: 'pt_ST-1' });
+  });
+
   it('is not locked for the ops token', async () => {
     const { app } = build();
 
