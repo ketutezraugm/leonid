@@ -6,3 +6,9 @@ coverage
 !.env.example
 .DS_Store
 *.log
+
+# Playwright MCP screenshots and logs
+.playwright-mcp/
+
+# Impeccable critique snapshots
+.impeccable/

@@ -1,0 +1,39 @@
+/*
+ * Bryntum Calendar overrides, driven only by tokens.css, like plan/gantt-theme.css. Loaded after the Svalbard theme.
+ */
+
+.lx-calendar {
+  height: 640px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.lx-calendar .b-calendar {
+  --b-primary: var(--color-accent);
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+/* Task colours follow the shared status vocabulary (StatusBadge), as the Gantt's bars do. */
+.lx-calendar .b-cal-event-wrap.lx-status-done {
+  --b-primary: var(--color-status-done);
+}
+
+.lx-calendar .b-cal-event-wrap.lx-status-progress {
+  --b-primary: var(--color-status-progress);
+}
+
+.lx-calendar .b-cal-event-wrap.lx-status-pending {
+  --b-primary: var(--color-status-pending);
+}
+
+.lx-calendar .b-cal-event-wrap.lx-status-risk {
+  --b-primary: var(--color-status-risk);
+}
+
+.lx-calendar .b-cal-event-wrap.lx-status-blocked {
+  --b-primary: var(--color-status-blocked);
+}

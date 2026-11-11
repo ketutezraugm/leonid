@@ -1,0 +1,61 @@
+/*
+ * Bryntum theme overrides, driven only by tokens.css. Loaded after the
+ * Svalbard theme so these win.
+ */
+
+.lx-gantt {
+  /* Fits the sample plan's 15 rows under the two-row header without a scrollbar. */
+  height: 740px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.lx-gantt .b-gantt {
+  --b-primary: var(--color-accent);
+  --b-gantt-task-primary: var(--color-accent);
+  --b-grid-row-height: var(--gantt-row-height);
+  --b-gantt-task-border-radius: var(--gantt-bar-radius);
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+/* Task bar colors follow the shared status vocabulary (StatusBadge). Bryntum
+ * derives each bar's --b-primary from --b-gantt-task-primary on the bar itself. */
+.lx-gantt .lx-status-done {
+  --b-gantt-task-primary: var(--color-status-done);
+}
+
+.lx-gantt .lx-status-progress {
+  --b-gantt-task-primary: var(--color-status-progress);
+}
+
+.lx-gantt .lx-status-pending {
+  --b-gantt-task-primary: var(--color-status-pending);
+}
+
+.lx-gantt .lx-status-risk {
+  --b-gantt-task-primary: var(--color-status-risk);
+}
+
+.lx-gantt .lx-status-blocked {
+  --b-gantt-task-primary: var(--color-status-blocked);
+}
+
+/* Event day: the fixed milestone and its line use the milestone ink, not a
+ * status color. Bryntum sets --b-primary on these elements via .b-colorize,
+ * so these selectors have to outrank that. */
+.lx-gantt .b-gantt-task-wrap.b-milestone-wrap,
+.lx-gantt .b-sch-time-range.b-colorize {
+  --b-primary: var(--gantt-milestone);
+  --b-gantt-task-primary: var(--gantt-milestone);
+  --b-gantt-milestone-primary: var(--gantt-milestone);
+}
+
+/* Funded by: a quiet label, not a status. The sponsor no longer holds a purchase back. */
+.lx-gantt .lx-funding {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}

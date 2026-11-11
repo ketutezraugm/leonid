@@ -1,0 +1,205 @@
+/* Delivery risk. Colours come from the design tokens (the status colours for late, at risk, on track and no
+   date yet); the fallbacks only keep it readable on a branch that predates them. Meaning never rests on colour
+   alone: every risk is written out, and the dot is decoration. */
+.lx-delivery {
+  --lx-blocked: var(--color-status-blocked, #c4242a);
+  --lx-risk: var(--color-status-risk, #b26a00);
+  --lx-done: var(--color-status-done, #2e7d32);
+  --lx-pending: var(--color-status-pending, #8a948e);
+  --lx-text: var(--color-text, #15163a);
+  --lx-muted: var(--color-muted, #56625b);
+  --lx-border: var(--color-border, #e1e6e2);
+  --lx-focus: var(--color-accent, #2b2670);
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 4px 2px;
+  overflow: auto;
+  color: var(--lx-text);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 14px;
+}
+
+.lx-delivery__note {
+  margin: 0;
+  padding: 16px;
+  color: var(--color-muted, #56625b);
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.lx-delivery__counts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lx-delivery__count {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--lx-border);
+  border-radius: 6px;
+}
+
+.lx-delivery__number {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.lx-delivery__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lx-muted);
+  font-size: 12px;
+}
+
+.lx-delivery__dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lx-pending);
+}
+
+.lx-delivery [data-tone='blocked'] .lx-delivery__dot,
+.lx-delivery__dot[data-tone='blocked'] {
+  background: var(--lx-blocked);
+}
+
+.lx-delivery [data-tone='risk'] .lx-delivery__dot,
+.lx-delivery__dot[data-tone='risk'] {
+  background: var(--lx-risk);
+}
+
+.lx-delivery [data-tone='done'] .lx-delivery__dot,
+.lx-delivery__dot[data-tone='done'] {
+  background: var(--lx-done);
+}
+
+.lx-delivery__scope {
+  margin: 0;
+  color: var(--lx-muted);
+  font-size: 12px;
+}
+
+.lx-delivery__warn {
+  margin: 0;
+  color: var(--lx-blocked);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lx-delivery__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* An item is two lines: what it is and how it stands, then the days. Items with a category are buttons that
+   filter the other widgets by it; items without one are plain text. */
+.lx-delivery__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head timing'
+    'dates dates';
+  align-items: baseline;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+button.lx-delivery__row {
+  cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+
+button.lx-delivery__row:hover {
+  background: var(--color-surface-sunken, #e8ede9);
+}
+
+button.lx-delivery__row:focus-visible {
+  outline: 2px solid var(--lx-focus);
+  outline-offset: 2px;
+}
+
+.lx-delivery__row[aria-pressed='true'] {
+  border-color: var(--lx-focus);
+  background: var(--color-accent-soft, #e1e9e3);
+}
+
+.lx-delivery__row[data-dimmed='true'] {
+  opacity: 0.5;
+}
+
+.lx-delivery__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  grid-area: head;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.lx-delivery__risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.lx-delivery__name {
+  font-weight: 600;
+}
+
+.lx-delivery__category {
+  color: var(--lx-muted);
+  text-transform: capitalize;
+}
+
+.lx-delivery__timing {
+  grid-area: timing;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lx-delivery__timing[data-tone='blocked'] {
+  color: var(--lx-blocked);
+}
+
+.lx-delivery__dates {
+  grid-area: dates;
+  color: var(--lx-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.lx-delivery__row {
+    transition: none;
+  }
+}

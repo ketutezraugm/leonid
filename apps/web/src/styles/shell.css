@@ -1,0 +1,973 @@
+/*
+ * Shell additions (owner: P4): event block, icon rail, agent button, drawer, tabs, dialog, toasts.
+ * Values come only from tokens.css.
+ */
+
+:root {
+  --drawer-width: 440px;
+}
+
+a.btn {
+  text-decoration: none;
+}
+
+/* --- Browser surfaces: selection, caret, scrollbars and link underlines carry the palette too --- */
+::selection {
+  background: var(--color-data-soft);
+  color: var(--color-text);
+}
+
+html {
+  scrollbar-color: var(--color-control-edge) transparent;
+}
+
+input,
+textarea {
+  caret-color: var(--color-accent);
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Keyboard users jump past the sidebar to the screen. Hidden until focused. */
+.skip-link {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 60;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.shell-sheet:focus {
+  outline: none;
+}
+
+/* --- Sidebar: event block, icons, count, wallet status, foot --- */
+.shell-sheet {
+  /* room for the floating agent button so it never covers the last row */
+  padding-bottom: 96px;
+}
+
+.shell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  min-height: var(--control-height);
+}
+
+.shell-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.shell-toggle:hover {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+
+.shell-event {
+  display: grid;
+  gap: 2px;
+  padding: 0 var(--space-2);
+}
+
+.shell-nav a {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.nav-count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-brass);
+  color: var(--color-on-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+}
+
+/* --- Account card and menu: pinned to the sidebar's bottom-left --- */
+@media (min-width: 721px) {
+  .shell-side {
+    min-height: calc(100dvh - 2 * var(--space-2));
+  }
+}
+
+/* The sidebar's menu floats over the sheet, so the sidebar sits above it and the sheet keeps the z-indexes of
+   its own widgets (the Plan's Gantt bars and toolbar) to itself. */
+.shell-side {
+  z-index: 20;
+}
+
+.shell-sheet {
+  isolation: isolate;
+}
+
+.shell-account {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.account {
+  position: relative;
+}
+
+.account-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.account-card:hover,
+.account-card:has(.account-button[aria-expanded='true']) {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* An empty button covers the whole card, so clicking anywhere opens the menu; the eye sits above it. */
+.account-button {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: none;
+  cursor: pointer;
+}
+
+.account-card > .account-initial,
+.account-card > .account-text {
+  pointer-events: none;
+}
+
+.account-initial {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.account-text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.account-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+}
+
+.account-text .muted {
+  font-size: var(--font-size-xs);
+}
+
+.account-balance {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.account-eye {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.account-eye .nav-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.account-eye:hover {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+
+/* The menu opens upward; its head and foot stay put and only the event list scrolls. */
+.account-menu {
+  position: absolute;
+  bottom: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  width: max(100%, 280px);
+  max-height: min(70vh, 520px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-menu);
+  transform-origin: bottom left;
+  animation: account-menu-in 180ms var(--ease-out-strong);
+}
+
+@keyframes account-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+.account-menu-head,
+.account-menu-links,
+.account-menu-foot,
+.account-menu-title {
+  flex: none;
+}
+
+.account-menu-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.account-menu-links,
+.account-menu-foot {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.account-menu-foot {
+  border-top: 1px solid var(--color-border);
+  padding-bottom: var(--space-2);
+}
+
+.account-menu a,
+.account-menu-foot button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  font: inherit;
+  color: var(--color-text);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-menu a:hover,
+.account-menu-foot button:hover {
+  background: var(--color-surface-sunken);
+}
+
+.account-menu-title {
+  margin: 0;
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+}
+
+.account-menu-events {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-2);
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.account-menu-events a {
+  justify-content: space-between;
+  min-height: 0;
+  padding: var(--space-2);
+}
+
+.account-menu-events a[aria-current='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.account-menu-event {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.account-menu-event .muted {
+  font-size: var(--font-size-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-menu {
+    animation: fade-in 150ms ease;
+  }
+}
+
+/* Agent workspace: the chat rail and results canvas fill the sheet edge to edge and scroll themselves. */
+.shell--agent {
+  height: 100dvh;
+  min-height: 0;
+}
+
+.shell--agent .shell-sheet {
+  height: calc(100dvh - 2 * var(--space-2));
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Where the workspace stacks chat over results, the page scrolls instead. */
+@media (max-width: 900px) {
+  .shell--agent {
+    height: auto;
+  }
+
+  .shell--agent .shell-sheet {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+/* The closed sidebar: an icon rail, on any screen. Plan, Money and Agent start this way. */
+.shell--rail {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.shell--rail .shell-side {
+  width: 64px;
+  padding: var(--space-3) var(--space-2);
+}
+
+.shell--rail .shell-top {
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.shell--rail .shell-label {
+  display: none;
+}
+
+.shell--rail .account-card,
+.shell--rail .event-label {
+  justify-content: center;
+  padding: var(--space-1);
+}
+
+.shell--rail .brand,
+.shell--rail .shell-nav a {
+  justify-content: center;
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  .shell--rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Phones have the top bar on every screen, which has nothing to close, so the rail styles step aside. */
+  .shell--rail .shell-side {
+    width: auto;
+    padding: var(--space-2) var(--space-3) 0;
+  }
+
+  .shell--rail .shell-label {
+    display: inline;
+  }
+
+  .shell-top,
+  .shell--rail .shell-top {
+    flex-direction: row;
+    min-height: 0;
+  }
+
+  .shell--rail .brand {
+    justify-content: flex-start;
+    padding: var(--space-1) 0;
+  }
+
+  .shell--rail .shell-nav a {
+    justify-content: flex-start;
+    padding: 0 var(--space-2) 0 10px;
+  }
+
+  .shell-toggle {
+    display: none;
+  }
+
+  .shell-event,
+  .shell--rail .shell-event,
+  .event-label {
+    display: none;
+  }
+
+  /* On phones the account card is just the avatar, in the top bar's corner, and its menu opens downward. */
+  .shell-side {
+    position: relative;
+  }
+
+  .shell-account {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-3);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .account-card {
+    padding: var(--space-1);
+  }
+
+  .shell-side .account-text {
+    display: none;
+  }
+
+  .account-menu {
+    top: calc(100% + var(--space-1));
+    bottom: auto;
+    right: 0;
+    left: auto;
+    width: min(320px, calc(100vw - 2 * var(--space-3)));
+  }
+
+  .shell-sheet {
+    padding-bottom: 88px;
+  }
+
+  /* The nav strip scrolls sideways; a soft fade says there is more, without a scrollbar. */
+  .shell-nav {
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+  }
+
+  .shell-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* --- Agent button: a forest disc, floating at the bottom-right --- */
+.agent-button {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  box-shadow: var(--shadow-menu);
+  cursor: pointer;
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.agent-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.agent-button:hover {
+  background: var(--color-accent-strong);
+}
+
+/* Leo peeks up from the bottom edge of the button: the drawing fills the disc and is cut by its circle (the
+   drawing is clipped, not the button, so the Working ring outside still shows). The mane is a pale halo; eyes and
+   nose are cut in the button's own indigo. */
+.agent-button .leo-peek {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: circle(50%);
+}
+
+.leo-peek-body {
+  transition: transform 300ms var(--ease-out-strong);
+}
+
+.leo-icon-mane {
+  fill: currentColor;
+  opacity: 0.5;
+}
+
+.leo-icon-ink {
+  fill: var(--color-accent);
+}
+
+.leo-icon-nose {
+  stroke: var(--color-accent);
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+}
+
+/* On hover he rises a little more, as if to say hi. Mouse only, never under reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .agent-button:hover .leo-peek-body {
+    transform: translateY(-1.6px);
+  }
+}
+
+.agent-button:active {
+  transform: scale(0.96);
+}
+
+/* Open: it slides left with the drawer and becomes the close button. */
+.agent-button--open {
+  transform: translateX(calc(-1 * (var(--drawer-width) + var(--space-2))));
+}
+
+.agent-button--open:active {
+  transform: translateX(calc(-1 * (var(--drawer-width) + var(--space-2)))) scale(0.96);
+}
+
+.agent-button-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-brass);
+  border: 2px solid var(--color-bg);
+}
+
+.agent-button-arc {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--color-brass);
+  animation: agent-spin 1.6s linear infinite;
+}
+
+@keyframes agent-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .agent-button {
+    right: var(--space-3);
+    bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .agent-button--open,
+  .agent-button--open:active {
+    transform: none;
+  }
+}
+
+/* --- Drawer --- */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(21, 22, 58, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms var(--ease-standard);
+}
+
+.drawer-scrim[data-open='true'] {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: var(--motion-base);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  width: min(var(--drawer-width), 100vw);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform 200ms var(--ease-drawer),
+    visibility 0s linear 200ms;
+}
+
+.drawer[data-open='true'] {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform 300ms var(--ease-drawer),
+    visibility 0s;
+}
+
+.drawer:focus {
+  outline: none;
+}
+
+.drawer-loading {
+  padding: var(--space-4);
+}
+
+/* P1's chat fills the drawer; its thread list opens on demand, as on a phone. */
+.drawer .chat {
+  flex: 1;
+  height: auto;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.drawer .chat-header {
+  padding-right: 72px; /* room beside the floating close button */
+}
+
+.drawer .chat-header {
+  min-height: 56px;
+  padding-left: var(--space-4);
+  border-bottom-color: var(--color-border);
+}
+
+.drawer .chat-header h2 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* P1's "Chats" button, dressed as our secondary button so it matches every other control. */
+.drawer .chat-toggle,
+.chat--rail .chat-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.drawer .chat-toggle:hover,
+.chat--rail .chat-toggle:hover {
+  background: var(--color-accent-soft);
+}
+
+.drawer .chat-sidebar {
+  display: none;
+  width: 100%;
+  border-right: 0;
+}
+
+.drawer .chat-body--list .chat-sidebar {
+  display: flex;
+}
+
+.drawer .chat-body--list .chat-main {
+  display: none;
+}
+
+/* In the drawer the empty state sits above the composer, left-aligned with an even inset, one prompt per row. */
+.drawer .chat-log {
+  padding: var(--space-4);
+}
+
+.drawer .chat-empty {
+  margin: auto 0 0;
+  text-align: left;
+}
+
+.drawer .chat-empty .muted {
+  margin: 0 0 var(--space-3);
+}
+
+.drawer .chat-suggestions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.drawer .chat-error {
+  padding: var(--space-2) var(--space-4);
+}
+
+.drawer .chat-form {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.drawer .chat-form textarea {
+  border-color: var(--color-control-edge);
+}
+
+@media (max-width: 720px) {
+  .drawer .chat-form textarea {
+    font-size: var(--font-size-md);
+  }
+}
+
+/* --- Tabs: the underline slides to the new tab, and the accent copy of the labels (clipped to the active tab)
+   slides with it, so each label changes color as the line passes. Positions come from Tabs.tsx. --- */
+.tabs {
+  position: relative;
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  /* Still swipes on narrow screens, without the browser's grey scrollbar under the labels. */
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  min-height: 40px;
+  padding: 0; /* the box is the label, so the underline is exactly as long as the text */
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+/* Before the slider is placed (and without script) the selected tab still shows on its own. */
+.tabs:not([data-ready]) .tab[aria-selected='true'] {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.tabs-copy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: var(--space-4);
+  pointer-events: none;
+}
+
+.tab-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  cursor: default;
+  color: var(--color-accent);
+}
+
+.tab-copy::before {
+  content: attr(data-label);
+}
+
+/* A 1px line, scaled to the active tab's width: it moves on transform only. */
+.tabs-line {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--color-accent);
+  transform-origin: left;
+}
+
+.tabs:not([data-ready]) .tabs-line,
+.tabs:not([data-ready]) .tabs-copy {
+  visibility: hidden;
+}
+
+.tabs[data-ready] .tabs-line,
+.tabs[data-ready] .tabs-copy {
+  transition:
+    transform 320ms var(--ease-in-out-strong),
+    clip-path 320ms var(--ease-in-out-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs[data-ready] .tabs-line,
+  .tabs[data-ready] .tabs-copy {
+    transition: none;
+  }
+}
+
+/* --- Dialog --- */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3);
+  background: var(--color-scrim);
+  animation: fade-in 200ms ease;
+}
+
+.dialog {
+  display: grid;
+  gap: var(--space-3);
+  width: min(440px, 100%);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-menu);
+  animation: dialog-in 220ms var(--ease-out-strong);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.dialog-body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.dialog-body p {
+  margin: 0;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+}
+
+/* --- Toasts rise from the bottom --- */
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-4);
+  z-index: 50;
+  display: grid;
+  gap: var(--space-2);
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 2 * var(--space-3)));
+  pointer-events: none;
+}
+
+.toast {
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-text);
+  color: var(--color-surface);
+  box-shadow: var(--shadow-menu);
+  animation: toast-in 250ms var(--ease-out-strong);
+}
+
+.toast-error {
+  background: var(--color-status-blocked-text);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* A new screen, or a new Money tab, settles in instead of snapping. Kept small and quick: it happens often. */
+.shell-sheet > *,
+.tab-panel > * {
+  animation: view-in 180ms var(--ease-out-strong);
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-button-arc {
+    animation: none;
+  }
+
+  .toast,
+  .dialog,
+  .shell-sheet > *,
+  .tab-panel > * {
+    animation: fade-in 150ms ease;
+  }
+}

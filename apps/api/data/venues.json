@@ -1,0 +1,5532 @@
+[
+  {
+    "id": "id-west-jakarta-auditorium",
+    "name": "Aula Bhinneka Jakarta Barat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "West Jakarta",
+    "type": "auditorium",
+    "capacity": 460,
+    "price": {
+      "amountMinor": 19300000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 920000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 130000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7805000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 23000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Stage",
+      "Dual projectors",
+      "Tiered seating",
+      "Sound system"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-west-jakarta-hotel-ballroom",
+    "name": "Hotel Cendana Jakarta Barat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "West Jakarta",
+    "type": "hotel_ballroom",
+    "capacity": 320,
+    "price": {
+      "amountMinor": 405000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 60,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 1580000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7470000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Stage",
+      "Sound system",
+      "Parking",
+      "Wi-Fi"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-west-jakarta-restaurant",
+    "name": "Restoran Rempah Jakarta Barat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "West Jakarta",
+    "type": "restaurant",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 190000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 615000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 2155000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "TV screen",
+      "Private room",
+      "Wi-Fi",
+      "Set menu"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-south-jakarta-auditorium",
+    "name": "Aula Nusantara Jakarta Selatan",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "South Jakarta",
+    "type": "auditorium",
+    "capacity": 360,
+    "price": {
+      "amountMinor": 10555000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 995000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 120000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 3770000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 30000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Tiered seating",
+      "Stage",
+      "Sound system"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-south-jakarta-coworking",
+    "name": "Ruang Kolaborasi Jakarta Selatan",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "South Jakarta",
+    "type": "coworking",
+    "capacity": 130,
+    "price": {
+      "amountMinor": 915000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 500000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 250000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Power at every seat",
+      "Fast Wi-Fi",
+      "Projector",
+      "Pantry"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-south-jakarta-meeting-room",
+    "name": "Paket Meeting Lentera Jakarta Selatan",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "South Jakarta",
+    "type": "meeting_room",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 230000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2425000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 150000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Whiteboard",
+      "Projector",
+      "Parking"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-central-jakarta-convention-hall",
+    "name": "Gedung Serbaguna Jakarta Pusat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "Central Jakarta",
+    "type": "convention_hall",
+    "capacity": 1070,
+    "price": {
+      "amountMinor": 66545000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 20000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 4730000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 12685000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 4675000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 78000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Generator",
+      "Parking",
+      "Loading dock",
+      "Freight lift"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-central-jakarta-restaurant",
+    "name": "Dapur Kayu Jakarta Pusat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "Central Jakarta",
+    "type": "restaurant",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 240000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 705000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 3370000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "TV screen",
+      "Private room",
+      "Set menu",
+      "Wi-Fi"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-central-jakarta-meeting-room",
+    "name": "Ruang Rapat Sinergi Jakarta Pusat",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "Central Jakarta",
+    "type": "meeting_room",
+    "capacity": null,
+    "price": {
+      "amountMinor": 220000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 1695000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 190000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Video conferencing",
+      "Wi-Fi",
+      "Whiteboard",
+      "Projector"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-north-jakarta-hotel-ballroom",
+    "name": "Grand Melati Ballroom Jakarta Utara",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "North Jakarta",
+    "type": "hotel_ballroom",
+    "capacity": 540,
+    "price": {
+      "amountMinor": 350000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 140,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 1750000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7865000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 23000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Parking",
+      "Stage",
+      "Sound system"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-north-jakarta-rooftop",
+    "name": "Atap Kota Jakarta Utara",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "North Jakarta",
+    "type": "rooftop",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 34015000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3170000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 30000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 57000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Outdoor lighting",
+      "Rain cover",
+      "Sound system",
+      "Bar"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-north-jakarta-restaurant",
+    "name": "Rumah Makan Lestari Jakarta Utara",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "North Jakarta",
+    "type": "restaurant",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 140000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 685000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 2605000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Private room",
+      "TV screen",
+      "Set menu",
+      "Wi-Fi"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-east-jakarta-hotel-ballroom",
+    "name": "Grand Melati Ballroom Jakarta Timur",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "East Jakarta",
+    "type": "hotel_ballroom",
+    "capacity": 230,
+    "price": {
+      "amountMinor": 500000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 70,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2490000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 5015000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 18000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Prayer room",
+      "Sound system",
+      "Stage",
+      "Parking"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-east-jakarta-restaurant",
+    "name": "Dapur Kayu Jakarta Timur",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "East Jakarta",
+    "type": "restaurant",
+    "capacity": null,
+    "price": {
+      "amountMinor": 285000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 635000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 3225000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Private room",
+      "TV screen",
+      "Wi-Fi",
+      "Set menu"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-east-jakarta-rooftop",
+    "name": "Teras Langit Jakarta Timur",
+    "country": "id",
+    "city": "Jakarta",
+    "area": "East Jakarta",
+    "type": "rooftop",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 28560000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3890000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 25000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 31000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "City view",
+      "Outdoor lighting",
+      "Rain cover",
+      "Bar"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-dago-convention-hall",
+    "name": "Balai Pertemuan Dago",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Dago",
+    "type": "convention_hall",
+    "capacity": 980,
+    "price": {
+      "amountMinor": 47545000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 35000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 5625000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 5050000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 5960000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 44000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Loading dock",
+      "Booth space",
+      "Parking",
+      "Generator"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-dago-hotel-ballroom",
+    "name": "Grand Melati Ballroom Dago",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Dago",
+    "type": "hotel_ballroom",
+    "capacity": null,
+    "price": {
+      "amountMinor": 495000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 150,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3095000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 3480000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 32000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Sound system",
+      "Parking",
+      "Stage"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-dago-meeting-room",
+    "name": "Paket Meeting Lentera Dago",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Dago",
+    "type": "meeting_room",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 335000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2295000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 245000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 5000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Whiteboard",
+      "Video conferencing",
+      "Parking"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-braga-meeting-room",
+    "name": "Paket Meeting Lentera Braga",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Braga",
+    "type": "meeting_room",
+    "capacity": 120,
+    "price": {
+      "amountMinor": 220000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2680000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 290000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "Whiteboard",
+      "Parking",
+      "Projector"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-braga-convention-hall",
+    "name": "Gedung Serbaguna Braga",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Braga",
+    "type": "convention_hall",
+    "capacity": 650,
+    "price": {
+      "amountMinor": 83740000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 20000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 7885000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 9975000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 4420000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 78000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Parking",
+      "Booth space",
+      "Wi-Fi",
+      "Loading dock"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-braga-hotel-ballroom",
+    "name": "Hotel Cendana Braga",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Braga",
+    "type": "hotel_ballroom",
+    "capacity": 250,
+    "price": {
+      "amountMinor": 250000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 140,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2975000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7450000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 41000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Projector",
+      "Prayer room",
+      "Wi-Fi"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-pasteur-hotel-ballroom",
+    "name": "Grand Melati Ballroom Pasteur",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Pasteur",
+    "type": "hotel_ballroom",
+    "capacity": 570,
+    "price": {
+      "amountMinor": 435000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 120,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3980000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 6920000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 21000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Prayer room",
+      "Projector",
+      "Sound system",
+      "Wi-Fi"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-pasteur-auditorium",
+    "name": "Aula Bhinneka Pasteur",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Pasteur",
+    "type": "auditorium",
+    "capacity": 160,
+    "price": {
+      "amountMinor": 24085000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 990000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 240000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7135000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 30000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Tiered seating",
+      "Stage",
+      "Sound system",
+      "Dual projectors"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-pasteur-convention-hall",
+    "name": "Balai Pertemuan Pasteur",
+    "country": "id",
+    "city": "Bandung",
+    "area": "Pasteur",
+    "type": "convention_hall",
+    "capacity": 760,
+    "price": {
+      "amountMinor": 78090000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 30000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 7955000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 8760000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 5465000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 79000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Generator",
+      "Loading dock",
+      "Wi-Fi",
+      "Booth space"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-gubeng-rooftop",
+    "name": "Rooftop Senja Gubeng",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Gubeng",
+    "type": "rooftop",
+    "capacity": 140,
+    "price": {
+      "amountMinor": 32775000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2075000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 35000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 28000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Rain cover",
+      "Outdoor lighting",
+      "Sound system",
+      "Bar"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-gubeng-convention-hall",
+    "name": "Gedung Serbaguna Gubeng",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Gubeng",
+    "type": "convention_hall",
+    "capacity": null,
+    "price": {
+      "amountMinor": 52260000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 30000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 4130000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 8025000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 6925000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 65000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Generator",
+      "Freight lift",
+      "Loading dock"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-gubeng-coworking",
+    "name": "Ruang Kolaborasi Gubeng",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Gubeng",
+    "type": "coworking",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 1650000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 315000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 250000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 5000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Power at every seat",
+      "Breakout rooms",
+      "Projector",
+      "Fast Wi-Fi"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-tegalsari-convention-hall",
+    "name": "Convention Hall Tegalsari",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Tegalsari",
+    "type": "convention_hall",
+    "capacity": 1350,
+    "price": {
+      "amountMinor": 45240000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 25000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 7160000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 12855000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 6845000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 72000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Freight lift",
+      "Generator",
+      "Parking",
+      "Booth space"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-tegalsari-rooftop",
+    "name": "Teras Langit Tegalsari",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Tegalsari",
+    "type": "rooftop",
+    "capacity": 160,
+    "price": {
+      "amountMinor": 31335000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3315000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 20000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 41000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Bar",
+      "City view",
+      "Outdoor lighting",
+      "Sound system"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-tegalsari-coworking",
+    "name": "Titik Temu Coworking Tegalsari",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Tegalsari",
+    "type": "coworking",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 1910000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 675000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 370000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Projector",
+      "Power at every seat",
+      "Breakout rooms"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-wiyung-auditorium",
+    "name": "Aula Bhinneka Wiyung",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Wiyung",
+    "type": "auditorium",
+    "capacity": 330,
+    "price": {
+      "amountMinor": 15490000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 665000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 195000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 3370000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Sound system",
+      "Stage",
+      "Tiered seating",
+      "Dual projectors"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-wiyung-hotel-ballroom",
+    "name": "Hotel Kenanga Wiyung",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Wiyung",
+    "type": "hotel_ballroom",
+    "capacity": 480,
+    "price": {
+      "amountMinor": 355000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 130,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2835000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7195000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Sound system",
+      "Stage",
+      "Parking"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-wiyung-rooftop",
+    "name": "Rooftop Senja Wiyung",
+    "country": "id",
+    "city": "Surabaya",
+    "area": "Wiyung",
+    "type": "rooftop",
+    "capacity": 130,
+    "price": {
+      "amountMinor": 17900000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2710000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 30000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 34000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "City view",
+      "Bar",
+      "Sound system",
+      "Outdoor lighting"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-malioboro-hotel-ballroom",
+    "name": "Hotel Cendana Malioboro",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Malioboro",
+    "type": "hotel_ballroom",
+    "capacity": 230,
+    "price": {
+      "amountMinor": 525000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 70,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3070000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 3590000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 24000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Stage",
+      "Wi-Fi",
+      "Parking",
+      "Projector"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-malioboro-auditorium",
+    "name": "Aula Bhinneka Malioboro",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Malioboro",
+    "type": "auditorium",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 18805000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 630000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 280000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 6545000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 49000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Stage",
+      "Tiered seating",
+      "Dual projectors",
+      "Green room"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-malioboro-rooftop",
+    "name": "Atap Kota Malioboro",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Malioboro",
+    "type": "rooftop",
+    "capacity": null,
+    "price": {
+      "amountMinor": 29575000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3200000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 25000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 36000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "City view",
+      "Bar",
+      "Rain cover",
+      "Sound system"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-sleman-coworking",
+    "name": "Kerja Bareng Hub Sleman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Sleman",
+    "type": "coworking",
+    "capacity": 190,
+    "price": {
+      "amountMinor": 1700000,
+      "currency": "IDR",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 765000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 190000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Power at every seat",
+      "Fast Wi-Fi",
+      "Projector",
+      "Breakout rooms"
+    ],
+    "description": "Event space di coworking, cocok untuk meetup, workshop, dan hackathon komunitas."
+  },
+  {
+    "id": "id-sleman-convention-hall",
+    "name": "Balai Pertemuan Sleman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Sleman",
+    "type": "convention_hall",
+    "capacity": 970,
+    "price": {
+      "amountMinor": 62720000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 20000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 5890000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 14485000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 7905000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 68000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Generator",
+      "Booth space",
+      "Loading dock",
+      "Freight lift"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-sleman-meeting-room",
+    "name": "Meeting Point Sleman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Sleman",
+    "type": "meeting_room",
+    "capacity": 50,
+    "price": {
+      "amountMinor": 270000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3830000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 240000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 15000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Projector",
+      "Whiteboard",
+      "Video conferencing"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-prawirotaman-hotel-ballroom",
+    "name": "Grand Melati Ballroom Prawirotaman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Prawirotaman",
+    "type": "hotel_ballroom",
+    "capacity": 590,
+    "price": {
+      "amountMinor": 335000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 110,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3535000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7855000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 37000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Sound system",
+      "Stage",
+      "Parking"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-prawirotaman-restaurant",
+    "name": "Dapur Kayu Prawirotaman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Prawirotaman",
+    "type": "restaurant",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 290000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 670000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 1940000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "id-prawirotaman-rooftop",
+    "name": "Rooftop Senja Prawirotaman",
+    "country": "id",
+    "city": "Yogyakarta",
+    "area": "Prawirotaman",
+    "type": "rooftop",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 40375000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2085000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 25000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 60000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Bar",
+      "Outdoor lighting",
+      "Sound system",
+      "Rain cover"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-denpasar-rooftop",
+    "name": "Rooftop Senja Denpasar",
+    "country": "id",
+    "city": "Bali",
+    "area": "Denpasar",
+    "type": "rooftop",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 30260000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2840000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 30000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "City view",
+      "Rain cover",
+      "Bar",
+      "Sound system"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-denpasar-convention-hall",
+    "name": "Convention Hall Denpasar",
+    "country": "id",
+    "city": "Bali",
+    "area": "Denpasar",
+    "type": "convention_hall",
+    "capacity": null,
+    "price": {
+      "amountMinor": 36325000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 25000,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 4510000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 5180000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 10210000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 42000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Loading dock",
+      "Booth space",
+      "Freight lift",
+      "Wi-Fi"
+    ],
+    "description": "Gedung serbaguna untuk expo, konferensi besar, dan acara ratusan peserta."
+  },
+  {
+    "id": "id-denpasar-auditorium",
+    "name": "Aula Bhinneka Denpasar",
+    "country": "id",
+    "city": "Bali",
+    "area": "Denpasar",
+    "type": "auditorium",
+    "capacity": 290,
+    "price": {
+      "amountMinor": 23585000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 815000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 175000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 7465000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 23000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Tiered seating",
+      "Stage",
+      "Green room"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-canggu-auditorium",
+    "name": "Aula Nusantara Canggu",
+    "country": "id",
+    "city": "Bali",
+    "area": "Canggu",
+    "type": "auditorium",
+    "capacity": 440,
+    "price": {
+      "amountMinor": 8325000,
+      "currency": "IDR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 735000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 245000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 5275000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 48000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Sound system",
+      "Green room",
+      "Stage"
+    ],
+    "description": "Auditorium dengan kursi bertingkat untuk keynote dan demo day."
+  },
+  {
+    "id": "id-canggu-rooftop",
+    "name": "Atap Kota Canggu",
+    "country": "id",
+    "city": "Bali",
+    "area": "Canggu",
+    "type": "rooftop",
+    "capacity": 180,
+    "price": {
+      "amountMinor": 29025000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3715000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 20000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 58000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Outdoor lighting",
+      "City view",
+      "Bar",
+      "Rain cover"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-canggu-meeting-room",
+    "name": "Ruang Rapat Sinergi Canggu",
+    "country": "id",
+    "city": "Bali",
+    "area": "Canggu",
+    "type": "meeting_room",
+    "capacity": 40,
+    "price": {
+      "amountMinor": 285000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2410000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 235000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Whiteboard",
+      "Parking",
+      "Video conferencing"
+    ],
+    "description": "Ruang meeting dengan paket half day dan full day, termasuk coffee break."
+  },
+  {
+    "id": "id-ubud-hotel-ballroom",
+    "name": "Grand Melati Ballroom Ubud",
+    "country": "id",
+    "city": "Bali",
+    "area": "Ubud",
+    "type": "hotel_ballroom",
+    "capacity": 560,
+    "price": {
+      "amountMinor": 265000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 110,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 3675000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 6715000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 38000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Sound system",
+      "Projector",
+      "Stage",
+      "Parking"
+    ],
+    "description": "Ballroom hotel dengan paket meeting full day, cocok untuk konferensi dan hackathon."
+  },
+  {
+    "id": "id-ubud-rooftop",
+    "name": "Atap Kota Ubud",
+    "country": "id",
+    "city": "Bali",
+    "area": "Ubud",
+    "type": "rooftop",
+    "capacity": 130,
+    "price": {
+      "amountMinor": 40370000,
+      "currency": "IDR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 2080000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 35000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 32000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Rain cover",
+      "Outdoor lighting",
+      "Sound system",
+      "Bar"
+    ],
+    "description": "Rooftop untuk networking malam dan after party."
+  },
+  {
+    "id": "id-ubud-restaurant",
+    "name": "Dapur Kayu Ubud",
+    "country": "id",
+    "city": "Bali",
+    "area": "Ubud",
+    "type": "restaurant",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 190000,
+      "currency": "IDR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 715000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 2755000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 21
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Set menu",
+      "Wi-Fi",
+      "TV screen",
+      "Private room"
+    ],
+    "description": "Ruang privat restoran untuk meetup kecil dan makan malam sponsor."
+  },
+  {
+    "id": "my-bukit-bintang-rooftop",
+    "name": "Twelfth Floor Rooftop Bukit Bintang",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bukit Bintang",
+    "type": "rooftop",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 610400,
+      "currency": "MYR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 128700,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1200,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 58000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "City view",
+      "Outdoor lighting",
+      "Bar",
+      "Rain cover"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "my-bukit-bintang-meeting-room",
+    "name": "Boardroom Collective Bukit Bintang",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bukit Bintang",
+    "type": "meeting_room",
+    "capacity": 30,
+    "price": {
+      "amountMinor": 12600,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 108000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 8000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 13000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Parking",
+      "Wi-Fi",
+      "Whiteboard",
+      "Projector"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-bukit-bintang-restaurant",
+    "name": "The Long Table Bukit Bintang",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bukit Bintang",
+    "type": "restaurant",
+    "capacity": 40,
+    "price": {
+      "amountMinor": 10600,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 22900,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 116800,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "TV screen",
+      "Set menu",
+      "Wi-Fi",
+      "Private room"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-bangsar-convention-hall",
+    "name": "Exhibition Hall Bangsar",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bangsar",
+    "type": "convention_hall",
+    "capacity": 450,
+    "price": {
+      "amountMinor": 2477300,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1500,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 199400,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 312700,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 494400,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 72000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Parking",
+      "Booth space",
+      "Generator",
+      "Freight lift"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-bangsar-coworking",
+    "name": "Common Ground Studio Bangsar",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bangsar",
+    "type": "coworking",
+    "capacity": 190,
+    "price": {
+      "amountMinor": 52400,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 11300,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 13900,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 17000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Pantry",
+      "Projector",
+      "Breakout rooms"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-bangsar-auditorium",
+    "name": "The Forum Auditorium Bangsar",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Bangsar",
+    "type": "auditorium",
+    "capacity": 120,
+    "price": {
+      "amountMinor": 721200,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 11000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 10800,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 288200,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 26000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Sound system",
+      "Green room",
+      "Stage"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-klcc-restaurant",
+    "name": "Lantern Kitchen KLCC",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "KLCC",
+    "type": "restaurant",
+    "capacity": 80,
+    "price": {
+      "amountMinor": 8500,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 26100,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 90700,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Set menu",
+      "Private room",
+      "TV screen",
+      "Wi-Fi"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-klcc-hotel-ballroom",
+    "name": "Harbourline Hotel KLCC",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "KLCC",
+    "type": "hotel_ballroom",
+    "capacity": 240,
+    "price": {
+      "amountMinor": 13900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 90,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 144400,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 166800,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 50000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Parking",
+      "Prayer room",
+      "Stage",
+      "Sound system"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-klcc-meeting-room",
+    "name": "The Briefing Rooms KLCC",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "KLCC",
+    "type": "meeting_room",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 9500,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 101700,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 7500,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 12000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Projector",
+      "Video conferencing",
+      "Whiteboard"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-mont-kiara-auditorium",
+    "name": "Lecture Theatre Mont Kiara",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Mont Kiara",
+    "type": "auditorium",
+    "capacity": 220,
+    "price": {
+      "amountMinor": 550300,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 19700,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 9000,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 330200,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 33000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Dual projectors",
+      "Sound system",
+      "Stage",
+      "Green room"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-mont-kiara-rooftop",
+    "name": "The Terrace Mont Kiara",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Mont Kiara",
+    "type": "rooftop",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 1411600,
+      "currency": "MYR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 76700,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1900,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 54000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "City view",
+      "Rain cover",
+      "Outdoor lighting",
+      "Bar"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "my-mont-kiara-hotel-ballroom",
+    "name": "Cinnamon Grand Ballroom Mont Kiara",
+    "country": "my",
+    "city": "Kuala Lumpur",
+    "area": "Mont Kiara",
+    "type": "hotel_ballroom",
+    "capacity": 310,
+    "price": {
+      "amountMinor": 16500,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 70,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 113300,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 291100,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 46000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Stage",
+      "Parking",
+      "Wi-Fi",
+      "Projector"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-damansara-restaurant",
+    "name": "Lantern Kitchen Damansara",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Damansara",
+    "type": "restaurant",
+    "capacity": 50,
+    "price": {
+      "amountMinor": 8100,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 20900,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 119100,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Set menu",
+      "Private room",
+      "TV screen",
+      "Wi-Fi"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-damansara-auditorium",
+    "name": "The Forum Auditorium Damansara",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Damansara",
+    "type": "auditorium",
+    "capacity": 350,
+    "price": {
+      "amountMinor": 468800,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 14400,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 14400,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 155400,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 40000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Sound system",
+      "Tiered seating",
+      "Stage",
+      "Green room"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-damansara-meeting-room",
+    "name": "Boardroom Collective Damansara",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Damansara",
+    "type": "meeting_room",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 8700,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 79000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 14300,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Video conferencing",
+      "Projector",
+      "Whiteboard",
+      "Parking"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-ss2-restaurant",
+    "name": "Lantern Kitchen SS2",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "SS2",
+    "type": "restaurant",
+    "capacity": null,
+    "price": {
+      "amountMinor": 10900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 16600,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 65000,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Wi-Fi",
+      "TV screen",
+      "Private room",
+      "Set menu"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-ss2-coworking",
+    "name": "The Workbench SS2",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "SS2",
+    "type": "coworking",
+    "capacity": null,
+    "price": {
+      "amountMinor": 82100,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 21100,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 13200,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 8000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Projector",
+      "Fast Wi-Fi",
+      "Breakout rooms",
+      "Pantry"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-ss2-meeting-room",
+    "name": "Boardroom Collective SS2",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "SS2",
+    "type": "meeting_room",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 11400,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 135100,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 12900,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Video conferencing",
+      "Projector",
+      "Whiteboard",
+      "Parking"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-section-13-meeting-room",
+    "name": "Quorum Meeting Suites Section 13",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Section 13",
+    "type": "meeting_room",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 10400,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 128600,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 13600,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 13000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Whiteboard",
+      "Video conferencing",
+      "Projector",
+      "Parking"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-section-13-coworking",
+    "name": "The Workbench Section 13",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Section 13",
+    "type": "coworking",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 65200,
+      "currency": "MYR",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 17000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 7700,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Fast Wi-Fi",
+      "Projector",
+      "Breakout rooms",
+      "Pantry"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "my-section-13-hotel-ballroom",
+    "name": "The Meridian Ballroom Section 13",
+    "country": "my",
+    "city": "Petaling Jaya",
+    "area": "Section 13",
+    "type": "hotel_ballroom",
+    "capacity": 520,
+    "price": {
+      "amountMinor": 14000,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 130,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 123600,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 222400,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 17000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Prayer room",
+      "Projector",
+      "Stage",
+      "Parking"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-george-town-auditorium",
+    "name": "Keynote Hall George Town",
+    "country": "my",
+    "city": "Penang",
+    "area": "George Town",
+    "type": "auditorium",
+    "capacity": 260,
+    "price": {
+      "amountMinor": 552400,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 39300,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 7700,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 327400,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 31000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Green room",
+      "Dual projectors",
+      "Sound system",
+      "Stage"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-george-town-convention-hall",
+    "name": "The Assembly Hall George Town",
+    "country": "my",
+    "city": "Penang",
+    "area": "George Town",
+    "type": "convention_hall",
+    "capacity": 410,
+    "price": {
+      "amountMinor": 1874700,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1800,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 269400,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 259400,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 477300,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 57000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Booth space",
+      "Generator",
+      "Wi-Fi",
+      "Freight lift"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-george-town-hotel-ballroom",
+    "name": "Cinnamon Grand Ballroom George Town",
+    "country": "my",
+    "city": "Penang",
+    "area": "George Town",
+    "type": "hotel_ballroom",
+    "capacity": 560,
+    "price": {
+      "amountMinor": 11900,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 110,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 133900,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 209800,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 21000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Sound system",
+      "Stage",
+      "Parking"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-bayan-lepas-restaurant",
+    "name": "Lantern Kitchen Bayan Lepas",
+    "country": "my",
+    "city": "Penang",
+    "area": "Bayan Lepas",
+    "type": "restaurant",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 7200,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 12600,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 55800,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 6000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Private room",
+      "TV screen",
+      "Wi-Fi",
+      "Set menu"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "my-bayan-lepas-rooftop",
+    "name": "Skyline Deck Bayan Lepas",
+    "country": "my",
+    "city": "Penang",
+    "area": "Bayan Lepas",
+    "type": "rooftop",
+    "capacity": 220,
+    "price": {
+      "amountMinor": 926800,
+      "currency": "MYR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 81300,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1400,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 53000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "City view",
+      "Bar",
+      "Outdoor lighting",
+      "Rain cover"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "my-bayan-lepas-meeting-room",
+    "name": "The Briefing Rooms Bayan Lepas",
+    "country": "my",
+    "city": "Penang",
+    "area": "Bayan Lepas",
+    "type": "meeting_room",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 10100,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 127500,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 11000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Projector",
+      "Whiteboard",
+      "Wi-Fi",
+      "Video conferencing"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-iskandar-puteri-auditorium",
+    "name": "Lecture Theatre Iskandar Puteri",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Iskandar Puteri",
+    "type": "auditorium",
+    "capacity": 490,
+    "price": {
+      "amountMinor": 796800,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 12100,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 14400,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 164500,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 30000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "whatsapp",
+    "amenities": [
+      "Tiered seating",
+      "Dual projectors",
+      "Green room",
+      "Stage"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "my-iskandar-puteri-rooftop",
+    "name": "Skyline Deck Iskandar Puteri",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Iskandar Puteri",
+    "type": "rooftop",
+    "capacity": 240,
+    "price": {
+      "amountMinor": 1129900,
+      "currency": "MYR",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 135800,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1800,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Outdoor lighting",
+      "Sound system",
+      "Rain cover",
+      "Bar"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "my-iskandar-puteri-convention-hall",
+    "name": "The Assembly Hall Iskandar Puteri",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Iskandar Puteri",
+    "type": "convention_hall",
+    "capacity": 740,
+    "price": {
+      "amountMinor": 2072500,
+      "currency": "MYR",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1800,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 115000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 538900,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 350300,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 60000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "whatsapp",
+    "amenities": [
+      "Loading dock",
+      "Booth space",
+      "Parking",
+      "Freight lift"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "my-taman-molek-hotel-ballroom",
+    "name": "Cinnamon Grand Ballroom Taman Molek",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Taman Molek",
+    "type": "hotel_ballroom",
+    "capacity": null,
+    "price": {
+      "amountMinor": 19300,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 90,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 66000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 173600,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 23000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Parking",
+      "Stage",
+      "Prayer room",
+      "Sound system"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "my-taman-molek-meeting-room",
+    "name": "Boardroom Collective Taman Molek",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Taman Molek",
+    "type": "meeting_room",
+    "capacity": 20,
+    "price": {
+      "amountMinor": 7500,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 116300,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 7700,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "whatsapp",
+    "amenities": [
+      "Parking",
+      "Projector",
+      "Whiteboard",
+      "Video conferencing"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "my-taman-molek-restaurant",
+    "name": "Copper Pot Dining Taman Molek",
+    "country": "my",
+    "city": "Johor Bahru",
+    "area": "Taman Molek",
+    "type": "restaurant",
+    "capacity": 100,
+    "price": {
+      "amountMinor": 9300,
+      "currency": "MYR",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 20,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 28400,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 96900,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 18
+    },
+    "deposit": {
+      "amountMinor": 11000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Private room",
+      "Wi-Fi",
+      "TV screen",
+      "Set menu"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "sg-raffles-place-rooftop",
+    "name": "Twelfth Floor Rooftop Raffles Place",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Raffles Place",
+    "type": "rooftop",
+    "capacity": 70,
+    "price": {
+      "amountMinor": 1898700,
+      "currency": "SGD",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 103000,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1400,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "phone",
+    "amenities": [
+      "Rain cover",
+      "Outdoor lighting",
+      "City view",
+      "Sound system"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "sg-raffles-place-convention-hall",
+    "name": "Exhibition Hall Raffles Place",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Raffles Place",
+    "type": "convention_hall",
+    "capacity": 490,
+    "price": {
+      "amountMinor": 4129800,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1100,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 228800,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 694500,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 360000,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 74000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Booth space",
+      "Wi-Fi",
+      "Freight lift",
+      "Generator"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-raffles-place-auditorium",
+    "name": "Keynote Hall Raffles Place",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Raffles Place",
+    "type": "auditorium",
+    "capacity": 280,
+    "price": {
+      "amountMinor": 426100,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 24000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 9300,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 177500,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Dual projectors",
+      "Sound system",
+      "Tiered seating",
+      "Green room"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "sg-orchard-coworking",
+    "name": "Basecamp Coworking Orchard",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Orchard",
+    "type": "coworking",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 44900,
+      "currency": "SGD",
+      "per": "hour"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": 4,
+      "includes": [
+        "Whole event floor",
+        "Chairs and tables for the full capacity",
+        "Wi-Fi"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 20900,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "After-hours staff",
+          "amountMinor": 12400,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 9000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Projector",
+      "Fast Wi-Fi",
+      "Breakout rooms",
+      "Pantry"
+    ],
+    "description": "Event space inside a coworking floor, popular with meetups, workshops and community hackathons."
+  },
+  {
+    "id": "sg-orchard-convention-hall",
+    "name": "Exhibition Hall Orchard",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Orchard",
+    "type": "convention_hall",
+    "capacity": 680,
+    "price": {
+      "amountMinor": 4358200,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 700,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 317100,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 526200,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 212700,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 65000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Generator",
+      "Freight lift",
+      "Loading dock",
+      "Parking"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-orchard-auditorium",
+    "name": "The Forum Auditorium Orchard",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Orchard",
+    "type": "auditorium",
+    "capacity": 320,
+    "price": {
+      "amountMinor": 914400,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 31600,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 8100,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 364400,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 25000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Dual projectors",
+      "Tiered seating",
+      "Green room",
+      "Stage"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "sg-one-north-convention-hall",
+    "name": "Exhibition Hall one-north",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "one-north",
+    "type": "convention_hall",
+    "capacity": 1330,
+    "price": {
+      "amountMinor": 1685100,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1300,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 315000,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 663500,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 511700,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 49000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "website",
+    "amenities": [
+      "Freight lift",
+      "Generator",
+      "Wi-Fi",
+      "Parking"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-one-north-hotel-ballroom",
+    "name": "The Meridian Ballroom one-north",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "one-north",
+    "type": "hotel_ballroom",
+    "capacity": 260,
+    "price": {
+      "amountMinor": 12000,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 70,
+      "minHours": null,
+      "includes": [
+        "Ballroom for the day",
+        "Banquet chairs and tables",
+        "Projector and screen",
+        "Stage"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 111600,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 441900,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 29000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Prayer room",
+      "Stage",
+      "Parking",
+      "Sound system"
+    ],
+    "description": "Hotel ballroom with full-day meeting packages, suited to conferences and hackathons."
+  },
+  {
+    "id": "sg-one-north-meeting-room",
+    "name": "Boardroom Collective one-north",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "one-north",
+    "type": "meeting_room",
+    "capacity": 20,
+    "price": {
+      "amountMinor": 8500,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 132500,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 10400,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 12000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Whiteboard",
+      "Video conferencing",
+      "Projector",
+      "Wi-Fi"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "sg-bugis-convention-hall",
+    "name": "Exhibition Hall Bugis",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Bugis",
+    "type": "convention_hall",
+    "capacity": 740,
+    "price": {
+      "amountMinor": 4272100,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1800,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 271100,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 572900,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 227300,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 56000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Generator",
+      "Freight lift",
+      "Loading dock",
+      "Booth space"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-bugis-restaurant",
+    "name": "Copper Pot Dining Bugis",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Bugis",
+    "type": "restaurant",
+    "capacity": 40,
+    "price": {
+      "amountMinor": 9100,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 22100,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 180700,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 7000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "TV screen",
+      "Private room",
+      "Wi-Fi",
+      "Set menu"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "sg-bugis-rooftop",
+    "name": "Twelfth Floor Rooftop Bugis",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Bugis",
+    "type": "rooftop",
+    "capacity": 150,
+    "price": {
+      "amountMinor": 1209600,
+      "currency": "SGD",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 90500,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1000,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 27000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "City view",
+      "Bar",
+      "Sound system",
+      "Outdoor lighting"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "sg-jurong-east-rooftop",
+    "name": "The Terrace Jurong East",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Jurong East",
+    "type": "rooftop",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 1084100,
+      "currency": "SGD",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 189900,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1800,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 33000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "website",
+    "amenities": [
+      "Rain cover",
+      "Sound system",
+      "Outdoor lighting",
+      "Bar"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  },
+  {
+    "id": "sg-jurong-east-auditorium",
+    "name": "Keynote Hall Jurong East",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Jurong East",
+    "type": "auditorium",
+    "capacity": 160,
+    "price": {
+      "amountMinor": 662400,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole auditorium for the day",
+        "Fixed seats",
+        "Stage",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Cleaning fee",
+          "amountMinor": 34500,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 6600,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Live streaming crew",
+          "amountMinor": 386900,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 47000,
+      "currency": "USD"
+    },
+    "catering": "unknown",
+    "booking": "phone",
+    "amenities": [
+      "Stage",
+      "Green room",
+      "Tiered seating",
+      "Dual projectors"
+    ],
+    "description": "Tiered auditorium for keynotes and demo days."
+  },
+  {
+    "id": "sg-jurong-east-meeting-room",
+    "name": "Quorum Meeting Suites Jurong East",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Jurong East",
+    "type": "meeting_room",
+    "capacity": 60,
+    "price": {
+      "amountMinor": 11200,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Room for the day",
+        "Chairs and tables",
+        "Projector",
+        "Whiteboard"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 124600,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Extra microphone",
+          "amountMinor": 10100,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 10000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Video conferencing",
+      "Projector",
+      "Whiteboard",
+      "Wi-Fi"
+    ],
+    "description": "Meeting rooms with half-day and full-day packages."
+  },
+  {
+    "id": "sg-tanjong-pagar-convention-hall",
+    "name": "Convention Centre Tanjong Pagar",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Tanjong Pagar",
+    "type": "convention_hall",
+    "capacity": 540,
+    "price": {
+      "amountMinor": 1750000,
+      "currency": "SGD",
+      "per": "day"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole hall for the day, empty floor",
+        "Basic lighting",
+        "Air conditioning"
+      ],
+      "addOns": [
+        {
+          "name": "Banquet chair",
+          "amountMinor": 700,
+          "unit": "person",
+          "required": true
+        },
+        {
+          "name": "Cleaning and security",
+          "amountMinor": 332100,
+          "unit": "event",
+          "required": true
+        },
+        {
+          "name": "Stage and backdrop",
+          "amountMinor": 440300,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Sound system",
+          "amountMinor": 522900,
+          "unit": "event",
+          "required": false
+        }
+      ],
+      "taxPercent": 0
+    },
+    "deposit": {
+      "amountMinor": 63000,
+      "currency": "USD"
+    },
+    "catering": "no",
+    "booking": "phone",
+    "amenities": [
+      "Loading dock",
+      "Booth space",
+      "Parking",
+      "Generator"
+    ],
+    "description": "Large hall for expos, big conferences and events with hundreds of attendees."
+  },
+  {
+    "id": "sg-tanjong-pagar-restaurant",
+    "name": "The Long Table Tanjong Pagar",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Tanjong Pagar",
+    "type": "restaurant",
+    "capacity": 90,
+    "price": {
+      "amountMinor": 7900,
+      "currency": "SGD",
+      "per": "pax"
+    },
+    "terms": {
+      "minPax": 10,
+      "minHours": null,
+      "includes": [
+        "Private room",
+        "Set menu",
+        "Chairs and tables"
+      ],
+      "addOns": [
+        {
+          "name": "Projector and screen",
+          "amountMinor": 30800,
+          "unit": "event",
+          "required": false
+        },
+        {
+          "name": "Extra hour",
+          "amountMinor": 194600,
+          "unit": "hour",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 5000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "Set menu",
+      "Private room",
+      "TV screen",
+      "Wi-Fi"
+    ],
+    "description": "Private dining room for small meetups and sponsor dinners."
+  },
+  {
+    "id": "sg-tanjong-pagar-rooftop",
+    "name": "Twelfth Floor Rooftop Tanjong Pagar",
+    "country": "sg",
+    "city": "Singapore",
+    "area": "Tanjong Pagar",
+    "type": "rooftop",
+    "capacity": 110,
+    "price": {
+      "amountMinor": 775400,
+      "currency": "SGD",
+      "per": "package"
+    },
+    "terms": {
+      "minPax": null,
+      "minHours": null,
+      "includes": [
+        "Whole rooftop for 6 hours",
+        "Cocktail tables and stools",
+        "Sound system"
+      ],
+      "addOns": [
+        {
+          "name": "Extra hour",
+          "amountMinor": 98300,
+          "unit": "hour",
+          "required": false
+        },
+        {
+          "name": "Banquet chair",
+          "amountMinor": 1800,
+          "unit": "person",
+          "required": false
+        }
+      ],
+      "taxPercent": 20
+    },
+    "deposit": {
+      "amountMinor": 35000,
+      "currency": "USD"
+    },
+    "catering": "yes",
+    "booking": "website",
+    "amenities": [
+      "City view",
+      "Sound system",
+      "Outdoor lighting",
+      "Rain cover"
+    ],
+    "description": "Rooftop for evening networking and after-parties."
+  }
+]

@@ -1,5 +1,5 @@
 {
-  "name": "quartermaster",
+  "name": "leonid",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "start": "pnpm --filter @quartermaster/api start",
+    "start": "pnpm --filter @leonid/api start",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "test": "pnpm -r test",

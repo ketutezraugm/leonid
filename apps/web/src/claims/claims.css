@@ -1,0 +1,115 @@
+/* Receipt claims (F16). Volunteers use this on a phone: full-width rows, large controls, 16px type. */
+.claim-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.claim-row {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.claim-main,
+.claim-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.claim-what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.claim-amount {
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.claim-reasons {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.claim-snap {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* The file input is replaced visually by the big button; it stays reachable through its label. */
+.claim-snap input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.claim-snap-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  font-size: var(--font-size-md);
+  cursor: pointer;
+}
+
+.claim-snap input[type='file']:focus-visible + .claim-snap-button {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.claim-form {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: end;
+}
+
+.claim-link {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-accent-soft);
+  overflow-wrap: anywhere;
+}
+
+.claim-review {
+  display: flex;
+  gap: var(--space-2);
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.claim-review .field {
+  flex: 1 1 140px;
+}
+
+/* What happened to the receipt the volunteer just sent. Errors use .field-error; a good result gets its own calm panel. */
+.claim-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-status-done-soft);
+  color: var(--color-status-done-text);
+}
+
+.claim-qr {
+  width: 160px;
+  height: 160px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}

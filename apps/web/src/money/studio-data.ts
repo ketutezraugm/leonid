@@ -1,0 +1,224 @@
+import type { AgDataSourcesDefinition, AgFieldDefinition, AgFormat } from 'ag-studio';
+import type {
+  BudgetBurnData,
+  DeliveryRiskData,
+  FundingThermometerData,
+  PayoutsLedgerData,
+  RulesHealthData,
+} from '@leonid/shared';
+
+// The widget payloads the command center reads. Each comes from one API endpoint, backed by the ledger.
+export type CommandCenterData = {
+  funding: FundingThermometerData;
+  budget: BudgetBurnData;
+  payouts: PayoutsLedgerData;
+  rules: RulesHealthData;
+  delivery: DeliveryRiskData;
+};
+
+// [id, name, format, hide?]
+type FieldSpec = [id: string, name: string, format: AgFormat, hide?: boolean];
+
+// Studio's currency format shows no symbol until it is given a formatter, so every money field gets one.
+const currencyOptions = (currency: string) => ({
+  format: new Intl.NumberFormat('en-US', { style: 'currency', currency }),
+});
+
+const fieldsFor =
+  (currency: string) =>
+  (specs: FieldSpec[]): AgFieldDefinition[] =>
+    specs.map(([id, name, format, hide]) => ({
+      id,
+      name,
+      format,
+      ...(hide && { hide }),
+      ...(format === 'currencyFormat' && { formatOptions: currencyOptions(currency) }),
+    }));
+
+// Only join relationships: Studio's calendar bindings name no table or field to relate.
+type Relationship = Extract<
+  NonNullable<AgDataSourcesDefinition['relationships']>[number],
+  { target: { tableId: string } }
+>;
+
+const link = (id: string, from: [string, string], to: [string, string]): Relationship => ({
+  id,
+  source: { tableId: from[0], fieldId: from[1] },
+  target: { tableId: to[0], fieldId: to[1] },
+  type: 'one-to-many',
+});
+
+// A sponsor or a budget category is the "one" side; payouts, rule checks and deliveries are the many. This
+// is what lets a click on a sponsor or a category in one widget filter every widget on those tables. The
+// ids are hidden fields: they join tables but are not offered as something to chart.
+export const RELATIONSHIPS: Relationship[] = [
+  link('sponsor-payouts', ['sponsors', 'id'], ['payouts', 'sponsorId']),
+  link('sponsor-rules', ['sponsors', 'id'], ['rules', 'sponsorId']),
+  link('sponsor-deliveries', ['sponsors', 'id'], ['deliveries', 'sponsorId']),
+  link('category-payouts', ['categories', 'category'], ['payouts', 'category']),
+  link('category-rules', ['categories', 'category'], ['rules', 'category']),
+  link('category-deliveries', ['categories', 'category'], ['deliveries', 'category']),
+];
+
+// The contract carries integer cents; Studio's currency format expects dollars. This is the only place that converts.
+const dollars = (cents: number) => cents / 100;
+
+export type StudioTable = {
+  id: string;
+  name: string;
+  description: string;
+  data: Record<string, string | number | null>[];
+  fields: AgFieldDefinition[];
+};
+
+export function buildStudioData(data: CommandCenterData): AgDataSourcesDefinition {
+  return {
+    description:
+      'Money for one community event, from PayPal webhooks recorded in the ledger. Amounts are USD dollars. ' +
+      'Cleared means PayPal confirmed the money; pledged and invoiced are not spendable until they clear.',
+    sources: buildTables(data),
+    relationships: RELATIONSHIPS,
+    // A query that would join rows into a bigger sum is refused, not run: on a money dashboard an error is
+    // better than a number that is quietly too high. Widgets built later, by hand or by the dashboard agent,
+    // get the same protection.
+    options: { fanout: { execute: 'prevent' } },
+  };
+}
+
+export function buildTables(data: CommandCenterData): StudioTable[] {
+  const fields = fieldsFor(data.funding.currency);
+  return [
+    {
+      id: 'sponsors',
+      name: 'Sponsor funding',
+      description:
+        'One row per sponsor: pledged, invoiced and cleared amounts. Outstanding is invoiced minus cleared.',
+      data: data.funding.sponsors.map((s) => ({
+        id: s.sponsorId,
+        name: s.name,
+        tier: s.tier,
+        pledged: dollars(s.pledged),
+        invoiced: dollars(s.invoiced),
+        cleared: dollars(s.cleared),
+        outstanding: dollars(s.invoiced - s.cleared),
+      })),
+      fields: fields([
+        ['id', 'Sponsor ID', 'textFormat', true],
+        ['name', 'Sponsor', 'textFormat'],
+        ['tier', 'Tier', 'textFormat'],
+        ['pledged', 'Pledged', 'currencyFormat'],
+        ['invoiced', 'Invoiced', 'currencyFormat'],
+        ['cleared', 'Cleared', 'currencyFormat'],
+        ['outstanding', 'Outstanding', 'currencyFormat'],
+      ]),
+    },
+    {
+      id: 'categories',
+      name: 'Budget categories',
+      description:
+        'One row per budget category: cap, captured spend and committed spend (approved but not yet captured).',
+      data: data.budget.categories.map((c) => ({
+        category: c.category,
+        cap: c.cap === null ? null : dollars(c.cap),
+        spent: dollars(c.spent),
+        committed: dollars(c.committed),
+        used: dollars(c.spent + c.committed),
+      })),
+      fields: fields([
+        ['category', 'Category', 'textFormat'],
+        ['cap', 'Cap', 'currencyFormat'],
+        ['spent', 'Spent', 'currencyFormat'],
+        ['committed', 'Committed', 'currencyFormat'],
+        ['used', 'Spent and committed', 'currencyFormat'],
+      ]),
+    },
+    {
+      id: 'payouts',
+      name: 'Payouts ledger',
+      description: 'Claims, speaker payments and prizes with their status.',
+      data: data.payouts.rows.map((p) => ({
+        id: p.id,
+        recipient: p.recipientName,
+        kind: p.kind,
+        country: p.destination.countryCode,
+        category: p.category,
+        sponsorId: p.sponsorId,
+        amount: dollars(p.amount),
+        status: p.status,
+      })),
+      fields: fields([
+        ['id', 'Payout item ID', 'textFormat', true],
+        ['recipient', 'Recipient', 'textFormat'],
+        ['kind', 'Kind', 'textFormat'],
+        ['country', 'Country', 'textFormat'],
+        ['category', 'Category', 'textFormat'],
+        ['sponsorId', 'Sponsor ID', 'textFormat', true],
+        ['amount', 'Amount', 'currencyFormat'],
+        ['status', 'Status', 'textFormat'],
+      ]),
+    },
+    {
+      id: 'rules',
+      name: 'Rules checks',
+      description: 'Recent spend checks by the rules engine, with the decision and the reasons.',
+      data: data.rules.recent.map((r) => ({
+        id: r.auditId,
+        date: r.at.slice(0, 10),
+        day: r.at.slice(0, 10),
+        actor: r.actor,
+        action: r.action,
+        sponsorId: r.sponsorId,
+        category: r.category,
+        amount: r.amount === null ? null : dollars(r.amount),
+        decision: r.result.decision,
+        reasons: r.result.reasons.join('; '),
+      })),
+      fields: fields([
+        ['id', 'Audit ID', 'textFormat', true],
+        ['date', 'Date', 'dateFormat'],
+        // The same day as plain text: a widget that only shows it avoids Studio turning it into a Date, which
+        // reads a day early east of Greenwich. It sorts correctly as text.
+        ['day', 'Day', 'textFormat', true],
+        ['actor', 'Actor', 'textFormat'],
+        ['action', 'Action', 'textFormat'],
+        ['sponsorId', 'Sponsor ID', 'textFormat', true],
+        ['category', 'Category', 'textFormat'],
+        ['amount', 'Amount', 'currencyFormat'],
+        ['decision', 'Decision', 'textFormat'],
+        ['reasons', 'Reasons', 'textFormat'],
+      ]),
+    },
+    {
+      id: 'deliveries',
+      name: 'Delivery risk',
+      description:
+        'Ordered items with expected arrival against their deadline. Days late is positive when past the deadline.',
+      data: data.delivery.items.map((d) => ({
+        id: d.orderId,
+        name: d.name,
+        sponsorId: d.sponsorId,
+        category: d.category,
+        expected: d.expectedDelivery,
+        deadline: d.deadline,
+        expectedDay: d.expectedDelivery,
+        deadlineDay: d.deadline,
+        daysLate: d.daysLate,
+        risk: d.risk,
+      })),
+      fields: fields([
+        ['id', 'Order ID', 'textFormat', true],
+        ['name', 'Item', 'textFormat'],
+        ['sponsorId', 'Sponsor ID', 'textFormat', true],
+        ['category', 'Category', 'textFormat'],
+        ['expected', 'Expected delivery', 'dateFormat'],
+        ['deadline', 'Deadline', 'dateFormat'],
+        // The same days as plain text, for a widget that only shows them: Studio turns a date into a Date at
+        // local midnight, which reads a day early east of Greenwich.
+        ['expectedDay', 'Expected day', 'textFormat', true],
+        ['deadlineDay', 'Deadline day', 'textFormat', true],
+        ['daysLate', 'Days late', 'integerFormat'],
+        ['risk', 'Risk', 'textFormat'],
+      ]),
+    },
+  ];
+}

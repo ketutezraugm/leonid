@@ -1,0 +1,173 @@
+/* Funding thermometer. Colours come from the design tokens; the fallbacks keep it readable until the
+   chart tokens (color-data, color-hold) are merged. Meaning never rests on colour alone: every figure is
+   also in text, and the held-back money is hatched. */
+.lx-thermo {
+  --lx-cleared: var(--color-data, var(--color-accent, #0070e0));
+  --lx-hold: var(--color-hold, #a8741a);
+  --lx-text: var(--color-text, #1d1d1b);
+  --lx-muted: var(--color-muted, #6b6b66);
+  --lx-border: var(--color-border, #e3e3de);
+  --lx-focus: var(--color-accent, #0070e0);
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 4px 2px;
+  overflow: auto;
+  color: var(--lx-text);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 14px;
+}
+
+.lx-thermo__note {
+  margin: 0;
+  padding: 16px;
+  color: var(--color-muted, #6b6b66);
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.lx-thermo__summary {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.lx-thermo__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--lx-muted);
+  font-size: 12px;
+}
+
+.lx-thermo__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lx-thermo__swatch {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.lx-thermo__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The bar sits on its own line, as wide as the row, so every sponsor's bar is measured against the same
+   lane and the lengths can be compared. */
+.lx-thermo__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name figures'
+    'lane lane';
+  align-items: baseline;
+  gap: 6px 12px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+
+.lx-thermo__row:hover {
+  background: var(--color-surface-sunken, #f0f0ec);
+}
+
+.lx-thermo__row:focus-visible {
+  outline: 2px solid var(--lx-focus);
+  outline-offset: 2px;
+}
+
+.lx-thermo__row[aria-pressed='true'] {
+  border-color: var(--lx-focus);
+  background: var(--color-accent-soft, #e5f0fc);
+}
+
+.lx-thermo__row[data-dimmed='true'] {
+  opacity: 0.5;
+}
+
+.lx-thermo__name {
+  grid-area: name;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lx-thermo__lane {
+  display: block;
+  grid-area: lane;
+  min-width: 0;
+}
+
+.lx-thermo__track {
+  display: flex;
+  height: 14px;
+  min-width: 2px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--lx-border);
+}
+
+.lx-thermo__seg {
+  display: block;
+  height: 100%;
+}
+
+.lx-thermo__seg--cleared,
+.lx-thermo__swatch--cleared {
+  background: var(--lx-cleared);
+}
+
+.lx-thermo__seg--outstanding,
+.lx-thermo__swatch--outstanding {
+  background: var(--lx-hold);
+}
+
+.lx-thermo__seg--uninvoiced,
+.lx-thermo__swatch--uninvoiced {
+  background: repeating-linear-gradient(135deg, var(--lx-hold) 0 2px, transparent 2px 5px);
+  outline: 1px solid var(--lx-hold);
+  outline-offset: -1px;
+}
+
+.lx-thermo__figures {
+  grid-area: figures;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lx-thermo__of {
+  color: var(--lx-muted);
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-thermo__row {
+    transition: none;
+  }
+}

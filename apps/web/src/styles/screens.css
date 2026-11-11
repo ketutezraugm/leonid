@@ -1,0 +1,994 @@
+/*
+ * Screen-level styles (owner: P4): Event home, Approvals, Sign in and the small parts they share.
+ * Values come only from tokens.css.
+ */
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Copyable PayPal IDs --- */
+.copy-id {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  transition: transform 160ms var(--ease-out-strong);
+}
+
+.copy-id .id {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.copy-id:hover .id {
+  color: var(--color-accent);
+}
+
+.copy-id:active {
+  transform: scale(0.97);
+}
+
+.copy-id-state {
+  min-width: 48px;
+  font-size: var(--font-size-xs);
+  color: var(--color-status-done-text);
+}
+
+/* "Copied" lifts in, so the click visibly landed. */
+.copy-id-state:not(:empty) {
+  animation: copied-in 200ms var(--ease-out-strong);
+}
+
+@keyframes copied-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-id:active {
+    transform: none;
+  }
+
+  .copy-id-state:not(:empty) {
+    animation: fade-in 150ms ease;
+  }
+}
+
+/* --- Budget bar: committed, unlocked, then the money that cannot be spent yet --- */
+.budget-bar {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.budget-bar-track {
+  display: flex;
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.budget-seg--committed {
+  background: var(--color-data);
+}
+
+.budget-seg--unlocked {
+  background: var(--color-data-soft);
+}
+
+.budget-seg--invoiced {
+  background: var(--color-hold);
+}
+
+.budget-seg--pledged {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-hold) 0 3px,
+    var(--color-surface) 3px 6px
+  );
+}
+
+.budget-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.budget-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- Event home: the answer first (what can we spend, what needs me), then the ledger, then the plan --- */
+.home {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.home .card + .card {
+  margin-top: 0;
+}
+
+.countdown {
+  color: var(--color-brass-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.home-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* The product's promise, set on the sheet itself rather than in another card. */
+.unlocked {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.unlocked h2 {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.unlocked-figure {
+  margin: 0;
+  font-size: clamp(36px, 4.4vw, 52px);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.unlocked-rule {
+  max-width: 62ch;
+  margin: 0;
+}
+
+.sample-tag {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+/* Needs you: loud when something waits, one quiet line when nothing does. */
+.needs {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.needs h2,
+.needs p {
+  margin: 0;
+}
+
+.needs--quiet p {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.needs-check {
+  width: 10px;
+  height: 6px;
+  margin-top: -3px;
+  border-left: 2px solid var(--color-status-done);
+  border-bottom: 2px solid var(--color-status-done);
+  transform: rotate(-45deg);
+  flex: none;
+}
+
+.needs--problem {
+  border-color: var(--color-status-risk);
+  background: var(--color-status-risk-soft);
+}
+
+.needs--problem h2 {
+  color: var(--color-status-risk-text);
+}
+
+.needs--waiting {
+  gap: var(--space-3);
+  border-color: var(--color-brass);
+  background: var(--color-brass-soft);
+}
+
+.needs--waiting h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-brass-text);
+}
+
+.needs-count {
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-brass-text);
+  color: var(--color-on-accent);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.needs-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.needs-amount {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.needs .btn-row {
+  margin-top: 0;
+}
+
+.needs-more {
+  font-size: var(--font-size-xs);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 10px;
+}
+
+/* A wide ledger scrolls inside its card on a phone instead of wrapping every column into slivers. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.ledger .table {
+  min-width: 560px;
+}
+
+/* Recent spends reads as a ledger: dated, with the rule that decided each line. */
+.ledger .table td {
+  height: auto;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.ledger-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.ledger-date {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.ledger-verdict {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+}
+
+.ledger .table tbody tr {
+  height: 72px;
+}
+
+.ledger-reason {
+  max-width: 32ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.alert-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-list li {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+.alert-list p {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .home-top,
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* On a phone the thing that needs you comes before the money. */
+  .home-top .needs {
+    order: -1;
+  }
+}
+
+/* --- Plan strip: header, then the calendar below --- */
+.runway {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.runway-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+
+.runway-head p {
+  flex: 1 1 280px;
+  margin: 0;
+}
+
+/* --- Plan: the Gantt draws its own frame --- */
+.plan-gantt {
+  margin-top: var(--space-4);
+}
+
+/* Legend on the left, the sample preview buttons on the right; they stack on a phone. */
+.plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.plan-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* --- Approvals: queue on the left, the selected item on the right --- */
+.approvals-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.approval-queue ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approval-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.approval-row:hover {
+  background: var(--color-surface-sunken);
+}
+
+.approval-row[aria-current='true'] {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.approval-row-title {
+  font-weight: var(--font-weight-medium);
+}
+
+.approval-detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.approval-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.approval-head p {
+  margin: 4px 0 0;
+}
+
+.approval-amount {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.approval-block h3 {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.approval-block p,
+.approval-block ul {
+  margin: 0;
+}
+
+.approval-block ul {
+  padding-left: var(--space-4);
+}
+
+.approval-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.paypal-mount {
+  min-height: 40px;
+  max-width: 360px;
+}
+
+.approval-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .approvals-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Sign in: bare, centered on the frame --- */
+.signin {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-3);
+}
+
+.signin-card {
+  display: grid;
+  gap: var(--space-3);
+  width: min(480px, 100%);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sheet);
+}
+
+.signin-card p {
+  margin: 0;
+}
+
+.signin-actions {
+  margin-top: var(--space-2);
+}
+
+.signin-note {
+  font-size: var(--font-size-xs);
+}
+
+/* --- Small shared bits --- */
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.field input:disabled {
+  background: var(--color-surface-sunken);
+  cursor: not-allowed;
+}
+
+.card .btn-row {
+  margin-top: var(--space-3);
+}
+
+/* --- Event setup: a kind picker, then a one-question-at-a-time interview on a centered panel --- */
+/* The popup sits over All events, which shows through blurred and dimmed, like any modal. */
+.interview {
+  position: fixed;
+  inset: 0;
+  z-index: 45; /* over dialogs and the agent button, under toasts */
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-3);
+  background: var(--color-scrim);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: interview-in var(--motion-base) var(--ease-standard);
+}
+
+@keyframes interview-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.interview-panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 640px;
+  padding: var(--space-4) var(--space-5) var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sheet);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-menu);
+  text-align: center;
+}
+
+.interview-panel--wide {
+  max-width: 920px;
+}
+
+.interview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.interview-back,
+.interview-close {
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.interview-close {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.interview-back:hover,
+.interview-close:hover {
+  color: var(--color-text);
+}
+
+.interview-orb {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, var(--color-surface) 0, transparent 45%),
+    radial-gradient(circle at 70% 75%, var(--color-data-soft) 0, transparent 60%),
+    linear-gradient(
+      160deg,
+      var(--color-brass-soft),
+      var(--color-accent-soft) 55%,
+      var(--color-data-soft)
+    );
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.interview-orb--small {
+  width: 72px;
+  height: 72px;
+}
+
+.interview-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+}
+
+.interview-lead {
+  max-width: 460px;
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.interview-continue {
+  min-width: 220px;
+}
+
+.interview-field {
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+}
+
+/* Kind cards: a drawing of the room at that size, then the name, the size and what it implies. */
+.kind-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.kind-card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background var(--motion-base) var(--ease-standard);
+}
+
+.kind-card:hover {
+  border-color: var(--color-control-edge);
+}
+
+.kind-card[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.kind-scene {
+  width: 100%;
+  height: auto;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+  fill: var(--color-data);
+}
+
+.kind-scene .scene-fixture {
+  fill: var(--color-data-soft);
+}
+
+.kind-scene .scene-stage {
+  fill: var(--color-brass);
+}
+
+.kind-scene .scene-dashed {
+  fill: none;
+  stroke: var(--color-control-edge);
+  stroke-dasharray: 4 3;
+}
+
+.kind-scene .scene-plus {
+  fill: none;
+  stroke: var(--color-data);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.kind-card-label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.kind-card-size {
+  color: var(--color-brass-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.kind-card-blurb {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* One question card: part and counter on top, lettered options, Skip and Confirm at the bottom. */
+.question-card {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  text-align: left;
+}
+
+.question-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+.question-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.question-count button {
+  padding: 0 var(--space-1);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-md);
+  cursor: pointer;
+}
+
+.question-count button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.question-text {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.question-input,
+.question-other input {
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-control-edge);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-md);
+}
+
+.question-input:focus-visible,
+.question-other input:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.question-input[aria-invalid='true'],
+.question-other input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.question-options {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.question-options button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--row-height);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.question-options button:hover {
+  background: var(--color-surface-sunken);
+}
+
+.question-options button[aria-checked='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.question-letter {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+[aria-checked='true'] > .question-letter {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.question-hint {
+  display: block;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+.question-other {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.question-other[data-active] button {
+  width: auto;
+}
+
+.question-other input {
+  flex: 1;
+}
+
+.question-needs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-2);
+}
+
+.question-need {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.question-need:has(input:checked) {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.question-need input {
+  margin-top: 3px;
+  accent-color: var(--color-accent);
+}
+
+.question-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* "Setting up": a spinner line, then every answer as its own card. */
+.interview-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.interview-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: agent-spin 0.9s linear infinite;
+}
+
+.interview-problem {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+
+.interview-problem p {
+  margin: 0;
+}
+
+.answer-list {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.answer-list li {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.answer-list span {
+  color: var(--color-muted);
+}
+
+.answer-list li:has(.answer-edit) {
+  grid-template-columns: 1fr auto;
+  column-gap: var(--space-3);
+}
+
+.answer-list li:has(.answer-edit) strong,
+.answer-list li:has(.answer-edit) span {
+  grid-column: 1;
+}
+
+.answer-edit {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.answer-edit:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .interview {
+    padding: var(--space-2);
+  }
+
+  .interview-panel {
+    padding: var(--space-3) var(--space-3) var(--space-5);
+  }
+
+  .kind-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* In development: visible so organizers see what is coming, but not choosable. */
+.question-need.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

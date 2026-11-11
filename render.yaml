@@ -1,20 +1,20 @@
-# Render Blueprint: one web service (API + built web app) and Postgres.
+# Render Blueprint: one web service (API + built web app). Postgres is on Supabase.
 # Secrets marked sync: false are entered in the Render dashboard on first deploy.
 services:
   - type: web
-    name: quartermaster
+    name: leonid
     runtime: node
     plan: starter
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    # Runs after the build and before the new version takes traffic; a failed migration stops the deploy.
+    preDeployCommand: pnpm --filter @leonid/api db:migrate
     startCommand: pnpm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: '22'
       - key: DATABASE_URL
-        fromDatabase:
-          name: quartermaster-db
-          property: connectionString
+        sync: false
       - key: PAYPAL_TREASURY_CLIENT_ID
         sync: false
       - key: PAYPAL_TREASURY_CLIENT_SECRET
@@ -23,14 +23,46 @@ services:
         sync: false
       - key: PAYPAL_PROCUREMENT_CLIENT_SECRET
         sync: false
-      - key: PAYPAL_WEBHOOK_ID
+      - key: PAYPAL_TREASURY_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_PROCUREMENT_WEBHOOK_ID
+        sync: false
+      - key: TREASURY_PAYPAL_PAYER_ID
+        sync: false
+      - key: PAYPAL_WEBHOOK_VERIFY
+        value: 'true'
+      - key: PAYPAL_ACCEPT_SIMULATOR_EVENTS
+        value: 'false'
+      - key: APP_BASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: TREASURER_ALLOWLIST
+        sync: false
+      # The hosted judges' demo may turn this on, together with DEMO_LOGIN_ALLOW_PRODUCTION=true (both required in production).
+      - key: DEMO_LOGIN
+        value: 'false'
+      # Lets the treasurer trigger a sandbox spend for the Gate 2 rehearsal (POST /api/demo/spend). Off unless you turn it on.
+      - key: DEMO_SPEND
+        value: 'false'
+      - key: TREASURER_TOKEN
         sync: false
       - key: CHANNEL3_API_KEY
         sync: false
-      - key: LLM_API_KEY
+      - key: OPENROUTER_API_KEY
         sync: false
-
-databases:
-  - name: quartermaster-db
-    plan: basic-256mb
-    databaseName: quartermaster
+      - key: OPENROUTER_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-5.6-luna
+      # Render Workflows (apps/workflows, created in the Dashboard: Blueprints do not support Workflows yet). The demo controls
+      # start a run with RENDER_API_KEY; the Workflow service calls /api/jobs/* with the same JOBS_TOKEN.
+      - key: JOBS_TOKEN
+        sync: false
+      - key: RENDER_API_KEY
+        sync: false
+      - key: WORKFLOW_SLUG
+        sync: false
+      # Invoice reminders: a sponsor is reminded at most once in this many whole hours (24 if unset; 0 allows a reminder on every run).
+      - key: INVOICE_REMINDER_MIN_HOURS
+        value: '24'

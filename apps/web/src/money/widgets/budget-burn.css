@@ -1,0 +1,238 @@
+/* Budget burn. Colours come from the design tokens: spent and committed money are the data series (committed
+   is the hatched one) and the track is the sunken surface. The fallbacks only keep it readable on a branch
+   that predates the tokens. Meaning never rests on colour alone: every figure is also in text, committed
+   money is hatched, and a category over its cap says so in words and gets a marker at the cap. */
+.lx-burn {
+  --lx-spent: var(--color-data, var(--color-accent, #0070e0));
+  --lx-danger: var(--color-danger, #c4320a);
+  --lx-text: var(--color-text, #1d1d1b);
+  --lx-muted: var(--color-muted, #6b6b66);
+  --lx-track: var(--color-surface-sunken, #e8ede9);
+  --lx-focus: var(--color-accent, #0070e0);
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 4px 2px;
+  overflow: auto;
+  color: var(--lx-text);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 14px;
+  /* Its own width decides the row layout below, so it holds up when the dashboard agent's panel squeezes it. */
+  container-type: inline-size;
+}
+
+.lx-burn__note {
+  margin: 0;
+  padding: 16px;
+  color: var(--color-muted, #6b6b66);
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.lx-burn__summary {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.lx-burn__alert {
+  margin: 0;
+  color: var(--lx-danger);
+  font-weight: 700;
+}
+
+.lx-burn__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--lx-muted);
+  font-size: 12px;
+}
+
+.lx-burn__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lx-burn__swatch {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.lx-burn__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The bar sits on its own line, as wide as the row, so every category's bar is measured against the same
+   lane and the lengths can be compared. Name, verdict and figures share the line above it, which keeps a
+   row to two lines so a handful of categories fit without scrolling. */
+.lx-burn__row {
+  display: grid;
+  grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name verdict figures'
+    'lane lane lane';
+  align-items: baseline;
+  gap: 6px 12px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+
+.lx-burn__row:hover {
+  background: var(--color-surface-sunken, #f0f0ec);
+}
+
+.lx-burn__row:focus-visible {
+  outline: 2px solid var(--lx-focus);
+  outline-offset: 2px;
+}
+
+.lx-burn__row[aria-pressed='true'] {
+  border-color: var(--lx-focus);
+  background: var(--color-accent-soft, #e5f0fc);
+}
+
+/* The selected row's background is nearly the track's colour, so the track turns white to stay visible. */
+.lx-burn__row[aria-pressed='true'] .lx-burn__track {
+  background: var(--color-surface, #fff);
+}
+
+.lx-burn__row[data-dimmed='true'] {
+  opacity: 0.5;
+}
+
+.lx-burn__name {
+  grid-area: name;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.lx-burn__lane {
+  display: block;
+  grid-area: lane;
+  min-width: 0;
+}
+
+.lx-burn__track {
+  position: relative;
+  display: flex;
+  height: 14px;
+  min-width: 2px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--lx-track);
+}
+
+.lx-burn__seg {
+  display: block;
+  height: 100%;
+}
+
+.lx-burn__seg--spent,
+.lx-burn__swatch--spent {
+  background: var(--lx-spent);
+}
+
+.lx-burn__seg--committed,
+.lx-burn__swatch--committed {
+  background: repeating-linear-gradient(135deg, var(--lx-spent) 0 2px, transparent 2px 5px);
+  outline: 1px solid var(--lx-spent);
+  outline-offset: -1px;
+}
+
+/* A line at the cap, drawn only when the category has used more than it. */
+.lx-burn__capmark,
+.lx-burn__swatch--cap {
+  background: var(--lx-danger);
+}
+
+.lx-burn__capmark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  box-shadow: 0 0 0 1px var(--color-surface, #fff);
+  transform: translateX(-1px);
+}
+
+.lx-burn__swatch--cap {
+  width: 2px;
+  height: 12px;
+  margin: 0 6px;
+}
+
+.lx-burn__figures {
+  grid-area: figures;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lx-burn__of {
+  color: var(--lx-muted);
+  font-weight: 400;
+}
+
+.lx-burn__verdict {
+  grid-area: verdict;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lx-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lx-burn__verdict[data-tone='over'] {
+  color: var(--lx-danger);
+  font-weight: 700;
+}
+
+/* Narrow (the dashboard agent's panel open, a small screen): the verdict gets its own line under the bar
+   instead of being cut to "$8…", and the name keeps the room beside the figures. */
+@container (max-width: 460px) {
+  .lx-burn__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name figures'
+      'lane lane'
+      'verdict verdict';
+  }
+
+  .lx-burn__verdict {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-burn__row {
+    transition: none;
+  }
+}

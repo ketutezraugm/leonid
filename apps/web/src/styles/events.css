@@ -1,0 +1,299 @@
+/*
+ * Multiple events (owner: P4): the sidebar's event label and the All events page.
+ * Values come only from tokens.css.
+ */
+
+/* --- The current event, as a plain label at the top of the sidebar --- */
+.event-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.event-label-text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.event-label-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-label-text .muted {
+  font-size: var(--font-size-xs);
+}
+
+/* In the icon rail the block is the event's first letter on a brass-edged tile. */
+.event-initial {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid var(--color-brass);
+  border-radius: var(--radius);
+  background: var(--color-brass-soft);
+  color: var(--color-brass-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.event-menu-name {
+  font-weight: var(--font-weight-medium);
+}
+
+@media (max-width: 720px) {
+  /* A short screen (All events with one card) must not stretch the top bar: the sheet takes the rest. */
+  .shell {
+    grid-template-rows: auto 1fr;
+    align-content: start;
+  }
+}
+
+/* --- All events: a list to scan, nearest date first --- */
+.events {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.event-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-3);
+  height: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.event-card:hover {
+  border-color: var(--color-accent);
+}
+
+.event-card-wrap {
+  position: relative;
+  height: 100%;
+}
+
+/* A sibling of the card link (a button can't sit inside a link), pinned to its top-right corner. */
+.event-card-delete {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.event-card-delete:hover,
+.event-card-delete:focus-visible {
+  background: var(--color-surface-sunken);
+  color: var(--color-status-blocked-text);
+}
+
+.event-card-delete svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 720px) {
+  .event-card-delete {
+    width: 44px;
+    height: 44px;
+    top: var(--space-1);
+    right: var(--space-1);
+  }
+}
+
+/* Event home's last card: deleting the event, away from everything used day to day. */
+.event-delete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.event-delete h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-md);
+}
+
+.event-delete p {
+  margin: 0;
+}
+
+.event-card-name {
+  grid-column: 1 / -1;
+  padding-right: var(--space-5);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.event-card-meta {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.event-card-days {
+  align-self: end;
+  margin-top: var(--space-3);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  color: var(--color-brass-text);
+}
+
+.event-card-days--over {
+  font-size: var(--font-size-md);
+  color: var(--color-muted);
+}
+
+.event-card-open {
+  display: inline-flex;
+  align-items: center;
+  align-self: end;
+  gap: 2px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent);
+}
+
+.event-card-open svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+.event-card:hover .event-card-open svg {
+  transform: translateX(2px);
+}
+
+.past-events summary {
+  padding: var(--space-2) 0;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.past-events .event-cards {
+  margin-top: var(--space-2);
+}
+
+.events-note {
+  margin: 0;
+}
+
+.plan-history {
+  margin-top: var(--space-6);
+}
+
+.plan-history-title {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--font-size-md);
+  color: var(--color-muted);
+}
+
+.plan-history-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-history-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-history-list > li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.plan-history-invoice {
+  justify-self: end;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-accent);
+}
+
+.plan-history-row:hover {
+  border-color: var(--color-accent);
+}
+
+.plan-history-name {
+  font-weight: var(--font-weight-medium);
+}
+
+.plan-history-meta {
+  grid-column: 1;
+  color: var(--color-muted);
+}
+
+.plan-history-total {
+  grid-column: 2;
+  grid-row: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+.plan-history-status {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  color: var(--color-muted);
+}
+
+.plan-history-status--paid {
+  color: var(--color-accent);
+}
+
+.plan-history-drawer {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+.plan-history-note {
+  margin-top: var(--space-6);
+}

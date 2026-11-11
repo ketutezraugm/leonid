@@ -1,5 +1,5 @@
 {
-  "name": "@quartermaster/api",
+  "name": "@leonid/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,22 +8,40 @@
     "build": "tsup",
     "start": "NODE_ENV=production node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "paypal:smoke": "tsx --env-file-if-exists=../../.env scripts/paypal-smoke.ts",
+    "channel3:coverage": "tsx --env-file-if-exists=../../.env scripts/channel3-coverage.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=../../.env scripts/migrate.ts",
+    "venues:generate": "tsx scripts/generate-venues.ts",
+    "db:seed": "tsx --env-file-if-exists=../../.env scripts/seed.ts",
+    "day1:invoicing": "tsx --env-file-if-exists=../../.env scripts/day1/invoicing.ts",
+    "day1:payouts": "tsx --env-file-if-exists=../../.env scripts/day1/payouts.ts",
+    "gate2:check": "tsx --env-file-if-exists=../../.env scripts/gate2-check.ts",
+    "day1:search": "tsx --env-file-if-exists=../../.env scripts/day1/search.ts"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "@types/supertest": "^7.2.1",
+    "drizzle-kit": "^0.31.11",
     "supertest": "^7.3.1",
     "tsup": "^9.0.0",
     "tsx": "^4.23.15",
     "vitest": "^5.0.5"
   },
   "dependencies": {
-    "@quartermaster/shared": "workspace:*",
+    "@ai-sdk/openai-compatible": "3.0.79",
+    "@leonid/shared": "workspace:*",
+    "@renderinc/sdk": "^1.7.0",
+    "ai": "7.0.154",
     "cors": "^2.8.6",
+    "drizzle-orm": "^0.45.4",
     "express": "^5.3.0",
+    "pdf-lib": "^1.17.1",
+    "postgres": "^3.4.9",
     "zod": "^4.6.7"
   }
 }
