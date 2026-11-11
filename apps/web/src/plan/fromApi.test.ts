@@ -11,6 +11,8 @@ const row = (over: Partial<PlanTaskRow> = {}): PlanTaskRow => ({
   dependsOn: [],
   fundedBySponsorId: null,
   invoiceOfSponsorId: null,
+  kind: 'task',
+  workstream: null,
   ...over,
 });
 const at = (iso: string) => new Date(iso);

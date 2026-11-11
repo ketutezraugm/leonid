@@ -113,6 +113,8 @@ export function eventsRouter(options: EventsRouterOptions = {}) {
           dependsOn: t.dependsOn,
           fundedBySponsorId: t.fundedBySponsorId,
           invoiceOfSponsorId: t.invoiceOfSponsorId,
+          kind: t.kind,
+          workstream: t.workstream,
         })),
       });
       res.json(body);

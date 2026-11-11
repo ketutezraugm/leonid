@@ -90,6 +90,8 @@ const answers: Record<string, unknown> = {
         dependsOn: [],
         fundedBySponsorId: null,
         invoiceOfSponsorId: null,
+        kind: 'task',
+        workstream: null,
       },
     ],
   },

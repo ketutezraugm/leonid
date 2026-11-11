@@ -80,6 +80,19 @@ export const ledgerEntries = pgTable(
   ],
 ).enableRLS();
 
+export const TASK_KINDS = ['task', 'payment', 'milestone'] as const;
+export const WORKSTREAMS = [
+  'venue',
+  'catering',
+  'swag',
+  'av',
+  'printing',
+  'photo_video',
+  'prizes',
+  'people',
+  'sponsors',
+] as const;
+
 export const tasks = pgTable(
   'tasks',
   {
@@ -95,6 +108,9 @@ export const tasks = pgTable(
     fundedBySponsorId: uuid('funded_by_sponsor_id').references(() => sponsors.id),
     // Set on the task that stands for this sponsor's PayPal invoice; its status follows the sponsor's.
     invoiceOfSponsorId: uuid('invoice_of_sponsor_id').references(() => sponsors.id),
+    // TaskKind and Workstream in @leonid/shared; a test keeps them in step. Older tasks are plain tasks with no workstream.
+    kind: text('kind', { enum: TASK_KINDS }).notNull().default('task'),
+    workstream: text('workstream', { enum: WORKSTREAMS }),
   },
   (t) => [index('tasks_event_idx').on(t.eventId)],
 ).enableRLS();

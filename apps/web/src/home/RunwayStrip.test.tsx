@@ -32,6 +32,8 @@ const task = (n: number, name: string, start: string, end: string) => ({
   dependsOn: [],
   fundedBySponsorId: null,
   invoiceOfSponsorId: null,
+  kind: 'task',
+  workstream: null,
 });
 
 afterEach(() => vi.unstubAllGlobals());

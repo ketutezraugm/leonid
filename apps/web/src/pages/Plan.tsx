@@ -1,10 +1,13 @@
 import { PlanResponse, SponsorsResponse } from '@leonid/shared';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { CalendarColorBy } from '../home/BryntumPlanCalendar';
 import { PlanCalendarPanel } from '../home/PlanCalendarPanel';
 import { toPlanEvents } from '../home/planEvents';
 import type { PlanSponsor } from '../plan/gating';
+import { WORKSTREAM_LABEL, WORKSTREAMS, workstreamSlug } from '../plan/workstreams';
 import { useFetch } from '../shell/api';
 import { useEvent, withEvent } from '../shell/event';
+import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { PageHeader } from '../ui/PageHeader';
 import { PageState } from '../ui/PageState';
@@ -32,6 +35,12 @@ export function Plan() {
   const events = useMemo(
     () => (plan.kind === 'ready' ? toPlanEvents(plan.data, new Date(), sponsors) : []),
     [plan, sponsors],
+  );
+  // The plan opens on its workstreams, so it reads as an event's parts rather than a list of payments. Status is one click away.
+  const [colorBy, setColorBy] = useState<CalendarColorBy>('workstream');
+  const workstreams = useMemo(
+    () => WORKSTREAMS.filter((ws) => events.some((e) => e.workstream === ws)),
+    [events],
   );
   const unpaid = sponsors.some((sponsor) => sponsor.status !== 'paid');
 
@@ -66,19 +75,48 @@ export function Plan() {
         <>
           <Card>
             <div className="plan-legend">
-              <div className="badge-row">
-                <StatusBadge status="done" />
-                <StatusBadge status="progress" />
-                <StatusBadge status="pending" />
-                <StatusBadge status="risk" label="At risk" />
-                <StatusBadge status="blocked" label="Late" />
+              <div className="plan-colorby" role="group" aria-label="Colour the plan by">
+                <Button aria-pressed={colorBy === 'workstream'} onClick={() => setColorBy('workstream')}>
+                  Workstream
+                </Button>
+                <Button aria-pressed={colorBy === 'status'} onClick={() => setColorBy('status')}>
+                  Status
+                </Button>
               </div>
+              {colorBy === 'status' ? (
+                <div className="badge-row">
+                  <StatusBadge status="done" />
+                  <StatusBadge status="progress" />
+                  <StatusBadge status="pending" />
+                  <StatusBadge status="risk" label="At risk" />
+                  <StatusBadge status="blocked" label="Late" />
+                </div>
+              ) : (
+                <ul className="plan-workstreams" aria-label="Workstreams">
+                  {workstreams.map((ws) => (
+                    <li key={ws}>
+                      <span className={`plan-swatch plan-swatch-${workstreamSlug(ws)}`} aria-hidden="true" />
+                      {WORKSTREAM_LABEL[ws]}
+                    </li>
+                  ))}
+                  <li>
+                    <span className="plan-swatch plan-swatch-late" aria-hidden="true" />
+                    Late
+                  </li>
+                </ul>
+              )}
               <p className="plan-preview muted" role="status">
+                <span className="plan-kind">
+                  <i className="fa-solid fa-diamond" aria-hidden="true" /> Milestone
+                </span>
+                <span className="plan-kind">
+                  <i className="fa-solid fa-dollar-sign" aria-hidden="true" /> Payment
+                </span>
                 Sponsor payments are live from PayPal.
               </p>
             </div>
           </Card>
-          <PlanCalendarPanel events={events} eventDate={plan.data.eventDate} />
+          <PlanCalendarPanel events={events} eventDate={plan.data.eventDate} colorBy={colorBy} />
         </>
       )}
     </section>
